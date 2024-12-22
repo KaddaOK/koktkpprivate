@@ -1,0 +1,70 @@
+[gd_scene load_steps=2 format=3 uid="uid://crqvvwc2k4kg1"]
+
+[ext_resource type="Theme" uid="uid://dewr0sictrh6v" path="res://largetext.tres" id="1_jpfe0"]
+
+[node name="NextUpVBox" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Next Up" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Next Up:"
+
+[node name="NextUpSingerNameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jpfe0")
+text = "Singer Name"
+
+[node name="Performing" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Performing:"
+
+[node name="NextUpSongNameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jpfe0")
+text = "Song Name"
+
+[node name="by" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "by"
+
+[node name="NextUpArtistNameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jpfe0")
+text = "Artist Name"
+
+[node name="Get Ready" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 19
+text = "Get Ready!"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Launching in" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Launching in:"
+
+[node name="NextUpLaunchCountdownLabel" type="Label" parent="HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4

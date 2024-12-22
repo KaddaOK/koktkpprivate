@@ -1,0 +1,387 @@
+[gd_scene load_steps=7 format=3 uid="uid://carwq23qmjl1g"]
+
+[ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://theme.tres" id="1_62q84"]
+[ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
+[ext_resource type="Shader" path="res://grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="3_vpspo"]
+[ext_resource type="PackedScene" uid="uid://crqvvwc2k4kg1" path="res://nextup.tscn" id="4_wr1th"]
+[ext_resource type="PackedScene" uid="uid://bt53uvcacuoej" path="res://emptyqueue.tscn" id="5_3ng4t"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n2p57"]
+shader = ExtResource("3_vpspo")
+shader_parameter/kelvin = 775.281
+shader_parameter/red_colour = 10.7
+shader_parameter/green_colour = 12.7
+shader_parameter/blue_colour = 0.0
+shader_parameter/time_factor = 0.14
+shader_parameter/move = false
+shader_parameter/resolution = 2.02
+shader_parameter/sin_roll = 0.02
+shader_parameter/cos_roll = 0.02
+shader_parameter/alpha = 1.0
+
+[node name="RootController" type="Node"]
+script = ExtResource("1_fuv7c")
+
+[node name="BackgroundMusicPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="Main GUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Main Margin" type="MarginContainer" parent="Main GUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_62q84")
+
+[node name="Split Layout" type="HBoxContainer" parent="Main GUI/Main Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Main GUI/Main Margin/Split Layout/VBoxContainer"]
+layout_mode = 2
+text = "Queue:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="MainQueuePlayPauseButton" type="Button" parent="Main GUI/Main Margin/Split Layout/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "⏸️"
+
+[node name="MainQueueSkipButton" type="Button" parent="Main GUI/Main Margin/Split Layout/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "⏭️"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Main GUI/Main Margin/Split Layout/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="Main GUI/Main Margin/Split Layout/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="QueueTree" type="Tree" parent="Main GUI/Main Margin/Split Layout/VBoxContainer/ScrollContainer/PanelContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/title_button_font_size = 11
+allow_search = false
+hide_folding = true
+enable_recursive_folding = false
+hide_root = true
+select_mode = 1
+
+[node name="Main Tabs" type="TabContainer" parent="Main GUI/Main Margin/Split Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Start" type="MarginContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="StartTabVBox" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="LaunchUnautomatedHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox"]
+layout_mode = 2
+
+[node name="LaunchUnautomatedButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/LaunchUnautomatedHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "Launch Browser Unautomated"
+
+[node name="LaunchUnautomatedExplanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/LaunchUnautomatedHbox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "<-- This is required in order to log into Google for YouTube Premium (no ads).  You might as well use it to log into Karafun as well.  Once you've done those things once, it should last a while.  CLOSE this window when you're finished!"
+autowrap_mode = 2
+
+[node name="LaunchAutomatedHBox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox"]
+layout_mode = 2
+
+[node name="LaunchAutomatedButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/LaunchAutomatedHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Launch Browser Automated"
+
+[node name="LaunchAutomatedExplanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/LaunchAutomatedHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "<-- Use this to place the browser on the correct monitor ahead of time. (If it's not open it'll try to open it though)"
+autowrap_mode = 2
+
+[node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox"]
+layout_mode = 2
+
+[node name="Monitor Explanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+layout_mode = 2
+text = "Set monitor for info screen (next up or empty queue): "
+
+[node name="MonitorSpinbox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ApplyMonitorButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+
+[node name="HideDisplayScreenButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide"
+
+[node name="WaitSettingsHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox"]
+layout_mode = 2
+
+[node name="Wait between songs" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/WaitSettingsHbox"]
+layout_mode = 2
+text = "Wait between songs:"
+
+[node name="WaitSpinbox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/WaitSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/WaitSettingsHbox"]
+layout_mode = 2
+text = "seconds"
+
+[node name="BackgroundMusicVBox" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox"]
+layout_mode = 2
+
+[node name="Background Music" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Background Music"
+
+[node name="BgMusicEnabledCheckBox" type="CheckBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Enabled"
+
+[node name="Volume" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+text = "Volume:"
+
+[node name="BgMusicVolumeSpinBox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 5.0
+step = 5.0
+value = 20.0
+
+[node name="Percent" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+text = "%"
+
+[node name="BgMusicAddButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Add...
+"
+
+[node name="BgMusicItemList" type="ItemList" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BgMusicAddFileDialog" type="FileDialog" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Start/StartTabVBox/BackgroundMusicVBox"]
+unique_name_in_owner = true
+title = "Open File(s)"
+initial_position = 2
+size = Vector2i(324, 200)
+ok_button_text = "Open"
+file_mode = 1
+access = 2
+filters = PackedStringArray("*.mp3 ; MP3 files", "*.flac; FLAC files", "*.ogg; OGG files", "*.wav; WAV files")
+use_native_dialog = true
+
+[node name="Search" type="MarginContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="SearchTabVBox" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="SearchControlsHBox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SearchLabel" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/SearchControlsHBox"]
+layout_mode = 2
+text = "Search:"
+
+[node name="Control" type="Control" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/SearchControlsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SearchText" type="LineEdit" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/SearchControlsHBox/Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -15.5
+offset_bottom = 15.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+
+[node name="ClearSearchButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/SearchControlsHBox/Control/SearchText"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -15.5
+offset_bottom = 15.5
+grow_horizontal = 0
+grow_vertical = 2
+text = "x"
+flat = true
+
+[node name="SearchButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/SearchControlsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Search"
+
+[node name="ResultsGrid" type="GridContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 2
+
+[node name="KfnLabel" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Results from Karafun:"
+
+[node name="KNLabel" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Results from Karaokenerds:"
+
+[node name="KfnScrollContainer" type="ScrollContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="KfnResultsTree" type="Tree" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid/KfnScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/title_button_font_size = 13
+
+[node name="KNScrollContainer" type="ScrollContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="KNResultsTree" type="Tree" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Search/SearchTabVBox/ResultsGrid/KNScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/title_button_font_size = 13
+
+[node name="AddToQueueDialog" type="ConfirmationDialog" parent="Main GUI"]
+unique_name_in_owner = true
+title = "Add to Queue"
+initial_position = 2
+size = Vector2i(300, 200)
+dialog_hide_on_ok = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/AddToQueueDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 292.0
+offset_bottom = 151.0
+
+[node name="QueueAddSongNameLabel" type="Label" parent="Main GUI/AddToQueueDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="QueueAddArtistNameLabel" type="Label" parent="Main GUI/AddToQueueDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="QueueAddCreatorNameLabel" type="Label" parent="Main GUI/AddToQueueDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Enter singer name_" type="Label" parent="Main GUI/AddToQueueDialog/VBoxContainer"]
+layout_mode = 2
+text = "Enter singer name:"
+
+[node name="EnterSingerName" type="LineEdit" parent="Main GUI/AddToQueueDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DisplayScreen" type="Window" parent="."]
+unique_name_in_owner = true
+title = "Display Screen - KOKT Karaoke Party"
+initial_position = 3
+size = Vector2i(500, 500)
+current_screen = 0
+visible = false
+always_on_top = true
+
+[node name="Pulsing background" type="ColorRect" parent="DisplayScreen"]
+material = SubResource("ShaderMaterial_n2p57")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="NextUpScene" parent="DisplayScreen" instance=ExtResource("4_wr1th")]
+unique_name_in_owner = true
+visible = false
+
+[node name="EmptyQueueScene" parent="DisplayScreen" instance=ExtResource("5_3ng4t")]
+unique_name_in_owner = true
