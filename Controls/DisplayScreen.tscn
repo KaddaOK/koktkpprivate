@@ -1,0 +1,74 @@
+[gd_scene load_steps=6 format=3 uid="uid://u06hi7mpxw6s"]
+
+[ext_resource type="Shader" path="res://grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="1_p30xu"]
+[ext_resource type="Script" path="res://Controls/DisplayScreen.cs" id="1_u87du"]
+[ext_resource type="PackedScene" uid="uid://crqvvwc2k4kg1" path="res://NextUpDisplay.tscn" id="2_07c3t"]
+[ext_resource type="PackedScene" uid="uid://bt53uvcacuoej" path="res://emptyqueue.tscn" id="3_k0l2h"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n2p57"]
+shader = ExtResource("1_p30xu")
+shader_parameter/kelvin = 775.281
+shader_parameter/red_colour = 10.7
+shader_parameter/green_colour = 12.7
+shader_parameter/blue_colour = 0.0
+shader_parameter/time_factor = 0.14
+shader_parameter/move = false
+shader_parameter/resolution = 2.02
+shader_parameter/sin_roll = 0.02
+shader_parameter/cos_roll = 0.02
+shader_parameter/alpha = 1.0
+
+[node name="DisplayScreen" type="Window"]
+auto_translate_mode = 1
+title = "Display Screen - KOKT Karaoke Party"
+initial_position = 3
+size = Vector2i(500, 500)
+current_screen = 0
+always_on_top = true
+script = ExtResource("1_u87du")
+
+[node name="Pulsing background" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_n2p57")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="NextUpScene" parent="." instance=ExtResource("2_07c3t")]
+unique_name_in_owner = true
+visible = false
+
+[node name="EmptyQueueScene" parent="." instance=ExtResource("3_k0l2h")]
+unique_name_in_owner = true
+
+[node name="BgMusicPlayingListing" type="HBoxContainer" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = -40.0
+offset_right = 45.0
+grow_vertical = 0
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="Label" type="Label" parent="BgMusicPlayingListing"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Background Music:"
+vertical_alignment = 2
+
+[node name="BgMusicNowPlayingLabel" type="Label" parent="BgMusicPlayingListing"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "None"
+
+[node name="BgMusicPausedIndicator" type="Label" parent="BgMusicPlayingListing"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "(Paused)"

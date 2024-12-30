@@ -1,7 +1,8 @@
 using System;
+using Godot;
 
 [Serializable]
-public class QueueItem
+public partial class QueueItem : GodotObject
 {
     public string SingerName { get; set; }
     public string SongName { get; set; }

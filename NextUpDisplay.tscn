@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://crqvvwc2k4kg1"]
+[gd_scene load_steps=4 format=3 uid="uid://crqvvwc2k4kg1"]
 
 [ext_resource type="Theme" uid="uid://dewr0sictrh6v" path="res://largetext.tres" id="1_jpfe0"]
+[ext_resource type="Script" path="res://NextUpDisplay.cs" id="1_ty5qw"]
+[ext_resource type="Theme" uid="uid://crllxnsu5yiaw" path="res://between.tres" id="2_ehqpi"]
 
-[node name="NextUpVBox" type="VBoxContainer"]
+[node name="NextUpDisplay" type="VBoxContainer"]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -12,10 +14,12 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+script = ExtResource("1_ty5qw")
 
 [node name="Next Up" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 4
+theme = ExtResource("2_ehqpi")
 text = "Next Up:"
 
 [node name="NextUpSingerNameLabel" type="Label" parent="."]
@@ -28,6 +32,7 @@ text = "Singer Name"
 [node name="Performing" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 4
+theme = ExtResource("2_ehqpi")
 text = "Performing:"
 
 [node name="NextUpSongNameLabel" type="Label" parent="."]
@@ -40,6 +45,7 @@ text = "Song Name"
 [node name="by" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 4
+theme = ExtResource("2_ehqpi")
 text = "by"
 
 [node name="NextUpArtistNameLabel" type="Label" parent="."]
@@ -52,7 +58,7 @@ text = "Artist Name"
 [node name="Get Ready" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 19
+theme = ExtResource("2_ehqpi")
 text = "Get Ready!"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
@@ -62,9 +68,18 @@ size_flags_horizontal = 4
 [node name="Launching in" type="Label" parent="HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
+theme = ExtResource("2_ehqpi")
 text = "Launching in:"
 
 [node name="NextUpLaunchCountdownLabel" type="Label" parent="HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
+theme = ExtResource("2_ehqpi")
+
+[node name="CountdownPausedIndicator" type="Label" parent="HBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme = ExtResource("2_ehqpi")
+text = "(Paused)"

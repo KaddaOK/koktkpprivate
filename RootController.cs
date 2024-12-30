@@ -12,27 +12,38 @@ using System.Threading.Tasks;
 public partial class RootController : Node
 {
 	public bool IsPaused { get; private set; }
+	public bool IsWaitingToReturnFromBrowserControl { get; private set; }
 	public Queue<QueueItem> Queue { get; private set; }
 	public QueueItem NowPlaying { get; private set; }
-
-	public QueueItem ItemBeingAdded { get; private set; }
-
-	private int _launchCountdownLengthSeconds = 10; // TODO: remember this setting
-
-	// Called when the node enters the scene tree for the first time.
+	public Settings Settings { get; private set; }
 	public override void _Ready()
 	{
 		SetupHistoryLogFile();
 		SetupQueueTree();
 		SetupMainQueueControls();
 		LoadQueueFromDiskIfExists();
+		Settings = Settings.LoadFromDiskIfExists();
+		BindDisplayScreenControls();
 		SetupBackgroundMusicQueue();
 
 		BindSearchScreenControls();
-		BindDisplayScreenControls();
 
 		SetupStartTabControls();
 		GetTree().AutoAcceptQuit = false;
+	}
+
+	private SearchTab SearchTab;
+	private void BindSearchScreenControls()
+	{
+		SearchTab = GetNode<SearchTab>($"%Search");
+		SearchTab.ItemAddedToQueue += SearchTabItemAddedToQueue;
+	}
+
+	private void SearchTabItemAddedToQueue(QueueItem item)
+	{
+		Queue.Enqueue(item);
+		AddQueueTreeRow(item);
+		SaveQueueToDisk();
 	}
 
 	public override void _Notification(int what)
@@ -53,16 +64,15 @@ public partial class RootController : Node
 	public async void PlayItem(QueueItem item, CancellationToken cancellationToken)
 	{
 		NowPlaying = item;
-		// TODO: fade in background music
-		if (IsBackgroundMusicEnabled)
+		if (Settings.BgMusicEnabled)
 		{
-			StartOrResumeBackgroundMusic();
+			FadeInBackgroundMusic();
 		}
 
-		ShowNextUp(item.SingerName, item.SongName, item.ArtistName);
+		DisplayScreen.ShowNextUp(item.SingerName, item.SongName, item.ArtistName, Settings.CountdownLengthSeconds);
 
 		// Countdown logic
-		int launchSecondsRemaining = _launchCountdownLengthSeconds;
+		int launchSecondsRemaining = Settings.CountdownLengthSeconds;
 		while (launchSecondsRemaining > 0)
 		{
 			if (cancellationToken.IsCancellationRequested)
@@ -72,30 +82,31 @@ public partial class RootController : Node
 			}
 			if (!IsPaused)
 			{
-				if (!DisplayScreen.Visible) // it may have been dismissed while paused
-				{
-					ShowDisplayScreen();
-				}
-				NextUpLaunchCountdownLabel.Text = launchSecondsRemaining.ToString();
+				DisplayScreen.UpdateLaunchCountdownSecondsRemaining(launchSecondsRemaining);
 				launchSecondsRemaining--;
 			}
 			await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
 		}
-		// TODO: fade out background music
-		if (IsBackgroundMusicEnabled)
+		if (Settings.BgMusicEnabled)
 		{
-			PauseBackgroundMusic();
+			FadeOutBackgroundMusic();
 		}
 
 		GD.Print($"Playing {item.SongName} by {item.ArtistName} ({item.CreatorName}) from {item.PerformanceLink}");
-		HideDisplayScreen();
+		DisplayScreen.HideDisplayScreen();
 		switch (item.ItemType)
 		{
 			case ItemType.KarafunWeb:
+				IsWaitingToReturnFromBrowserControl = true;
 				await PuppeteerPlayer.PlayKarafunUrl(item.PerformanceLink, cancellationToken);
+				IsWaitingToReturnFromBrowserControl = false;
+				GD.Print("Karafun playback finished.");
 				break;
 			case ItemType.Youtube:
+				IsWaitingToReturnFromBrowserControl = true;
 				await PuppeteerPlayer.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
+				IsWaitingToReturnFromBrowserControl = false;
+				GD.Print("Youtube playback finished.");
 				break;
 			default:
 				GD.PrintErr($"Unknown item type: {item.ItemType}");
@@ -112,95 +123,31 @@ public partial class RootController : Node
 
 	#region display screen stuff
 
-	public Control NextUpScene { get; private set;}
-	public Control EmptyQueueScene { get; private set; }
-	public Window DisplayScreen { get; private set; }
-	public Label NextUpSingerNameLabel { get; private set; }
-	public Label NextUpSongNameLabel { get; private set; }
-	public Label NextUpArtistNameLabel { get; private set; }
-	public Label NextUpLaunchCountdownLabel { get; private set; }
 
-	public bool DisplayScreenIsDismissed { get; private set; }
+	public DisplayScreen DisplayScreen { get; private set; }
 
 	public void BindDisplayScreenControls()
 	{
-		DisplayScreen = GetNode<Window>($"%{nameof(DisplayScreen)}");
-		DisplayScreen.WindowInput += DisplayScreenWindowInput;
-
-		NextUpScene = GetNode<Control>($"%{nameof(NextUpScene)}");
-		EmptyQueueScene = GetNode<Control>($"%{nameof(EmptyQueueScene)}");
-
-		NextUpSingerNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpSingerNameLabel)}");
-		NextUpSongNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpSongNameLabel)}");
-		NextUpArtistNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpArtistNameLabel)}");
-		NextUpLaunchCountdownLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpLaunchCountdownLabel)}");
+		DisplayScreen = GetNode<DisplayScreen>($"%{nameof(DisplayScreen)}");
+		DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
 	}
 
-	public void DisplayScreenWindowInput(InputEvent @event)
+	public void ShowEmptyQueueScreen()
 	{
-		if (@event is InputEventKey keyEvent)
-		{
-			if (keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
-			{
-				DisplayScreenIsDismissed = true;
-				HideDisplayScreen();
-			}
-		}
-	}
-
-	public void ShowEmptyQueue()
-	{
-		NextUpScene.Visible = false;
-		EmptyQueueScene.Visible = true;
-		ShowDisplayScreen();
-		if (IsBackgroundMusicEnabled)
+		DisplayScreen.ShowEmptyQueueScreen();
+		if (Settings.BgMusicEnabled)
 		{
 			StartOrResumeBackgroundMusic();
 		}
 	}
 
-	public void ShowNextUp(string singer, string song, string artist)
-	{
-		NextUpSingerNameLabel.Text = singer;
-		NextUpSongNameLabel.Text = song;
-		NextUpArtistNameLabel.Text = artist;
-		NextUpLaunchCountdownLabel.Text = _launchCountdownLengthSeconds.ToString();
-		NextUpScene.Visible = true;
-		EmptyQueueScene.Visible = false;
-		ShowDisplayScreen();
-	}
-
-	private void ShowDisplayScreen()
-	{
-		// TODO: make this configurable
-		DisplayScreen.Mode = Window.ModeEnum.Fullscreen;
-
-		DisplayScreen.InitialPosition = Window.WindowInitialPosition.CenterOtherScreen;
-		DisplayScreen.CurrentScreen = MonitorId;
-		DisplayScreen.Visible = true;
-		DisplayScreenIsDismissed = false;
-		DisplayScreen.Show();
-		DisplayScreen.AlwaysOnTop = true;
-		DisplayScreen.GrabFocus();
-		// TODO: play empty queue playlist
-	}
-
-	public void HideDisplayScreen()
-	{
-		DisplayScreen.AlwaysOnTop = false;
-		DisplayScreen.Visible = false;
-		DisplayScreen.Hide();
-		// TODO: pause empty queue playlist
-	}
-
 	#endregion
 
 	#region background audio queue stuff
-	private List<string> BackgroundMusicQueuePaths = new List<string>(); // TODO: get from settings
+
 	private ItemList BgMusicItemList;
 	private FileDialog BgMusicAddFileDialog;
 	private string BackgroundMusicNowPlaying = null;
-	private bool IsBackgroundMusicEnabled = true; // TODO: get from settings
 	private AudioStreamPlayer BackgroundMusicPlayer;
 	private CheckBox BgMusicEnabledCheckBox;
 	private SpinBox BgMusicVolumeSpinBox;
@@ -209,26 +156,37 @@ public partial class RootController : Node
 	public void SetupBackgroundMusicQueue()
 	{
 		BgMusicItemList = GetNode<ItemList>($"%{nameof(BgMusicItemList)}");
+		foreach (var file in Settings.BgMusicFiles)
+		{
+			BgMusicItemList.AddItem(file);
+		}
 		BgMusicItemList.GuiInput += BgMusicItemListGuiInput;
+
 		BackgroundMusicPlayer = GetNode<AudioStreamPlayer>($"%{nameof(BackgroundMusicPlayer)}");
 		BackgroundMusicPlayer.Finished += BackgroundMusicPlayerFinished;
+		
 		BgMusicEnabledCheckBox = GetNode<CheckBox>($"%{nameof(BgMusicEnabledCheckBox)}");
+		BgMusicEnabledCheckBox.SetPressedNoSignal(Settings.BgMusicEnabled);
+		ToggleBackgroundMusic(Settings.BgMusicEnabled);
 		BgMusicEnabledCheckBox.Toggled += ToggleBackgroundMusic;
+
 		BgMusicVolumeSpinBox = GetNode<SpinBox>($"%{nameof(BgMusicVolumeSpinBox)}");
+		BgMusicVolumeSpinBox.Value = Settings.BgMusicVolumePercent;
+		BackgroundMusicPlayer.VolumeDb = PercentToDb(Settings.BgMusicVolumePercent);
 		BgMusicVolumeSpinBox.ValueChanged += (value) => SetBgMusicVolumePercent(value);
+
 		BgMusicAddFileDialog = GetNode<FileDialog>($"%{nameof(BgMusicAddFileDialog)}");
 		BgMusicAddFileDialog.FileSelected += OnBgMusicFileSelected;
 		BgMusicAddFileDialog.FilesSelected += OnBgMusicFilesSelected;
 		BgMusicAddButton = GetNode<Button>($"%{nameof(BgMusicAddButton)}");
 		BgMusicAddButton.Pressed += ShowBackgroundMusicAddDialog;
-		// TODO: load background music queue from disk
-		// TODO: if background music queue isn't empty, start playing it, if it's enabled
 	}
 
 	private void ToggleBackgroundMusic(bool enable)
 	{
-		IsBackgroundMusicEnabled = enable;
-		if (IsBackgroundMusicEnabled)
+		Settings.BgMusicEnabled = enable;
+		Settings.SaveToDisk();
+		if (Settings.BgMusicEnabled && !IsWaitingToReturnFromBrowserControl)
 		{
 			StartOrResumeBackgroundMusic();
 		}
@@ -238,11 +196,38 @@ public partial class RootController : Node
 		}
 	}
 
+	private async void FadeInBackgroundMusic()
+	{
+		if (Settings.BgMusicVolumePercent == 0)
+		{
+			GD.PrintErr("BG Music volume is 0, not fading in.");
+		}
+		else
+		{
+			BackgroundMusicPlayer.VolumeDb = PercentToDb(0);
+			var finalVolumeInDb = PercentToDb(Settings.BgMusicVolumePercent);
+			GD.Print($"Fading in background music to {Settings.BgMusicVolumePercent}% ({finalVolumeInDb} dB)");
+			var tween = GetTree().CreateTween();
+			tween.SetEase(Tween.EaseType.Out);
+			tween.TweenProperty(BackgroundMusicPlayer, "volume_db", finalVolumeInDb, 2).From(PercentToDb(0.01));
+		}
+		StartOrResumeBackgroundMusic();
+	}
+
+	private async void FadeOutBackgroundMusic()
+	{
+		var tween = GetTree().CreateTween();
+		tween.TweenProperty(BackgroundMusicPlayer, "volume_db", PercentToDb(0.01), 5);
+		tween.Finished += () => PauseBackgroundMusic();
+	}
+
 	private void StartOrResumeBackgroundMusic()
 	{
-		GD.Print($"BG Music: {BackgroundMusicQueuePaths.Count} items in queue. Stream: {(BackgroundMusicPlayer.Stream == null ? "null" : "present")}, Playing: {BackgroundMusicPlayer.Playing}, Paused: {BackgroundMusicPlayer.StreamPaused}");
-		if (BackgroundMusicQueuePaths.Count > 0)
+		GD.Print($"BG Music: {Settings.BgMusicFiles.Count} items in queue. Stream: {(BackgroundMusicPlayer.Stream == null ? "null" : "present")}, Playing: {BackgroundMusicPlayer.Playing}, Paused: {BackgroundMusicPlayer.StreamPaused}");
+		if (Settings.BgMusicFiles.Count > 0)
 		{
+			DisplayScreen.UpdateBgMusicPaused(false);
+
 			// if it's already playing, don't do anything
 			if (BackgroundMusicPlayer.Playing)
 			{
@@ -266,35 +251,47 @@ public partial class RootController : Node
 		if (BackgroundMusicPlayer.Playing)
 		{
 			BackgroundMusicPlayer.StreamPaused = true;
+			DisplayScreen.UpdateBgMusicPaused(true);
 		}
 	}
 
-
+	private float PercentToDb(double percent)
+	{
+		return (float)Mathf.LinearToDb(percent / 100D);
+	}
 	private void SetBgMusicVolumePercent(double volumePercent)
 	{
-		BackgroundMusicPlayer.VolumeDb = (float)Mathf.LinearToDb(volumePercent/100D);
+		Settings.BgMusicVolumePercent = volumePercent;
+		Settings.SaveToDisk();
+		BackgroundMusicPlayer.VolumeDb = PercentToDb(volumePercent);
+		GD.Print($"BG Music volume set to {volumePercent}% ({BackgroundMusicPlayer.VolumeDb} dB)");
 	}
 	private void BackgroundMusicPlayerFinished()
 	{
-		if (BackgroundMusicQueuePaths.Count > 0)
+		if (Settings.BgMusicFiles.Count > 0)
 		{
 			var oldNowPlaying = BackgroundMusicNowPlaying;
-			var previousPlaylistIndex = BackgroundMusicQueuePaths.IndexOf(oldNowPlaying);
+			var previousPlaylistIndex = Settings.BgMusicFiles.IndexOf(oldNowPlaying);
 			var nextIndexToPlay = previousPlaylistIndex + 1;
-			if (nextIndexToPlay >= BackgroundMusicQueuePaths.Count)
+			if (nextIndexToPlay >= Settings.BgMusicFiles.Count)
 			{
 				nextIndexToPlay = 0;
 			}
 			StartPlayingBackgroundMusic(nextIndexToPlay);
 		}
+		else
+		{
+			DisplayScreen.UpdateBgMusicNowPlaying("None");
+		}
 	}
 
 	private void StartPlayingBackgroundMusic(int indexToPlay)
 	{
-			BackgroundMusicNowPlaying = BackgroundMusicQueuePaths[indexToPlay];
+			BackgroundMusicNowPlaying = Settings.BgMusicFiles[indexToPlay];
 			BackgroundMusicPlayer.Stream = LoadAudioFromPath(BackgroundMusicNowPlaying);
-			SetBgMusicVolumePercent(BgMusicVolumeSpinBox.Value);
 			BackgroundMusicPlayer.Play();
+			DisplayScreen.UpdateBgMusicNowPlaying(Path.GetFileNameWithoutExtension(BackgroundMusicNowPlaying));
+			DisplayScreen.UpdateBgMusicPaused(false);
 	}
 
 	public AudioStream LoadAudioFromPath(string path)
@@ -369,27 +366,28 @@ public partial class RootController : Node
 		BgMusicAddFileDialog.Visible = false;
 		foreach (var file in files)
 		{
-			if (!BackgroundMusicQueuePaths.Contains(file))
+			if (!Settings.BgMusicFiles.Contains(file))
 			{
-				BackgroundMusicQueuePaths.Add(file);
+				Settings.BgMusicFiles.Add(file);
 			}
 
-            // Check if the file name already exists in BgMusicItemList
-            bool existsInItemList = false;
-            for (int i = 0; i < BgMusicItemList.ItemCount; i++)
-            {
-                if (BgMusicItemList.GetItemText(i) == file)
-                {
-                    existsInItemList = true;
-                    break;
-                }
-            }
+			// Check if the file name already exists in BgMusicItemList
+			bool existsInItemList = false;
+			for (int i = 0; i < BgMusicItemList.ItemCount; i++)
+			{
+				if (BgMusicItemList.GetItemText(i) == file)
+				{
+					existsInItemList = true;
+					break;
+				}
+			}
 
-            if (!existsInItemList)
-            {
-                BgMusicItemList.AddItem(file);
-            }
+			if (!existsInItemList)
+			{
+				BgMusicItemList.AddItem(file);
+			}
 		}
+		Settings.SaveToDisk();
 	}
 
 	public void BgMusicItemListGuiInput(InputEvent @event)
@@ -406,7 +404,8 @@ public partial class RootController : Node
 					// remove from display list
 					BgMusicItemList.RemoveItem(selectedItemIndex);
 					// remove from actual queue
-					BackgroundMusicQueuePaths.Remove(pathToRemove);
+					Settings.BgMusicFiles.Remove(pathToRemove);
+					Settings.SaveToDisk();
 					// TODO: if the removed item was the one playing, skip it
 				}
 			}
@@ -417,7 +416,7 @@ public partial class RootController : Node
 
 	#region main queue stuff
 
-	private Tree QueueTree;
+	private DraggableTree QueueTree;
 	private TreeItem _queueRoot;
 	private Button MainQueuePlayPauseButton;
 	private Button MainQueueSkipButton;
@@ -425,7 +424,7 @@ public partial class RootController : Node
 	private CancellationTokenSource PlayingCancellationSource = new CancellationTokenSource();
 	private void SetupQueueTree()
 	{
-		QueueTree = GetNode<Tree>($"%{nameof(QueueTree)}");
+		QueueTree = GetNode<DraggableTree>($"%{nameof(QueueTree)}");
 		QueueTree.Columns = 4;
 		QueueTree.SetColumnTitle(0, "Singer");
 		QueueTree.SetColumnTitle(1, "Song");
@@ -438,6 +437,61 @@ public partial class RootController : Node
 		_queueRoot = QueueTree.CreateItem();
 
 		QueueTree.GuiInput += QueueTreeGuiInput;
+		QueueTree.Reorder += QueueTreeReorder;
+	}
+
+	private void QueueTreeReorder(string draggedItemMetadata, string targetItemMetadata, int dropSection)
+	{
+		// find the dragged item in the queue
+		var draggedItem = Queue.FirstOrDefault(i => i.PerformanceLink == draggedItemMetadata);
+		if (draggedItem == null)
+		{
+			GD.PrintErr($"Could not find dragged item in the queue");
+			return;
+		}
+
+		var withoutMovedItem = Queue.Where(q => q != draggedItem).ToList();
+		var formerIndex = Queue.ToList().IndexOf(draggedItem);
+
+		int targetIndex = -1;
+		// if it's the NowPlaying item, that means they're dragging it to be next
+		if (NowPlaying != null && NowPlaying.PerformanceLink == draggedItemMetadata)
+		{
+			targetIndex = 0;
+		}
+		else
+		{
+			// find the destination item in the queue
+			var targetItem = Queue.FirstOrDefault(i => i.PerformanceLink == targetItemMetadata);
+			if (targetItem == null)
+			{
+				GD.PrintErr($"Could not find target item in the queue");
+				return;
+			}
+			targetIndex = withoutMovedItem.IndexOf(targetItem) + (dropSection == 1 ? 1 : 0);
+			GD.Print($"Item was dropped {(dropSection == 1 ? "after" : "before")} {targetItem.SingerName}");
+		}
+		if (targetIndex >= withoutMovedItem.Count)
+		{
+			withoutMovedItem.Add(draggedItem);
+			GD.Print($"Moved queue item from index {formerIndex} to the bottom");
+		}
+		else
+		{
+			withoutMovedItem.Insert(targetIndex, draggedItem);
+			GD.Print($"Moved queue item from index {formerIndex} to {targetIndex}");
+		}
+		Queue = new Queue<QueueItem>(withoutMovedItem);
+		SaveQueueToDisk();
+
+		// rebuild the tree
+		QueueTree.Clear();
+		_queueRoot = QueueTree.CreateItem();
+		AddQueueTreeRow(NowPlaying);
+		foreach (var item in Queue)
+		{
+			AddQueueTreeRow(item);
+		}
 	}
 
 	private void SetupMainQueueControls()
@@ -455,10 +509,12 @@ public partial class RootController : Node
 		if (IsPaused)
 		{
 			ResumeQueue();
+			DisplayScreen.UpdateCountdownPausedIndicator(false);
 		}
 		else
 		{
 			PauseQueue();
+			DisplayScreen.UpdateCountdownPausedIndicator(true);
 		}
 	}
 
@@ -474,6 +530,7 @@ public partial class RootController : Node
 		else 
 		{
 			// TODO: it's much more of a pain to make this work while we're paused tbh so for now it does nothing
+			GD.Print("Sorry, I didn't implement skipping while paused yet.");
 		}
 	}
 
@@ -560,6 +617,11 @@ public partial class RootController : Node
 
 	private void AddQueueTreeRow(QueueItem item)
 	{
+		if (item == null)
+		{
+			return;
+		};
+
 		if (_queueRoot == null)
 		{
 			GD.Print("Queue root item is disposed, recreating it.");
@@ -571,7 +633,6 @@ public partial class RootController : Node
 		treeItem.SetText(2, item.ArtistName);
 		treeItem.SetText(3, item.CreatorName);
 		treeItem.SetMetadata(0, item.PerformanceLink);
-		//GD.Print($"Added queue item: {item.SingerName} - {item.SongName} - {item.ArtistName} - {item.CreatorName} - {item.PerformanceLink}");
 	}
 
 	private void RemoveQueueTreeRow(QueueItem item)
@@ -654,6 +715,7 @@ public partial class RootController : Node
 		{
 			if (Queue.Count > 0)
 			{
+				GD.Print($"Queue has {Queue.Count} items, playing next.");
 				// Save the queue to disk right before we pop it (in case playing fails)
 				SaveQueueToDisk();
 				PlayingCancellationSource.Cancel();
@@ -661,12 +723,13 @@ public partial class RootController : Node
 				PlayItem(Queue.Dequeue(), PlayingCancellationSource.Token);
 				AppendToPlayHistory(NowPlaying);
 			}
-			else if (!DisplayScreen.Visible && !DisplayScreenIsDismissed)
+			else if (!DisplayScreen.Visible && !DisplayScreen.IsDismissed)
 			{
-				ShowEmptyQueue();
+				GD.Print("Queue is empty, showing empty queue screen.");
+				ShowEmptyQueueScreen();
 				// Save the queue to disk because it's now empty
 				SaveQueueToDisk();
-				if (IsBackgroundMusicEnabled)
+				if (Settings.BgMusicEnabled)
 				{
 					StartOrResumeBackgroundMusic();
 				}
@@ -701,7 +764,6 @@ public partial class RootController : Node
 	private SpinBox WaitSpinbox;
 	private Button ApplyMonitorButton;
 	private Button HideDisplayScreenButton;
-	private int MonitorId = 1;
 
 	private void SetupStartTabControls()
 	{
@@ -710,11 +772,14 @@ public partial class RootController : Node
 		MonitorSpinbox = GetNode<SpinBox>($"%{nameof(MonitorSpinbox)}");
 		// Set the max value of the spinbox to the number of monitors
 		MonitorSpinbox.MaxValue = DisplayServer.GetScreenCount() - 1;
-		MonitorSpinbox.Value = MonitorId;
+		MonitorSpinbox.Value = Settings.DisplayScreenMonitor;
 
 		WaitSpinbox = GetNode<SpinBox>($"%{nameof(WaitSpinbox)}");
-		WaitSpinbox.Value = _launchCountdownLengthSeconds;
-		WaitSpinbox.ValueChanged += (value) => _launchCountdownLengthSeconds = (int)value;
+		WaitSpinbox.Value = Settings.CountdownLengthSeconds;
+		WaitSpinbox.ValueChanged += (value) => {
+			Settings.CountdownLengthSeconds = (int)value;
+			Settings.SaveToDisk();
+		};
 
 
 		ApplyMonitorButton = GetNode<Button>($"%{nameof(ApplyMonitorButton)}");
@@ -728,7 +793,7 @@ public partial class RootController : Node
 
 	private void LaunchUnautomatedButtonPressed()
 	{
-		// TODO: maybe make it configurable what URLs to launch
+		// TODO: maybe make it configurable what URLs to launch?
 		PuppeteerPlayer.LaunchUnautomatedBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
 	}
 	private void LaunchAutomatedButtonPressed()
@@ -737,380 +802,15 @@ public partial class RootController : Node
 	}
 	private void ApplyMonitorButtonPressed()
 	{
-		MonitorId = (int)MonitorSpinbox.Value;
-		GD.Print($"Monitor ID set to {MonitorId}");
-		ShowDisplayScreen();
+		Settings.DisplayScreenMonitor = (int)MonitorSpinbox.Value;
+		Settings.SaveToDisk();
+		GD.Print($"Monitor ID set to {Settings.DisplayScreenMonitor}");
+		DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
+		DisplayScreen.ShowDisplayScreen();
 	}
 	private void HideMonitorButtonPressed()
 	{
-		DisplayScreenIsDismissed = true;
-		HideDisplayScreen();
+		DisplayScreen.Dismiss();
 	}
-	#endregion
-
-	#region search tab stuff
-	private Tree KfnResultsTree;
-	private Tree KNResultsTree;
-	private TreeItem _kfnRoot;
-	private TreeItem _knRoot;
-	private LineEdit SearchText;
-	private Button SearchButton;
-	private Button ClearSearchButton;
-	private List<KarafunSearchScrapeResultItem> KarafunResults;
-	private List<KNSearchResultItem> KNResults;
-	private Boolean IsStreamingResults = false;
-
-	private ConfirmationDialog AddToQueueDialog;
-	private LineEdit EnterSingerName;
-	private bool IsAddToQueueResolvingPerformLink = false;
-	private Label QueueAddSongNameLabel;
-	private Label QueueAddArtistNameLabel;
-	private Label QueueAddCreatorNameLabel;
-
-	private void BindSearchScreenControls()
-	{
-		SetupKfnTree();
-		SetupKNTree();
-		SetupSearchText();
-		SetupSearchButton();
-		SetupAddToQueueDialog();
-	}
-
-	private void SetupSearchText()
-	{
-		SearchText = GetNode<LineEdit>($"%{nameof(SearchText)}");
-		SearchText.TextSubmitted += Search;
-	}
-	
-	private void SetupSearchButton()
-	{
-		SearchButton = GetNode<Button>($"%{nameof(SearchButton)}");
-		SearchButton.Pressed += () => Search(SearchText.Text);
-
-		ClearSearchButton = GetNode<Button>($"%{nameof(ClearSearchButton)}");
-		ClearSearchButton.Pressed += () => {
-			SearchText.Text = "";
-			KfnResultsTree.Clear();
-			KNResultsTree.Clear();
-			SearchText.GrabFocus();
-		};
-	}
-
-	private void SetupKfnTree()
-	{
-		KfnResultsTree = GetNode<Tree>($"%{nameof(KfnResultsTree)}");
-		KfnResultsTree.Columns = 2;
-		KfnResultsTree.SetColumnTitle(0, "Song Name");
-		KfnResultsTree.SetColumnTitle(1, "Artist Name");
-		KfnResultsTree.SetColumnTitlesVisible(true);
-		KfnResultsTree.HideRoot = true;
-
-		// Create the root of the tree
-		_kfnRoot = KfnResultsTree.CreateItem();
-
-		// Connect the double-click event
-		KfnResultsTree.ItemActivated += OnKfnItemDoubleClicked;
-	}
-
-	private void SetupKNTree()
-	{
-		KNResultsTree = GetNode<Tree>($"%{nameof(KNResultsTree)}");
-		KNResultsTree.Columns = 3;
-		KNResultsTree.SetColumnTitle(0, "Song Name");
-		KNResultsTree.SetColumnTitle(1, "Artist Name");
-		KNResultsTree.SetColumnTitle(2, "Creator");
-		KNResultsTree.SetColumnTitlesVisible(true);
-		KNResultsTree.HideRoot = true;
-
-		// Create the root of the tree
-		_knRoot = KNResultsTree.CreateItem();
-
-		// Connect the double-click event
-		KNResultsTree.ItemActivated += OnKNItemDoubleClicked;
-	}
-
-	private void SetupAddToQueueDialog()
-	{
-		AddToQueueDialog = GetNode<ConfirmationDialog>($"%{nameof(AddToQueueDialog)}");
-		EnterSingerName = AddToQueueDialog.GetNode<LineEdit>($"%{nameof(EnterSingerName)}");
-		EnterSingerName.TextSubmitted += (_) => AddToQueueDialogConfirmed();
-		QueueAddSongNameLabel = AddToQueueDialog.GetNode<Label>($"%{nameof(QueueAddSongNameLabel)}");
-		QueueAddArtistNameLabel = AddToQueueDialog.GetNode<Label>($"%{nameof(QueueAddArtistNameLabel)}");
-		QueueAddCreatorNameLabel = AddToQueueDialog.GetNode<Label>($"%{nameof(QueueAddCreatorNameLabel)}");
-		AddToQueueDialog.Confirmed += AddToQueueDialogConfirmed;
-		AddToQueueDialog.Canceled += CloseAddToQueueDialog;
-	}
-
-	private void CloseAddToQueueDialog()
-	{
-		ItemBeingAdded = null;
-		AddToQueueDialog.Hide();
-	}
-
-	private void AddToQueueDialogConfirmed()
-	{
-		if (ItemBeingAdded != null && !IsAddToQueueResolvingPerformLink)
-		{
-			ItemBeingAdded.SingerName = EnterSingerName.Text;
-			EnterSingerName.Text = "";
-			Queue.Enqueue(ItemBeingAdded);
-			// serialize queue to disk
-			SaveQueueToDisk();
-			AddQueueTreeRow(ItemBeingAdded);
-			CloseAddToQueueDialog();
-		}
-	}
-
-	private async Task ToggleIsSearching(bool isSearching)
-	{
-		SearchText.Editable = !isSearching;
-		SearchButton.Disabled = isSearching;
-		SearchButton.Text = isSearching ? "Searching..." : "Search";
-		IsStreamingResults = isSearching;
-		Input.SetDefaultCursorShape(isSearching ? Input.CursorShape.Busy : Input.CursorShape.Arrow);
-		await ToSignal(GetTree(), "process_frame");
-	}
-
-	private async void Search(string query)
-	{
-		if (IsStreamingResults)
-		{
-			GD.Print("Already streaming results, skipping search.");
-			return;
-		}
-		await ToggleIsSearching(true);
-
-		var searchKaraokenerds = true; // TODO: Implement a setting to enable/disable searching Karaokenerds
-		var searchKarafun = true; // TODO: Implement a setting to enable/disable searching Karafun
-
-		var searchTasks = new List<Task>();
-		if (searchKaraokenerds)
-		{
-			KNResultsTree.Clear();
-			_knRoot = KNResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-			searchTasks.Add(GetResultsFromKaraokenerds(query));
-		}
-		if (searchKarafun)
-		{
-			KfnResultsTree.Clear();
-			_kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-			searchTasks.Add(StreamResultsFromKarafun(query));
-		}
-		await Task.WhenAll(searchTasks);
-		await ToggleIsSearching(false);
-	}
-
-	private async Task GetResultsFromKaraokenerds(string query)
-	{
-		GD.Print($"Searching KN for: {query}");
-		var results = await KaraokenerdsSearchScrape.Search(query);
-		GD.Print($"Received {results.Count} results from KN");
-		KNResults = results;
-		foreach (var result in KNResults)
-		{
-			AddKNResultsRow(result);
-		}
-		await ToSignal(GetTree(), "process_frame");
-	}
-
-	private async Task StreamResultsFromKarafun(string query)
-	{
-		GD.Print($"Searching Karafun for: {query}");
-		IsStreamingResults = true;
-		var mayHaveMore = false;
-		var pageResults = new List<KarafunSearchScrapeResultItem>();
-		var artistResults = new Dictionary<string, List<KarafunSearchScrapeResultItem>>();
-		KarafunResults = new List<KarafunSearchScrapeResultItem>();
-		await foreach (var result in KarafunSearchScrape.Search(query))
-		{
-			GD.Print($"Received {result.Results.Count} results from Karafun");
-			if (result.MayHaveMore) {
-				mayHaveMore = true;
-			}
-			if (result.PartOfArtistSet != null)
-			{
-				if (artistResults.ContainsKey(result.PartOfArtistSet))
-				{
-					artistResults[result.PartOfArtistSet].AddRange(result.Results);
-				}
-				else
-				{
-					artistResults.Add(result.PartOfArtistSet, result.Results);
-				}
-			}
-			else
-			{
-				pageResults.AddRange(result.Results);
-			}
-			
-			KarafunResults = new List<KarafunSearchScrapeResultItem>(pageResults);
-			foreach (var artist in artistResults)
-			{
-				// Find the index of the Artist item and replace it with the new results
-				int artistIndex = KarafunResults.FindIndex(a => a.ResultType == KarafunSearchScrapeResultItemType.Artist && a.ArtistLink == artist.Key);
-				if (artistIndex != -1)
-				{
-					KarafunResults.RemoveAt(artistIndex);
-					KarafunResults.InsertRange(artistIndex, artist.Value);
-				}
-			}
-			KarafunResults = KarafunResults
-				.Where(r => r.ResultType != KarafunSearchScrapeResultItemType.Artist)
-				.DistinctBy(r => r.SongInfoLink)
-				.OrderBy(item => item.ResultType == KarafunSearchScrapeResultItemType.UnlicensedSong ? 1 : 0)
-				.ThenBy(item => KarafunResults.IndexOf(item)) // Preserve the original relative order
-				.ToList();
-
-			await UpdateKarafunResultsTree();
-		}
-		IsStreamingResults = false;
-	}
-
-	private async Task UpdateKarafunResultsTree()
-	{
-		// Track user selections
-		var selectedItems = new List<string>();
-		var selectedItem = KfnResultsTree.GetSelected();
-		if (selectedItem != null)
-		{
-			selectedItems.Add(selectedItem.GetMetadata(0).ToString()); // Use metadata to track selections
-		}
-
-		//GD.Print($"Updating karafun tree with {KarafunResults.Count} results");
-
-		//actually probably fine to just clear and re-add everything
-		KfnResultsTree.Clear();
-		_kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-		foreach (var result in KarafunResults)
-		{
-			AddKarafunResultsRow(result);
-		}
-
-		// Restore user selections
-		foreach (var item in selectedItems)
-		{
-			var treeItem = FindTreeItemByMetadata(item);
-			if (treeItem != null)
-			{
-				KfnResultsTree.SetSelected(treeItem, 0);
-			}
-		}
-
-		await ToSignal(GetTree(), "process_frame");
-	}
-
-	private TreeItem FindTreeItemByMetadata(string metadata)
-	{
-		var items = _kfnRoot.GetChildren();
-		var item = items.FirstOrDefault();
-		while (item != null)
-		{
-			if (item.GetMetadata(0).ToString() == metadata)
-			{
-				return item;
-			}
-			item = item.GetNext();
-		}
-		return null;
-	}
-
-	private void AddKarafunResultsRow(KarafunSearchScrapeResultItem item)
-	{
-		if (_kfnRoot == null)
-		{
-			GD.Print("Kfn root item is disposed, recreating it.");
-			_kfnRoot = KfnResultsTree.CreateItem();
-		}
-		var treeItem = KfnResultsTree.CreateItem(_kfnRoot);
-		treeItem.SetText(0, item.SongName);
-		treeItem.SetText(1, item.ArtistName);
-		treeItem.SetMetadata(0, item.SongInfoLink);
-	}
-
-	private void AddKNResultsRow(KNSearchResultItem item)
-	{
-		if (_knRoot == null)
-		{
-			GD.Print("KN root item is disposed, recreating it.");
-			_knRoot = KNResultsTree.CreateItem();
-		}
-		var treeItem = KNResultsTree.CreateItem(_knRoot);
-		treeItem.SetText(0, item.SongName);
-		treeItem.SetText(1, item.ArtistName);
-		treeItem.SetText(2, item.CreatorBrandName);
-		treeItem.SetMetadata(0, item.YoutubeLink);
-	}
-
-	private void ShowAddToQueueDialog(string songName, string artistName, string creatorName)
-	{
-		SetAddToQueueBoxText(songName, artistName, creatorName);
-		AddToQueueDialog.PopupCentered();
-		EnterSingerName.GrabFocus();
-	}
-	private void SetAddToQueueBoxText(string songName, string artistName, string creatorName)
-	{
-		QueueAddSongNameLabel.Text = songName;
-		QueueAddArtistNameLabel.Text = artistName;
-		QueueAddCreatorNameLabel.Text = creatorName;
-	}
-
-	private async void OnKfnItemDoubleClicked()
-	{
-		TreeItem selectedItem = KfnResultsTree.GetSelected();
-		if (selectedItem != null)
-		{
-			string songName = selectedItem.GetText(0);
-			string artistName = selectedItem.GetText(1);
-			GD.Print($"Double-clicked: {songName} by {artistName}");
-			string songInfoLink = selectedItem.GetMetadata(0).ToString();
-
-			IsAddToQueueResolvingPerformLink = true;
-			ShowAddToQueueDialog("Loading, please wait...", "Loading, please wait...", "Karafun (loading perform link)");
-			await ToSignal(GetTree(), "process_frame");
-
-			GD.Print($"Getting perform link for {songInfoLink}");
-			var performLink = await KarafunSearchScrape.GetDirectPerformanceLinkForSong(songInfoLink);
-			GD.Print($"Perform link: {performLink}");
-
-			ItemBeingAdded = new QueueItem
-			{
-				SongName = songName,
-				ArtistName = artistName,
-				CreatorName = "Karafun",
-				SongInfoLink = songInfoLink,
-				PerformanceLink = performLink,
-				ItemType = ItemType.KarafunWeb
-			};
-
-			IsAddToQueueResolvingPerformLink = false;
-			SetAddToQueueBoxText(songName, artistName, "Karafun Web");
-		}
-	}
-
-	private async void OnKNItemDoubleClicked()
-	{
-		TreeItem selectedItem = KNResultsTree.GetSelected();
-		if (selectedItem != null)
-		{
-			string songName = selectedItem.GetText(0);
-			string artistName = selectedItem.GetText(1);
-			string creatorName = selectedItem.GetText(2);
-			string youtubeLink = selectedItem.GetMetadata(0).ToString();
-			GD.Print($"Double-clicked: {songName} by {artistName} ({creatorName}), {youtubeLink}");
-			
-			ItemBeingAdded = new QueueItem
-			{
-				SongName = songName,
-				ArtistName = artistName,
-				CreatorName = creatorName,
-				PerformanceLink = youtubeLink,
-				ItemType = ItemType.Youtube
-			};
-
-			IsAddToQueueResolvingPerformLink = false;
-			ShowAddToQueueDialog(songName, artistName, creatorName);
-		}
-	}
-
 	#endregion
 }
