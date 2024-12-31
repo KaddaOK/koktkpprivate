@@ -1,13 +1,16 @@
 <Project Sdk="Godot.NET.Sdk/4.3.0">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net7.0</TargetFramework>
-    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'ios' ">net8.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>KOKTKaraokeParty</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BunLabs.NAudio.Flac" Version="2.0.1" />
+    <PackageReference Include="ChickenSoft.AutoInject" Version="2.5.0" PrivateAssets="all" />
+    <PackageReference Include="ChickenSoft.GodotNodeInterfaces" Version="2.2.31" />
+    <PackageReference Include="ChickenSoft.Introspection" Version="2.1.0" />
+    <PackageReference Include="ChickenSoft.Introspection.Generator" Version="2.1.0" PrivateAssets="all" OutputItemType="analyzer" />
+    <PackageReference Include="GodotSharp.SourceGenerators" Version="2.5.0" PrivateAssets="all" OutputItemType="analyzer" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PuppeteerSharp" Version="20.0.5" />

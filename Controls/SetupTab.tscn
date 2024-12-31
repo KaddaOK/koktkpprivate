@@ -1,0 +1,132 @@
+[gd_scene format=3 uid="uid://c6qlqhs4aolwm"]
+
+[node name="Setup" type="MarginContainer"]
+metadata/_tab_index = 0
+
+[node name="StartTabVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="LaunchUnautomatedHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+
+[node name="LaunchUnautomatedButton" type="Button" parent="StartTabVBox/LaunchUnautomatedHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "Launch Browser Unautomated"
+
+[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/LaunchUnautomatedHbox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "<-- This is required in order to log into Google for YouTube Premium (no ads).  You might as well use it to log into Karafun as well.  Once you've done those things once, it should last a while.  CLOSE this window when you're finished!"
+autowrap_mode = 2
+
+[node name="LaunchAutomatedHBox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+
+[node name="LaunchAutomatedButton" type="Button" parent="StartTabVBox/LaunchAutomatedHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Launch Browser Automated"
+
+[node name="LaunchAutomatedExplanation" type="Label" parent="StartTabVBox/LaunchAutomatedHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "<-- Use this to place the browser on the correct monitor ahead of time. (If it's not open it'll try to open it though)"
+autowrap_mode = 2
+
+[node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+
+[node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+layout_mode = 2
+text = "Set monitor for info screen (next up or empty queue): "
+
+[node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+
+[node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide"
+
+[node name="WaitSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+
+[node name="Wait between songs" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
+layout_mode = 2
+text = "Wait between songs:"
+
+[node name="WaitSpinbox" type="SpinBox" parent="StartTabVBox/WaitSettingsHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
+layout_mode = 2
+text = "seconds"
+
+[node name="BackgroundMusicVBox" type="VBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="StartTabVBox/BackgroundMusicVBox"]
+layout_mode = 2
+
+[node name="Background Music" type="Label" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Background Music"
+
+[node name="BgMusicEnabledCheckBox" type="CheckBox" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Enabled"
+
+[node name="Volume" type="Label" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+text = "Volume:"
+
+[node name="BgMusicVolumeSpinBox" type="SpinBox" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 5.0
+step = 5.0
+value = 20.0
+
+[node name="Percent" type="Label" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+layout_mode = 2
+text = "%"
+
+[node name="BgMusicAddButton" type="Button" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Add...
+"
+
+[node name="BgMusicItemList" type="ItemList" parent="StartTabVBox/BackgroundMusicVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BgMusicAddFileDialog" type="FileDialog" parent="StartTabVBox/BackgroundMusicVBox"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+title = "Open File(s)"
+initial_position = 2
+size = Vector2i(324, 200)
+ok_button_text = "Open"
+file_mode = 1
+access = 2
+filters = PackedStringArray("*.ogg; OGG files", "*.mp3 ; MP3 files", "*.flac; FLAC files", "*.wav; WAV files")
+use_native_dialog = true

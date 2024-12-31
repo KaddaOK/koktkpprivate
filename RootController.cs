@@ -1,3 +1,5 @@
+using Chickensoft.AutoInject;
+using Chickensoft.Introspection;
 using Godot;
 using NAudio.Flac;
 using NAudio.Wave;
@@ -9,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+[Meta(typeof(IAutoNode))]
 public partial class RootController : Node
 {
 	public bool IsPaused { get; private set; }
@@ -16,8 +19,14 @@ public partial class RootController : Node
 	public Queue<QueueItem> Queue { get; private set; }
 	public QueueItem NowPlaying { get; private set; }
 	public Settings Settings { get; private set; }
-	public override void _Ready()
-	{
+
+	#region Nodes
+	[Node] public SetupTab SetupTab { get; set; } = default!;
+    #endregion
+
+    public override void _Ready()
+    {
+		//GD.Print("RootController OnReady did happen.");
 		SetupHistoryLogFile();
 		SetupQueueTree();
 		SetupMainQueueControls();
@@ -26,10 +35,55 @@ public partial class RootController : Node
 		BindDisplayScreenControls();
 		SetupBackgroundMusicQueue();
 
+		// TODO: should prob'ly move these to functions rather than lambdas?
+		SetupTab.CountdownLengthChanged += (value) =>
+		{
+			Settings.CountdownLengthSeconds = (int)value;
+			Settings.SaveToDisk();
+		};
+		SetupTab.DisplayScreenMonitorChanged += (value) =>
+		{
+			Settings.DisplayScreenMonitor = (int)value;
+			Settings.SaveToDisk();
+			GD.Print($"Monitor ID set to {Settings.DisplayScreenMonitor}");
+			DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
+			DisplayScreen.ShowDisplayScreen();
+		};
+		SetupTab.DisplayScreenDismissed += () =>
+		{
+			DisplayScreen.Dismiss();
+		};
+		SetupTab.BgMusicItemRemoved += (pathToRemove) =>
+		{
+			Settings.BgMusicFiles.Remove(pathToRemove);
+			Settings.SaveToDisk();
+			// TODO: if the removed item was the one playing, skip it
+		};
+		SetupTab.BgMusicItemsAdded += (pathsToAdd) =>
+		{
+			foreach (var file in pathsToAdd)
+			{
+					if (!Settings.BgMusicFiles.Contains(file))
+				{
+					Settings.BgMusicFiles.Add(file);
+				}
+			}
+			Settings.SaveToDisk();
+		};
+		SetupTab.BgMusicToggle += ToggleBackgroundMusic;
+		SetupTab.BgMusicVolumeChanged += SetBgMusicVolumePercent;
+
+		SetupTab.SetBgMusicItems(Settings.BgMusicFiles);
+		SetupTab.SetBgMusicEnabled(Settings.BgMusicEnabled);
+		SetupTab.SetBgMusicVolumePercent(Settings.BgMusicVolumePercent);
+		SetupTab.SetDisplayScreenMonitor(Settings.DisplayScreenMonitor);
+
 		BindSearchScreenControls();
 
-		SetupStartTabControls();
 		GetTree().AutoAcceptQuit = false;
+
+		ToggleBackgroundMusic(Settings.BgMusicEnabled);
+
 	}
 
 	private SearchTab SearchTab;
@@ -53,6 +107,7 @@ public partial class RootController : Node
 			Quit();
 		}
 
+		this.Notify(what);
 	}
 
 	public async void Quit()
@@ -145,41 +200,40 @@ public partial class RootController : Node
 
 	#region background audio queue stuff
 
-	private ItemList BgMusicItemList;
-	private FileDialog BgMusicAddFileDialog;
+
+
 	private string BackgroundMusicNowPlaying = null;
 	private AudioStreamPlayer BackgroundMusicPlayer;
-	private CheckBox BgMusicEnabledCheckBox;
-	private SpinBox BgMusicVolumeSpinBox;
-	private Button BgMusicAddButton;
 
 	public void SetupBackgroundMusicQueue()
 	{
+		/*
 		BgMusicItemList = GetNode<ItemList>($"%{nameof(BgMusicItemList)}");
 		foreach (var file in Settings.BgMusicFiles)
 		{
 			BgMusicItemList.AddItem(file);
 		}
 		BgMusicItemList.GuiInput += BgMusicItemListGuiInput;
+		*/
 
 		BackgroundMusicPlayer = GetNode<AudioStreamPlayer>($"%{nameof(BackgroundMusicPlayer)}");
 		BackgroundMusicPlayer.Finished += BackgroundMusicPlayerFinished;
 		
-		BgMusicEnabledCheckBox = GetNode<CheckBox>($"%{nameof(BgMusicEnabledCheckBox)}");
-		BgMusicEnabledCheckBox.SetPressedNoSignal(Settings.BgMusicEnabled);
-		ToggleBackgroundMusic(Settings.BgMusicEnabled);
-		BgMusicEnabledCheckBox.Toggled += ToggleBackgroundMusic;
+		//BgMusicEnabledCheckBox = GetNode<CheckBox>($"%{nameof(BgMusicEnabledCheckBox)}");
+		//BgMusicEnabledCheckBox.SetPressedNoSignal(Settings.BgMusicEnabled);
+		//ToggleBackgroundMusic(Settings.BgMusicEnabled);
+		//BgMusicEnabledCheckBox.Toggled += ToggleBackgroundMusic;
 
-		BgMusicVolumeSpinBox = GetNode<SpinBox>($"%{nameof(BgMusicVolumeSpinBox)}");
-		BgMusicVolumeSpinBox.Value = Settings.BgMusicVolumePercent;
+		//BgMusicVolumeSpinBox = GetNode<SpinBox>($"%{nameof(BgMusicVolumeSpinBox)}");
+		//BgMusicVolumeSpinBox.Value = Settings.BgMusicVolumePercent;
 		BackgroundMusicPlayer.VolumeDb = PercentToDb(Settings.BgMusicVolumePercent);
-		BgMusicVolumeSpinBox.ValueChanged += (value) => SetBgMusicVolumePercent(value);
+		//BgMusicVolumeSpinBox.ValueChanged += (value) => SetBgMusicVolumePercent(value);
 
-		BgMusicAddFileDialog = GetNode<FileDialog>($"%{nameof(BgMusicAddFileDialog)}");
-		BgMusicAddFileDialog.FileSelected += OnBgMusicFileSelected;
-		BgMusicAddFileDialog.FilesSelected += OnBgMusicFilesSelected;
-		BgMusicAddButton = GetNode<Button>($"%{nameof(BgMusicAddButton)}");
-		BgMusicAddButton.Pressed += ShowBackgroundMusicAddDialog;
+		//BgMusicAddFileDialog = GetNode<FileDialog>($"%{nameof(BgMusicAddFileDialog)}");
+		//BgMusicAddFileDialog.FileSelected += OnBgMusicFileSelected;
+		//BgMusicAddFileDialog.FilesSelected += OnBgMusicFilesSelected;
+		//BgMusicAddButton = GetNode<Button>($"%{nameof(BgMusicAddButton)}");
+		//BgMusicAddButton.Pressed += ShowBackgroundMusicAddDialog;
 	}
 
 	private void ToggleBackgroundMusic(bool enable)
@@ -349,66 +403,6 @@ public partial class RootController : Node
 				Stereo = wavReader.WaveFormat.Channels == 2,
 				MixRate = wavReader.WaveFormat.SampleRate
 			};
-		}
-	}
-
-	private void ShowBackgroundMusicAddDialog()
-	{
-		BgMusicAddFileDialog.Visible = true;
-	}
-
-	private void OnBgMusicFileSelected(string file)
-	{
-		OnBgMusicFilesSelected(new string[] { file });
-	}
-	private void OnBgMusicFilesSelected(string[] files)
-	{
-		BgMusicAddFileDialog.Visible = false;
-		foreach (var file in files)
-		{
-			if (!Settings.BgMusicFiles.Contains(file))
-			{
-				Settings.BgMusicFiles.Add(file);
-			}
-
-			// Check if the file name already exists in BgMusicItemList
-			bool existsInItemList = false;
-			for (int i = 0; i < BgMusicItemList.ItemCount; i++)
-			{
-				if (BgMusicItemList.GetItemText(i) == file)
-				{
-					existsInItemList = true;
-					break;
-				}
-			}
-
-			if (!existsInItemList)
-			{
-				BgMusicItemList.AddItem(file);
-			}
-		}
-		Settings.SaveToDisk();
-	}
-
-	public void BgMusicItemListGuiInput(InputEvent @event)
-	{
-		if (@event is InputEventKey keyEvent)
-		{
-			if (keyEvent.Pressed && keyEvent.Keycode == Key.Delete)
-			{
-				var selectedItemIndex = BgMusicItemList.GetSelectedItems().FirstOrDefault();
-				if (selectedItemIndex > -1)
-				{
-					var pathToRemove = BgMusicItemList.GetItemText(selectedItemIndex);
-
-					// remove from display list
-					BgMusicItemList.RemoveItem(selectedItemIndex);
-					// remove from actual queue
-					Settings.BgMusicFiles.Remove(pathToRemove);
-					Settings.SaveToDisk();
-					// TODO: if the removed item was the one playing, skip it
-				}
-			}
 		}
 	}
 
@@ -711,7 +705,8 @@ public partial class RootController : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		if (!IsPaused && NowPlaying == null)
+		if (!IsPaused && NowPlaying == null 
+		&& Queue != null && DisplayScreen != null) // this shouldn't happen but things are being jerks
 		{
 			if (Queue.Count > 0)
 			{
@@ -757,60 +752,5 @@ public partial class RootController : Node
 	}
 	#endregion
 
-	#region Start tab stuff
-	private Button LaunchUnautomatedButton;
-	private Button LaunchAutomatedButton;
-	private SpinBox MonitorSpinbox;
-	private SpinBox WaitSpinbox;
-	private Button ApplyMonitorButton;
-	private Button HideDisplayScreenButton;
-
-	private void SetupStartTabControls()
-	{
-		LaunchUnautomatedButton = GetNode<Button>($"%{nameof(LaunchUnautomatedButton)}");
-		LaunchAutomatedButton = GetNode<Button>($"%{nameof(LaunchAutomatedButton)}");
-		MonitorSpinbox = GetNode<SpinBox>($"%{nameof(MonitorSpinbox)}");
-		// Set the max value of the spinbox to the number of monitors
-		MonitorSpinbox.MaxValue = DisplayServer.GetScreenCount() - 1;
-		MonitorSpinbox.Value = Settings.DisplayScreenMonitor;
-
-		WaitSpinbox = GetNode<SpinBox>($"%{nameof(WaitSpinbox)}");
-		WaitSpinbox.Value = Settings.CountdownLengthSeconds;
-		WaitSpinbox.ValueChanged += (value) => {
-			Settings.CountdownLengthSeconds = (int)value;
-			Settings.SaveToDisk();
-		};
-
-
-		ApplyMonitorButton = GetNode<Button>($"%{nameof(ApplyMonitorButton)}");
-		HideDisplayScreenButton = GetNode<Button>($"%{nameof(HideDisplayScreenButton)}");
-
-		LaunchUnautomatedButton.Pressed += LaunchUnautomatedButtonPressed;
-		LaunchAutomatedButton.Pressed += LaunchAutomatedButtonPressed;
-		ApplyMonitorButton.Pressed += ApplyMonitorButtonPressed;
-		HideDisplayScreenButton.Pressed += HideMonitorButtonPressed;
-	}
-
-	private void LaunchUnautomatedButtonPressed()
-	{
-		// TODO: maybe make it configurable what URLs to launch?
-		PuppeteerPlayer.LaunchUnautomatedBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
-	}
-	private void LaunchAutomatedButtonPressed()
-	{
-		PuppeteerPlayer.LaunchAutomatedBrowser();
-	}
-	private void ApplyMonitorButtonPressed()
-	{
-		Settings.DisplayScreenMonitor = (int)MonitorSpinbox.Value;
-		Settings.SaveToDisk();
-		GD.Print($"Monitor ID set to {Settings.DisplayScreenMonitor}");
-		DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
-		DisplayScreen.ShowDisplayScreen();
-	}
-	private void HideMonitorButtonPressed()
-	{
-		DisplayScreen.Dismiss();
-	}
-	#endregion
+	
 }
