@@ -1,10 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=8 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://theme.tres" id="1_62q84"]
 [ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
 [ext_resource type="Script" path="res://Controls/DraggableTree.cs" id="3_dnylh"]
 [ext_resource type="PackedScene" uid="uid://u06hi7mpxw6s" path="res://Controls/DisplayScreen.tscn" id="3_f0j17"]
 [ext_resource type="PackedScene" uid="uid://dvyxhpdbi8cjs" path="res://Controls/SearchTab.tscn" id="3_vhkgr"]
+[ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
+[ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 
 [node name="RootController" type="Node"]
 script = ExtResource("1_fuv7c")
@@ -88,136 +90,10 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 current_tab = 0
 
-[node name="Setup" type="MarginContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs"]
-layout_mode = 2
-metadata/_tab_index = 0
-
-[node name="StartTabVBox" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup"]
-layout_mode = 2
-theme_override_constants/separation = 30
-
-[node name="LaunchUnautomatedHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox"]
-layout_mode = 2
-
-[node name="LaunchUnautomatedButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/LaunchUnautomatedHbox"]
+[node name="Setup" parent="Main GUI/Main Margin/Split Layout/Main Tabs" instance=ExtResource("4_4si77")]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-text = "Launch Browser Unautomated"
-
-[node name="LaunchUnautomatedExplanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/LaunchUnautomatedHbox"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "<-- This is required in order to log into Google for YouTube Premium (no ads).  You might as well use it to log into Karafun as well.  Once you've done those things once, it should last a while.  CLOSE this window when you're finished!"
-autowrap_mode = 2
-
-[node name="LaunchAutomatedHBox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox"]
-layout_mode = 2
-
-[node name="LaunchAutomatedButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/LaunchAutomatedHBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-text = "Launch Browser Automated"
-
-[node name="LaunchAutomatedExplanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/LaunchAutomatedHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "<-- Use this to place the browser on the correct monitor ahead of time. (If it's not open it'll try to open it though)"
-autowrap_mode = 2
-
-[node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox"]
-layout_mode = 2
-
-[node name="Monitor Explanation" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-layout_mode = 2
-text = "Set monitor for info screen (next up or empty queue): "
-
-[node name="MonitorSpinbox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="ApplyMonitorButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Apply"
-
-[node name="HideDisplayScreenButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Hide"
-
-[node name="WaitSettingsHbox" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox"]
-layout_mode = 2
-
-[node name="Wait between songs" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/WaitSettingsHbox"]
-layout_mode = 2
-text = "Wait between songs:"
-
-[node name="WaitSpinbox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/WaitSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/WaitSettingsHbox"]
-layout_mode = 2
-text = "seconds"
-
-[node name="BackgroundMusicVBox" type="VBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox"]
-layout_mode = 2
-
-[node name="Background Music" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 2
-text = "Background Music"
-
-[node name="BgMusicEnabledCheckBox" type="CheckBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Enabled"
-
-[node name="Volume" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-layout_mode = 2
-text = "Volume:"
-
-[node name="BgMusicVolumeSpinBox" type="SpinBox" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-min_value = 5.0
-step = 5.0
-value = 20.0
-
-[node name="Percent" type="Label" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-layout_mode = 2
-text = "%"
-
-[node name="BgMusicAddButton" type="Button" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 10
-text = "Add...
-"
-
-[node name="BgMusicItemList" type="ItemList" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BgMusicAddFileDialog" type="FileDialog" parent="Main GUI/Main Margin/Split Layout/Main Tabs/Setup/StartTabVBox/BackgroundMusicVBox"]
-unique_name_in_owner = true
-title = "Open File(s)"
-initial_position = 2
-size = Vector2i(324, 200)
-ok_button_text = "Open"
-file_mode = 1
-access = 2
-filters = PackedStringArray("*.ogg; OGG files", "*.mp3 ; MP3 files", "*.flac; FLAC files", "*.wav; WAV files")
-use_native_dialog = true
+script = ExtResource("5_mkmvn")
 
 [node name="Search" parent="Main GUI/Main Margin/Split Layout/Main Tabs" instance=ExtResource("3_vhkgr")]
 unique_name_in_owner = true
