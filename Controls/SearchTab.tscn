@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://dvyxhpdbi8cjs"]
+[gd_scene load_steps=4 format=3 uid="uid://dvyxhpdbi8cjs"]
 
 [ext_resource type="Script" path="res://Controls/SearchTab.cs" id="1_iaba6"]
+[ext_resource type="PackedScene" uid="uid://pme5quf0aogv" path="res://Controls/LoadableLabel.tscn" id="2_pm6ve"]
+[ext_resource type="Script" path="res://Controls/LoadableLabel.cs" id="3_h8wwf"]
 
 [node name="SearchTab" type="MarginContainer"]
 custom_minimum_size = Vector2(500, 300)
@@ -64,15 +66,33 @@ layout_mode = 2
 size_flags_vertical = 3
 columns = 2
 
-[node name="KfnLabel" type="Label" parent="SearchTabVBox/ResultsGrid"]
+[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+
+[node name="KfnLabel" type="Label" parent="SearchTabVBox/ResultsGrid/KfnSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Results from Karafun:"
 
-[node name="KNLabel" type="Label" parent="SearchTabVBox/ResultsGrid"]
+[node name="KfnResultCount" parent="SearchTabVBox/ResultsGrid/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("3_h8wwf")
+FontSize = 12
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SearchTabVBox/ResultsGrid"]
+layout_mode = 2
+
+[node name="KNLabel" type="Label" parent="SearchTabVBox/ResultsGrid/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Results from Karaokenerds:"
+
+[node name="KNResultCount" parent="SearchTabVBox/ResultsGrid/HBoxContainer" instance=ExtResource("2_pm6ve")]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("3_h8wwf")
+FontSize = 12
 
 [node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/ResultsGrid"]
 layout_mode = 2
@@ -105,24 +125,52 @@ unique_name_in_owner = true
 auto_translate_mode = 1
 title = "Add to Queue"
 initial_position = 2
-size = Vector2i(300, 200)
+size = Vector2i(300, 240)
 dialog_hide_on_ok = false
 
 [node name="VBoxContainer" type="VBoxContainer" parent="AddToQueueDialog"]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 292.0
-offset_bottom = 151.0
+offset_bottom = 191.0
 
-[node name="QueueAddSongNameLabel" type="Label" parent="AddToQueueDialog/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="AddToQueueDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 20
+
+[node name="GridContainer" type="GridContainer" parent="AddToQueueDialog/VBoxContainer/MarginContainer"]
+layout_mode = 2
+columns = 2
+
+[node name="Song_" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
+layout_mode = 2
+text = "Song:"
+horizontal_alignment = 2
+
+[node name="QueueAddSongNameLabel" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
+script = ExtResource("3_h8wwf")
 
-[node name="QueueAddArtistNameLabel" type="Label" parent="AddToQueueDialog/VBoxContainer"]
+[node name="Artist_" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
+layout_mode = 2
+text = "Artist:"
+horizontal_alignment = 2
+
+[node name="QueueAddArtistNameLabel" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
+script = ExtResource("3_h8wwf")
 
-[node name="QueueAddCreatorNameLabel" type="Label" parent="AddToQueueDialog/VBoxContainer"]
+[node name="From_" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
+layout_mode = 2
+text = "From:"
+horizontal_alignment = 2
+
+[node name="QueueAddCreatorNameLabel" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 

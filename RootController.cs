@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node
@@ -25,9 +24,12 @@ public partial class RootController : Node
 
     [Node("%Setup")] // TODO: this name is annoying to me
     private ISetupTab SetupTab { get; set; } = default!;
-    private SearchTab SearchTab { get; set; } = default!;
+
+    [Node("%Search")] // TODO: this name is annoying to me
+    private ISearchTab SearchTab { get; set; } = default!;
+
     [Node] private IDisplayScreen DisplayScreen { get; set; } = default!;
-    private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
+    [Node] private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
 
     #endregion
 
@@ -51,7 +53,6 @@ public partial class RootController : Node
 
     private void BindSearchScreenControls()
     {
-        SearchTab = GetNode<SearchTab>($"%Search");
         SearchTab.ItemAddedToQueue += SearchTabItemAddedToQueue;
     }
 
@@ -147,7 +148,7 @@ public partial class RootController : Node
         DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
     }
 
-    public void ShowEmptyQueueScreen()
+    public void ShowEmptyQueueScreenAndBgMusic()
     {
         DisplayScreen.ShowEmptyQueueScreen();
         if (Settings.BgMusicEnabled)
@@ -162,7 +163,6 @@ public partial class RootController : Node
 
     public void SetupBackgroundMusicQueue()
     {
-        BackgroundMusicPlayer = GetNode<AudioStreamPlayer>($"%{nameof(BackgroundMusicPlayer)}");
         BackgroundMusicPlayer.Finished += BackgroundMusicPlayerFinished;
         ToggleBackgroundMusic(Settings.BgMusicEnabled);
     }
@@ -653,13 +653,9 @@ public partial class RootController : Node
             else if (!DisplayScreen.Visible && !DisplayScreen.IsDismissed)
             {
                 GD.Print("Queue is empty, showing empty queue screen.");
-                ShowEmptyQueueScreen();
+                ShowEmptyQueueScreenAndBgMusic();
                 // Save the queue to disk because it's now empty
                 SaveQueueToDisk();
-                if (Settings.BgMusicEnabled)
-                {
-                    StartOrResumeBackgroundMusic();
-                }
             }
         }
     }

@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://pme5quf0aogv"]
+
+[ext_resource type="PackedScene" uid="uid://b6jf7t6d0cjvj" path="res://Controls/LoadingSpinner.tscn" id="1_60w57"]
+
+[node name="LoadableLabel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="LoadedLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+vertical_alignment = 1
+
+[node name="LoadingSpinner" parent="." instance=ExtResource("1_60w57")]
+unique_name_in_owner = true
+layout_mode = 1
+offset_right = 47.0
+offset_bottom = 23.0

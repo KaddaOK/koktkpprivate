@@ -1,0 +1,35 @@
+[gd_scene load_steps=6 format=3 uid="uid://b6jf7t6d0cjvj"]
+
+[ext_resource type="Script" path="res://Controls/LoadingSpinner.cs" id="1_dxhr6"]
+
+[sub_resource type="Gradient" id="Gradient_spo0j"]
+offsets = PackedFloat32Array(0.362069, 0.491379, 0.637931)
+colors = PackedColorArray(0.808998, 0.808998, 0.808998, 0, 1, 1, 1, 0.215686, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_ky7hg"]
+gradient = SubResource("Gradient_spo0j")
+width = 20
+height = 20
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="Gradient" id="Gradient_46w4g"]
+offsets = PackedFloat32Array(0.275862, 0.5, 0.741379)
+colors = PackedColorArray(1.34766e-06, 0.952283, 0.952283, 0, 0, 0.952941, 0.952941, 1, 1.34766e-06, 0.952283, 0.952283, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_blivq"]
+gradient = SubResource("Gradient_46w4g")
+width = 20
+height = 20
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 1)
+
+[node name="LoadingSpinner" type="TextureProgressBar"]
+value = 100.0
+fill_mode = 4
+radial_fill_degrees = 115.0
+texture_under = SubResource("GradientTexture2D_ky7hg")
+texture_progress = SubResource("GradientTexture2D_blivq")
+script = ExtResource("1_dxhr6")
