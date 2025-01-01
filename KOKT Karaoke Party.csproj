@@ -6,6 +6,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BunLabs.NAudio.Flac" Version="2.0.1" />
+    <PackageReference Include="Chickensoft.AutoInject" Version="2.4.0" />
+    <PackageReference Include="ChickenSoft.GodotNodeInterfaces" Version="2.2.31" />
+    <PackageReference Include="Chickensoft.Introspection" Version="2.0.0" />
+    <PackageReference Include="Chickensoft.Introspection.Generator" Version="2.0.0" PrivateAssets="all" OutputItemType="analyzer" />
+    <PackageReference Include="GodotSharp.SourceGenerators" Version="2.1.1" PrivateAssets="all" OutputItemType="analyzer" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PuppeteerSharp" Version="20.0.5" />
