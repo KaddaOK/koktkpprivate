@@ -1,11 +1,30 @@
 using Chickensoft.AutoInject;
+using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
 
+public interface ISetupTab: IMarginContainer
+{
+    event SetupTab.CountdownLengthChangedEventHandler CountdownLengthChanged;
+    event SetupTab.DisplayScreenMonitorChangedEventHandler DisplayScreenMonitorChanged;
+    event SetupTab.DisplayScreenDismissedEventHandler DisplayScreenDismissed;
+    event SetupTab.BgMusicItemRemovedEventHandler BgMusicItemRemoved;
+    event SetupTab.BgMusicItemsAddedEventHandler BgMusicItemsAdded;
+    event SetupTab.BgMusicToggleEventHandler BgMusicToggle;
+    event SetupTab.BgMusicVolumeChangedEventHandler BgMusicVolumeChanged;
+    
+    void SetBgMusicItemsUIValues(List<string> bgMusicFiles);
+    void SetBgMusicEnabledUIValue(bool enabled);
+    void SetBgMusicVolumePercentUIValue(double volumePercent);
+    void SetDisplayScreenMonitorUIValue(int monitor);
+    void SetDisplayScreenMonitorMaxValue(int maxMonitor);
+    void SetCountdownLengthSecondsUIValue(int countdownLengthSeconds);
+}
+
 [Meta(typeof(IAutoNode))]
-public partial class SetupTab : MarginContainer
+public partial class SetupTab : MarginContainer, ISetupTab
 {
     public override void _Notification(int what) => this.Notify(what);
     

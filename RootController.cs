@@ -1,3 +1,5 @@
+using Chickensoft.AutoInject;
+using Chickensoft.Introspection;
 using Godot;
 using NAudio.Flac;
 using NAudio.Wave;
@@ -9,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+[Meta(typeof(IAutoNode))]
 public partial class RootController : Node
 {
     public bool IsPaused { get; private set; }
@@ -19,12 +22,13 @@ public partial class RootController : Node
     private string BackgroundMusicNowPlaying = null;
 
     #region Nodes
-    public SetupTab SetupTab { get; private set; } = default!;
+    [Node("%Setup")] // TODO: this name is annoying to me
+    public ISetupTab SetupTab { get; private set; } = default!;
     public SearchTab SearchTab { get; private set; } = default!;
     public DisplayScreen DisplayScreen { get; private set; } = default!;
     public AudioStreamPlayer BackgroundMusicPlayer { get; private set; } = default!;
     #endregion
-	public override void _Ready()
+	public void OnReady()
     {
         SetupHistoryLogFile();
         SetupQueueTree();
@@ -36,9 +40,10 @@ public partial class RootController : Node
 
         BindSearchScreenControls();
 
-        SetupTab = GetNode<SetupTab>($"%Setup"); // TODO: this name is annoying to me
         SetupStartTab();
         GetTree().AutoAcceptQuit = false;
+
+        SetProcess(true);
     }
 
     private void BindSearchScreenControls()
@@ -60,7 +65,10 @@ public partial class RootController : Node
         {
             Quit();
         }
-		// TODO: this.Notify(what);
+        else
+        {
+            this.Notify(what);
+        }
     }
 
     public async void Quit()
@@ -626,7 +634,7 @@ public partial class RootController : Node
         }
     }
 
-	public override void _Process(double delta)
+	public void OnProcess(double delta)
     {
         if (!IsPaused && NowPlaying == null)
         {
