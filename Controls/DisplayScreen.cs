@@ -1,112 +1,116 @@
+using Chickensoft.AutoInject;
+using Chickensoft.GodotNodeInterfaces;
+using Chickensoft.Introspection;
 using Godot;
 
-public partial class DisplayScreen : Window
+public interface IDisplayScreen : IWindow
 {
-	public bool IsDismissed { get; private set; }
-	public int MonitorId { get; private set; }
+    public bool IsDismissed { get; }
 
-	public Control NextUpScene { get; private set;}
-	public Control EmptyQueueScene { get; private set; }
+    void SetMonitorId(int monitorId);
+    void Dismiss();
+    void ShowDisplayScreen();
+    void HideDisplayScreen();
+    void ShowNextUp(string singer, string song, string artist, int launchCountdownLengthSeconds);
+    void UpdateLaunchCountdownSecondsRemaining(int secondsRemaining);
+    void ToggleCountdownPaused(bool isPaused);
+    void UpdateBgMusicNowPlaying(string nowPlaying);
+    void UpdateBgMusicPaused(bool isPaused);
+    void ShowEmptyQueueScreen();
+}
 
-	public Label NextUpSingerNameLabel { get; private set; }
-	public Label NextUpSongNameLabel { get; private set; }
-	public Label NextUpArtistNameLabel { get; private set; }
-	public Label NextUpLaunchCountdownLabel { get; private set; }
-	public Label CountdownPausedIndicator { get; private set; }
-	public Label BgMusicNowPlayingLabel { get; private set; }
-	public Label BgMusicPausedIndicator { get; private set; }
+[Meta(typeof(IAutoNode))]
+public partial class DisplayScreen : Window, IDisplayScreen
+{
+    public override void _Notification(int what) => this.Notify(what);
 
-	public override void _Ready()
-	{
-		WindowInput += DisplayScreenWindowInput;
+    public bool IsDismissed { get; private set; }
+    public int MonitorId { get; private set; }
 
-		NextUpScene = GetNode<Control>($"%{nameof(NextUpScene)}");
-		EmptyQueueScene = GetNode<Control>($"%{nameof(EmptyQueueScene)}");
+    [Node] private NextUpDisplay NextUpScene { get; set; } = default!;
+    [Node] private Control EmptyQueueScene { get; set; } = default!;
 
-		NextUpSingerNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpSingerNameLabel)}");
-		NextUpSongNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpSongNameLabel)}");
-		NextUpArtistNameLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpArtistNameLabel)}");
-		NextUpLaunchCountdownLabel = NextUpScene.GetNode<Label>($"%{nameof(NextUpLaunchCountdownLabel)}");
-		CountdownPausedIndicator = NextUpScene.GetNode<Label>($"%{nameof(CountdownPausedIndicator)}");
-		BgMusicNowPlayingLabel = GetNode<Label>($"%{nameof(BgMusicNowPlayingLabel)}");
-		BgMusicPausedIndicator = GetNode<Label>($"%{nameof(BgMusicPausedIndicator)}");
-	}
+    [Node] private Label BgMusicNowPlayingLabel { get; set; } = default!;
+    [Node] private Label BgMusicPausedIndicator { get; set; } = default!;
 
-	public void SetMonitorId(int monitorId)
-	{
-		MonitorId = monitorId;
-	}
-	public void Dismiss()
-	{
-		IsDismissed = true;
-		HideDisplayScreen();
-	}
-	public void ShowDisplayScreen()
-	{
-		// TODO: make this configurable
-		Mode = Window.ModeEnum.Fullscreen;
+    public void OnReady()
+    {
+        WindowInput += DisplayScreenWindowInput;
+    }
 
-		InitialPosition = Window.WindowInitialPosition.CenterOtherScreen;
-		CurrentScreen = MonitorId;
-		Visible = true;
-		IsDismissed = false;
-		Show();
-		AlwaysOnTop = true;
-		GrabFocus();
-	}
+    public void SetMonitorId(int monitorId)
+    {
+        MonitorId = monitorId;
+    }
+    public void Dismiss()
+    {
+        IsDismissed = true;
+        HideDisplayScreen();
+    }
+    public void ShowDisplayScreen()
+    {
+        // TODO: make this configurable
+        Mode = Window.ModeEnum.Fullscreen;
 
-	public void HideDisplayScreen()
-	{
-		AlwaysOnTop = false;
-		Visible = false;
-		Hide();
-	}
-	public void ShowNextUp(string singer, string song, string artist, int launchCountdownLengthSeconds)
-	{
-		NextUpSingerNameLabel.Text = singer;
-		NextUpSongNameLabel.Text = song;
-		NextUpArtistNameLabel.Text = artist;
-		NextUpLaunchCountdownLabel.Text = launchCountdownLengthSeconds.ToString();
-		NextUpScene.Visible = true;
-		EmptyQueueScene.Visible = false;
-		ShowDisplayScreen();
-	}
+        InitialPosition = Window.WindowInitialPosition.CenterOtherScreen;
+        CurrentScreen = MonitorId;
+        Visible = true;
+        IsDismissed = false;
+        Show();
+        AlwaysOnTop = true;
+        GrabFocus();
+    }
 
-	public void UpdateLaunchCountdownSecondsRemaining(int secondsRemaining)
-	{
-		NextUpLaunchCountdownLabel.Text = secondsRemaining.ToString();
-	}
+    public void HideDisplayScreen()
+    {
+        AlwaysOnTop = false;
+        Visible = false;
+        Hide();
+    }
 
-	public void UpdateCountdownPausedIndicator(bool isPaused)
-	{
-		CountdownPausedIndicator.Visible = isPaused;
-	}
+    public void ShowNextUp(string singer, string song, string artist, int launchCountdownLengthSeconds)
+    {
+        NextUpScene.SetNextUpInfo(singer, song, artist, launchCountdownLengthSeconds);
+        NextUpScene.Visible = true;
+        EmptyQueueScene.Visible = false;
+        ShowDisplayScreen();
+    }
 
-	public void UpdateBgMusicNowPlaying(string nowPlaying)
-	{
-		BgMusicNowPlayingLabel.Text = nowPlaying;
-	}
+    public void UpdateLaunchCountdownSecondsRemaining(int secondsRemaining)
+    {
+        NextUpScene.UpdateLaunchCountdownSecondsRemaining(secondsRemaining);
+    }
 
-	public void UpdateBgMusicPaused(bool isPaused)
-	{
-		BgMusicPausedIndicator.Visible = isPaused;
-	}
-	
-	public void ShowEmptyQueueScreen()
-	{
-		NextUpScene.Visible = false;
-		EmptyQueueScene.Visible = true;
-		ShowDisplayScreen();
-	}
+    public void ToggleCountdownPaused(bool isPaused)
+    {
+        NextUpScene.ToggleCountdownPaused(isPaused);
+    }
 
-	public void DisplayScreenWindowInput(InputEvent @event)
-	{
-		if (@event is InputEventKey keyEvent)
-		{
-			if (keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
-			{
-				Dismiss();
-			}
-		}
-	}
+    public void UpdateBgMusicNowPlaying(string nowPlaying)
+    {
+        BgMusicNowPlayingLabel.Text = nowPlaying;
+    }
+
+    public void UpdateBgMusicPaused(bool isPaused)
+    {
+        BgMusicPausedIndicator.Visible = isPaused;
+    }
+
+    public void ShowEmptyQueueScreen()
+    {
+        NextUpScene.Visible = false;
+        EmptyQueueScene.Visible = true;
+        ShowDisplayScreen();
+    }
+
+    private void DisplayScreenWindowInput(InputEvent @event)
+    {
+        if (@event is InputEventKey keyEvent)
+        {
+            if (keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
+            {
+                Dismiss();
+            }
+        }
+    }
 }

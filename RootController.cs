@@ -22,12 +22,15 @@ public partial class RootController : Node
     private string BackgroundMusicNowPlaying = null;
 
     #region Nodes
+
     [Node("%Setup")] // TODO: this name is annoying to me
-    public ISetupTab SetupTab { get; private set; } = default!;
-    public SearchTab SearchTab { get; private set; } = default!;
-    public DisplayScreen DisplayScreen { get; private set; } = default!;
-    public AudioStreamPlayer BackgroundMusicPlayer { get; private set; } = default!;
+    private ISetupTab SetupTab { get; set; } = default!;
+    private SearchTab SearchTab { get; set; } = default!;
+    [Node] private IDisplayScreen DisplayScreen { get; set; } = default!;
+    private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
+
     #endregion
+
 	public void OnReady()
     {
         SetupHistoryLogFile();
@@ -141,7 +144,6 @@ public partial class RootController : Node
 
     public void BindDisplayScreenControls()
     {
-        DisplayScreen = GetNode<DisplayScreen>($"%{nameof(DisplayScreen)}");
         DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
     }
 
@@ -435,12 +437,12 @@ public partial class RootController : Node
         if (IsPaused)
         {
             ResumeQueue();
-            DisplayScreen.UpdateCountdownPausedIndicator(false);
+            DisplayScreen.ToggleCountdownPaused(false);
         }
         else
         {
             PauseQueue();
-            DisplayScreen.UpdateCountdownPausedIndicator(true);
+            DisplayScreen.ToggleCountdownPaused(true);
         }
     }
 
