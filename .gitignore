@@ -4,3 +4,8 @@
 
 # VS nnnn junk
 .vs/
+
+# .NET build artifacts
+bin/
+obj/
+.generated/

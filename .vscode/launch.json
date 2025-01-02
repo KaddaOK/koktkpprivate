@@ -8,10 +8,10 @@
             "preLaunchTask": "build",
             "program": "${env:GODOT}",
             "args": [
-                        "--path",
-                        "${workspaceRoot}/KOKTKaraokeParty"
-                    ],
-            "stopAtEntry": false,
+                "--path", 
+                "${workspaceRoot}/KOKTKaraokeParty"
+            ],
+            "stopAtEntry": false
         },
         {
             "name": "Launch (Select Scene)",
@@ -20,13 +20,13 @@
             "preLaunchTask": "build",
             "program": "${env:GODOT}",
             "args": [
-                        "--path",
-                        "${workspaceRoot}/KOKTKaraokeParty",
-                        "${command:godot.csharp.getLaunchScene}"
-                    ],
+                "--path",
+                "${workspaceRoot}/KOKTKaraokeParty",
+                "${command:godot.csharp.getLaunchScene}"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/KOKTKaraokeParty",
-            "console": "internalConsole",
+            "console": "internalConsole"
         },
         {
             "name": "Auto Attach",
@@ -47,13 +47,42 @@
             "preLaunchTask": "build",
             "program": "${env:GODOT}",
             "args": [
-                        "--path",
-                        "${workspaceRoot}/KOKTKaraokeParty",
-                        "--editor"
-                    ],
+                "--path", 
+                "${workspaceRoot}/KOKTKaraokeParty",
+                 "--editor"
+            ],
             "stopAtEntry": false,
-            "cwd":"${workspaceFolder}",
-            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole"
+        },
+        {
+            "name": "🧪 Debug Tests",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${env:GODOT}",
+            "args": [
+                // These command line flags are used by GoDotTest to run tests.
+                "--run-tests",
+                "--headless",
+                "--quit-on-finish"
+            ],
+            "cwd": "${workspaceFolder}/KOKTKaraokeParty.Tests",
+            "stopAtEntry": false
+        },
+        {
+            "name": "🔬 Debug Current Test",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${env:GODOT}",
+            "args": [
+                // These command line flags are used by GoDotTest to run tests.
+                "--run-tests=${fileBasenameNoExtension}",
+                "--quit-on-finish"
+            ],
+            "cwd": "${workspaceFolder}/KOKTKaraokeParty.Tests",
+            "stopAtEntry": false
         }
     ]
 }

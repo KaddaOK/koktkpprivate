@@ -3,6 +3,8 @@ using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 
+namespace KOKTKaraokeParty;
+
 public interface INextUpDisplay : IVBoxContainer
 {
     void SetNextUpInfo(string singer, string song, string artist, int launchCountdownLengthSeconds);

@@ -1,6 +1,8 @@
 using Godot;
 using System;
 
+namespace KOKTKaraokeParty;
+
 public partial class Globals : Node
 {
 	public RootController RootController { get; set; }

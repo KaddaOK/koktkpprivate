@@ -11,6 +11,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+namespace KOKTKaraokeParty;
+
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node, 
 IProvide<IPuppeteerPlayer>, IProvide<Settings>

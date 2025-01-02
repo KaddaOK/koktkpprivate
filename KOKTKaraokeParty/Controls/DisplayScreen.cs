@@ -3,6 +3,8 @@ using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 
+namespace KOKTKaraokeParty;
+
 public interface IDisplayScreen : IWindow
 {
     public bool IsDismissed { get; }
@@ -27,11 +29,11 @@ public partial class DisplayScreen : Window, IDisplayScreen
     public bool IsDismissed { get; private set; }
     public int MonitorId { get; private set; }
 
-    [Node] private NextUpDisplay NextUpScene { get; set; } = default!;
-    [Node] private Control EmptyQueueScene { get; set; } = default!;
+    [Node] private INextUpDisplay NextUpScene { get; set; } = default!;
+    [Node] private IControl EmptyQueueScene { get; set; } = default!;
 
-    [Node] private Label BgMusicNowPlayingLabel { get; set; } = default!;
-    [Node] private Label BgMusicPausedIndicator { get; set; } = default!;
+    [Node] private ILabel BgMusicNowPlayingLabel { get; set; } = default!;
+    [Node] private ILabel BgMusicPausedIndicator { get; set; } = default!;
 
     public void OnReady()
     {
