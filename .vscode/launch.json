@@ -9,7 +9,7 @@
             "program": "${env:GODOT}",
             "args": [
                         "--path",
-                        "${workspaceRoot}"
+                        "${workspaceRoot}/KOKTKaraokeParty"
                     ],
             "stopAtEntry": false,
         },
@@ -21,11 +21,11 @@
             "program": "${env:GODOT}",
             "args": [
                         "--path",
-                        "${workspaceRoot}",
+                        "${workspaceRoot}/KOKTKaraokeParty",
                         "${command:godot.csharp.getLaunchScene}"
                     ],
             "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceRoot}/KOKTKaraokeParty",
             "console": "internalConsole",
         },
         {
@@ -48,7 +48,7 @@
             "program": "${env:GODOT}",
             "args": [
                         "--path",
-                        "${workspaceRoot}",
+                        "${workspaceRoot}/KOKTKaraokeParty",
                         "--editor"
                     ],
             "stopAtEntry": false,

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node, 
@@ -103,7 +104,16 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     public async void Quit()
     {
-        await PuppeteerPlayer.CloseAutomatedBrowser();
+        var cleanupTasks = new List<Task>
+        {
+            PuppeteerPlayer.CloseAutomatedBrowser()
+        };
+        if (BackgroundMusicPlayer.Playing)
+        {
+            BackgroundMusicPlayer.Stop();
+            cleanupTasks.Add(Task.Delay(100));
+        }
+        await Task.WhenAll(cleanupTasks);
         GetTree().Quit();
     }
 
@@ -618,7 +628,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             var queueList = Queue.ToArray();
             GD.Print($"Getting JSON for queue ({queueList.Length} items)...");
             var queueJson = JsonConvert.SerializeObject(queueList, Formatting.Indented);
-            GD.Print($"Queue JSON: {queueJson}");
+            //GD.Print($"Queue JSON: {queueJson}");
             // Write the JSON to the file
             File.WriteAllText(savedQueueFileName, queueJson);
         }

@@ -60,7 +60,6 @@ public partial class SetupTab : MarginContainer, ISetupTab
 
     public void OnReady()
     {
-        GD.Print("SetupTab OnReady did happen.");
         LaunchUnautomatedButton.Pressed += () => PuppeteerPlayer.LaunchUnautomatedBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
         LaunchAutomatedButton.Pressed += () => PuppeteerPlayer.LaunchAutomatedBrowser();
         ApplyMonitorButton.Pressed += () => EmitSignal(SignalName.DisplayScreenMonitorChanged, (int)MonitorSpinbox.Value);

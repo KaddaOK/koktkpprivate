@@ -26,7 +26,7 @@ public partial class Settings
                 GD.Print("Loading settings from disk...");
                 // Read the JSON content from the file
                 var settingsJson = File.ReadAllText(settingsFileName);
-                GD.Print($"Settings JSON: {settingsJson}");
+                //GD.Print($"Settings JSON: {settingsJson}");
                 // Deserialize the JSON into the settings value to return
                 settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
             }
@@ -43,7 +43,7 @@ public partial class Settings
         try
         {
             var settingsJson = JsonConvert.SerializeObject(this, Formatting.Indented);
-            GD.Print($"Settings JSON: {settingsJson}");
+            //GD.Print($"Settings JSON: {settingsJson}");
             // Write the JSON to the file
             File.WriteAllText(settingsFileName, settingsJson);
         }

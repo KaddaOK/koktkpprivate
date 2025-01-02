@@ -1,6 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KOKT Karaoke Party", "KOKT Karaoke Party.csproj", "{7C231A1D-3B59-488F-A0AF-C99E92AB7336}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KOKTKaraokeParty", "KOKTKaraokeParty/KOKTKaraokeParty.csproj", "{7C231A1D-3B59-488F-A0AF-C99E92AB7336}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

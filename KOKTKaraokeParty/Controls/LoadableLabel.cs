@@ -21,7 +21,7 @@ public partial class LoadableLabel : Control, ILoadableLabel
     public void OnReady()
     {
         SetLoaded(false);
-        GD.Print($"LoadableLabel.OnReady() FontSize: {FontSize}");
+        //GD.Print($"LoadableLabel.OnReady() FontSize: {FontSize}");
         // Ensure the label has a valid theme
         if (LoadedLabel.Theme == null)
         {
@@ -34,7 +34,7 @@ public partial class LoadableLabel : Control, ILoadableLabel
 
     public void SetLoaded(bool isLoaded, string text = null)
     {
-        GD.Print($"LoadableLabel.SetLoaded({isLoaded}, {text})");
+        //GD.Print($"LoadableLabel.SetLoaded({isLoaded}, {text})");
         LoadedLabel.Text = text;
         LoadingSpinner.Visible = !isLoaded;
         LoadedLabel.Visible = isLoaded;
