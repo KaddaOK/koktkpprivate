@@ -18,38 +18,38 @@ public partial class Settings
     public static Settings LoadFromDiskIfExists()
     {
         var settings = new Settings();
-		try
-		{
-			// Check if the settings file exists
-			if (File.Exists(settingsFileName))
-			{
-				GD.Print("Loading settings from disk...");
-				// Read the JSON content from the file
-				var settingsJson = File.ReadAllText(settingsFileName);
-				GD.Print($"Settings JSON: {settingsJson}");
-				// Deserialize the JSON into the settings value to return
-				settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
-			}
-		}
-		catch (Exception ex)
-		{
-			GD.PrintErr($"Failed to load settings from disk: {ex.Message}");
-		}
+        try
+        {
+            // Check if the settings file exists
+            if (File.Exists(settingsFileName))
+            {
+                GD.Print("Loading settings from disk...");
+                // Read the JSON content from the file
+                var settingsJson = File.ReadAllText(settingsFileName);
+                GD.Print($"Settings JSON: {settingsJson}");
+                // Deserialize the JSON into the settings value to return
+                settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to load settings from disk: {ex.Message}");
+        }
         return settings;
     }
 
     public void SaveToDisk()
-	{
-		try
-		{
-			var settingsJson = JsonConvert.SerializeObject(this, Formatting.Indented);
-			GD.Print($"Settings JSON: {settingsJson}");
-			// Write the JSON to the file
-			File.WriteAllText(settingsFileName, settingsJson);
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"Failed to save settings to disk: {ex.Message}");
-		}
-	}
+    {
+        try
+        {
+            var settingsJson = JsonConvert.SerializeObject(this, Formatting.Indented);
+            GD.Print($"Settings JSON: {settingsJson}");
+            // Write the JSON to the file
+            File.WriteAllText(settingsFileName, settingsJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save settings to disk: {ex.Message}");
+        }
+    }
 }

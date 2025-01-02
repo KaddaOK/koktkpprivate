@@ -11,14 +11,40 @@ using System.Linq;
 using System.Threading;
 
 [Meta(typeof(IAutoNode))]
-public partial class RootController : Node
+public partial class RootController : Node, 
+IProvide<IPuppeteerPlayer>, IProvide<Settings>
 {
-    public bool IsPaused { get; private set; }
-    public bool IsWaitingToReturnFromBrowserControl { get; private set; }
-    public Queue<QueueItem> Queue { get; private set; }
-    public QueueItem NowPlaying { get; private set; }
-    public Settings Settings { get; private set; }
-    private string BackgroundMusicNowPlaying = null;
+    #region Local State
+
+    private bool IsPaused { get; set; }
+    private bool IsWaitingToReturnFromBrowserControl { get; set; }
+    private Queue<QueueItem> Queue { get; set; }
+    private QueueItem NowPlaying { get; set; }
+    private string BackgroundMusicNowPlayingFilePath { get; set;}
+
+    #endregion
+
+    #region Initialized Dependencies
+
+    private IPuppeteerPlayer PuppeteerPlayer { get; set; }
+    IPuppeteerPlayer IProvide<IPuppeteerPlayer>.Value() => PuppeteerPlayer;
+
+    private Settings Settings { get; set; }
+    Settings IProvide<Settings>.Value() => Settings;
+
+    public void SetupForTesting(IPuppeteerPlayer puppeteerPlayer, Settings settings)
+    {
+        PuppeteerPlayer = puppeteerPlayer;
+        Settings = settings;
+    }
+
+    public void Initialize()
+    {
+        PuppeteerPlayer = new PuppeteerPlayer();
+        Settings = Settings.LoadFromDiskIfExists();
+    }
+
+    #endregion
 
     #region Nodes
 
@@ -39,7 +65,6 @@ public partial class RootController : Node
         SetupQueueTree();
         SetupMainQueueControls();
         LoadQueueFromDiskIfExists();
-        Settings = Settings.LoadFromDiskIfExists();
         BindDisplayScreenControls();
         SetupBackgroundMusicQueue();
 
@@ -48,6 +73,7 @@ public partial class RootController : Node
         SetupStartTab();
         GetTree().AutoAcceptQuit = false;
 
+        this.Provide();
         SetProcess(true);
     }
 
@@ -77,7 +103,7 @@ public partial class RootController : Node
 
     public async void Quit()
     {
-        await PuppeteerPlayer.CloseBrowser();
+        await PuppeteerPlayer.CloseAutomatedBrowser();
         GetTree().Quit();
     }
 
@@ -258,7 +284,7 @@ public partial class RootController : Node
     {
         if (Settings.BgMusicFiles.Count > 0)
         {
-            var oldNowPlaying = BackgroundMusicNowPlaying;
+            var oldNowPlaying = BackgroundMusicNowPlayingFilePath;
             var previousPlaylistIndex = Settings.BgMusicFiles.IndexOf(oldNowPlaying);
             var nextIndexToPlay = previousPlaylistIndex + 1;
             if (nextIndexToPlay >= Settings.BgMusicFiles.Count)
@@ -275,10 +301,10 @@ public partial class RootController : Node
 
     private void StartPlayingBackgroundMusic(int indexToPlay)
     {
-        BackgroundMusicNowPlaying = Settings.BgMusicFiles[indexToPlay];
-        BackgroundMusicPlayer.Stream = LoadAudioFromPath(BackgroundMusicNowPlaying);
+        BackgroundMusicNowPlayingFilePath = Settings.BgMusicFiles[indexToPlay];
+        BackgroundMusicPlayer.Stream = LoadAudioFromPath(BackgroundMusicNowPlayingFilePath);
         BackgroundMusicPlayer.Play();
-        DisplayScreen.UpdateBgMusicNowPlaying(Path.GetFileNameWithoutExtension(BackgroundMusicNowPlaying));
+        DisplayScreen.UpdateBgMusicNowPlaying(Path.GetFileNameWithoutExtension(BackgroundMusicNowPlayingFilePath));
         DisplayScreen.UpdateBgMusicPaused(false);
     }
 

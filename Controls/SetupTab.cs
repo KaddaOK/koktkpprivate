@@ -14,7 +14,7 @@ public interface ISetupTab: IMarginContainer
     event SetupTab.BgMusicItemsAddedEventHandler BgMusicItemsAdded;
     event SetupTab.BgMusicToggleEventHandler BgMusicToggle;
     event SetupTab.BgMusicVolumeChangedEventHandler BgMusicVolumeChanged;
-    
+
     void SetBgMusicItemsUIValues(List<string> bgMusicFiles);
     void SetBgMusicEnabledUIValue(bool enabled);
     void SetBgMusicVolumePercentUIValue(double volumePercent);
@@ -27,6 +27,10 @@ public interface ISetupTab: IMarginContainer
 public partial class SetupTab : MarginContainer, ISetupTab
 {
     public override void _Notification(int what) => this.Notify(what);
+
+    #region Dependencies
+    [Dependency] public IPuppeteerPlayer PuppeteerPlayer => this.DependOn<IPuppeteerPlayer>();
+    #endregion
     
     #region Nodes
     [Node] private Button LaunchUnautomatedButton { get; set; } = default!;
