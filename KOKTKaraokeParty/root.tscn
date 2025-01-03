@@ -1,9 +1,9 @@
 [gd_scene load_steps=8 format=3 uid="uid://carwq23qmjl1g"]
 
-[ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://theme.tres" id="1_62q84"]
+[ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
 [ext_resource type="Script" path="res://Controls/DraggableTree.cs" id="3_dnylh"]
-[ext_resource type="PackedScene" uid="uid://u06hi7mpxw6s" path="res://Controls/DisplayScreen.tscn" id="3_f0j17"]
+[ext_resource type="PackedScene" uid="uid://u06hi7mpxw6s" path="res://Controls/DisplayScreen/DisplayScreen.tscn" id="3_f0j17"]
 [ext_resource type="PackedScene" uid="uid://dvyxhpdbi8cjs" path="res://Controls/SearchTab.tscn" id="3_vhkgr"]
 [ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
 [ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]

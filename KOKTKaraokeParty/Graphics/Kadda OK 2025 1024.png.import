@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dr4g1ncpslm4w"
-path="res://.godot/imported/Kadda OK 2025 1024.png-b450e8286a5d17b18b39be4abfc2cc2f.ctex"
+path="res://.godot/imported/Kadda OK 2025 1024.png-371de2442a2b1d3553b701934bfd58c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Kadda OK 2025 1024.png"
-dest_files=["res://.godot/imported/Kadda OK 2025 1024.png-b450e8286a5d17b18b39be4abfc2cc2f.ctex"]
+source_file="res://Graphics/Kadda OK 2025 1024.png"
+dest_files=["res://.godot/imported/Kadda OK 2025 1024.png-371de2442a2b1d3553b701934bfd58c2.ctex"]
 
 [params]
 

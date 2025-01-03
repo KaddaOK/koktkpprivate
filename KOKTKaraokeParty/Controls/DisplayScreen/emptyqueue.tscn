@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bt53uvcacuoej"]
 
-[ext_resource type="Theme" uid="uid://ni0gixnye1eu" path="res://outlined.tres" id="1_l0ngd"]
+[ext_resource type="Theme" uid="uid://ni0gixnye1eu" path="res://Controls/DisplayScreen/emptyQueueText.tres" id="1_l0ngd"]
 
 [node name="EmptyQueueVBox" type="VBoxContainer"]
 anchors_preset = 15

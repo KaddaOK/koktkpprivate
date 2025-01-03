@@ -14,13 +14,9 @@ config/name="KOKT Karaoke Party"
 run/main_scene="res://root.tscn"
 config/features=PackedStringArray("4.3", "C#", "Mobile")
 boot_splash/show_image=false
-config/icon="res://Kadda OK 2025 1024.png"
-config/macos_native_icon="res://Kadda OK 2025 icon.icns"
-config/windows_native_icon="res://Kadda OK 2025 icon.ico"
-
-[autoload]
-
-Globals="*res://Globals.cs"
+config/icon="res://Graphics/Kadda OK 2025 1024.png"
+config/macos_native_icon="res://Graphics/Kadda OK 2025 icon.icns"
+config/windows_native_icon="res://Graphics/Kadda OK 2025 icon.ico"
 
 [debug]
 
