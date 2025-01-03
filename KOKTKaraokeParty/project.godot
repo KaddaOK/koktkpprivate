@@ -24,11 +24,14 @@ file_logging/max_log_files=10
 
 [display]
 
+window/size/viewport_width=1250
+window/size/viewport_height=700
 window/subwindows/embed_subwindows=false
 
 [dotnet]
 
 project/assembly_name="KOKTKaraokeParty"
+project/solution_directory="../"
 
 [rendering]
 

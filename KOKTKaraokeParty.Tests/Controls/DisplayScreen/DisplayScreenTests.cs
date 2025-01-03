@@ -10,44 +10,44 @@ using Moq;
 
 public class DisplayScreenTests(Node testScene) : TestClass(testScene)
 {
-  private Fixture _fixture = default!;
-  private DisplayScreen _scene = default!;
+    private Fixture _fixture = default!;
+    private DisplayScreen _scene = default!;
 
-  private Mock<INextUpDisplay> _nextUpScene = default!;
-  private Mock<IControl> _emptyQueueScene = default!;
-  private Mock<ILabel> _bgMusicNowPlayingLabel = default!;
-  private Mock<ILabel> _bgMusicPausedIndicator = default!;
+    private Mock<INextUpDisplay> _nextUpScene = default!;
+    private Mock<IControl> _emptyQueueScene = default!;
+    private Mock<ILabel> _bgMusicNowPlayingLabel = default!;
+    private Mock<ILabel> _bgMusicPausedIndicator = default!;
 
-  [Setup]
-  public async Task Setup()
-  {
-    _fixture = new(TestScene.GetTree());
-
-    _nextUpScene = new();
-    _emptyQueueScene = new();
-    _bgMusicNowPlayingLabel = new();
-    _bgMusicPausedIndicator = new();
-
-    _scene = new DisplayScreen();
-    _scene.FakeNodeTree(new()
+    [Setup]
+    public async Task Setup()
     {
-      ["%NextUpScene"] = _nextUpScene.Object,
-      ["%EmptyQueueScene"] = _emptyQueueScene.Object,
-      ["%BgMusicNowPlayingLabel"] = _bgMusicNowPlayingLabel.Object,
-      ["%BgMusicPausedIndicator"] = _bgMusicPausedIndicator.Object,
-    });
+        _fixture = new(TestScene.GetTree());
 
-    await _fixture.AddToRoot(_scene);
-  }
+        _nextUpScene = new();
+        _emptyQueueScene = new();
+        _bgMusicNowPlayingLabel = new();
+        _bgMusicPausedIndicator = new();
 
-  [Cleanup]
-  public async Task Cleanup() => await _fixture.Cleanup();
+        _scene = new DisplayScreen();
+        _scene.FakeNodeTree(new()
+        {
+            ["%NextUpScene"] = _nextUpScene.Object,
+            ["%EmptyQueueScene"] = _emptyQueueScene.Object,
+            ["%BgMusicNowPlayingLabel"] = _bgMusicNowPlayingLabel.Object,
+            ["%BgMusicPausedIndicator"] = _bgMusicPausedIndicator.Object,
+        });
 
-  [Test]
-  public void UpdateBgMusicNowPlaying_SetsLabelText()
-  {
-    _scene.UpdateBgMusicNowPlaying("hwaaa?!");
+        await _fixture.AddToRoot(_scene);
+    }
 
-    _bgMusicNowPlayingLabel.VerifySet(x => x.Text = "hwaaa?!");
-  }
+    [Cleanup]
+    public async Task Cleanup() => await _fixture.Cleanup();
+
+    [Test]
+    public void UpdateBgMusicNowPlaying_SetsLabelText()
+    {
+        _scene.UpdateBgMusicNowPlaying("hwaaa?!");
+
+        _bgMusicNowPlayingLabel.VerifySet(x => x.Text = "hwaaa?!");
+    }
 }

@@ -7,35 +7,48 @@ metadata/_tab_index = 0
 layout_mode = 2
 theme_override_constants/separation = 30
 
-[node name="LaunchUnautomatedHbox" type="HBoxContainer" parent="StartTabVBox"]
+[node name="Label" type="Label" parent="StartTabVBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Set up the app in this tab, and when you're satisfied, switch to the \"Search\" tab to start singing!"
 
-[node name="LaunchUnautomatedButton" type="Button" parent="StartTabVBox/LaunchUnautomatedHbox"]
+[node name="GridContainer" type="GridContainer" parent="StartTabVBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 9
+theme_override_constants/v_separation = 13
+columns = 2
+
+[node name="LaunchUnautomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-size_flags_vertical = 4
-text = "Launch Browser Unautomated"
+size_flags_vertical = 0
+text = "Launch Browser 
+Unautomated"
 
-[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/LaunchUnautomatedHbox"]
+[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "<-- This is required in order to log into Google for YouTube Premium (no ads).  You might as well use it to log into Karafun as well.  Once you've done those things once, it should last a while.  CLOSE this window when you're finished!"
+theme_override_font_sizes/font_size = 13
+text = "<-- Google blocks login from automated browsers, so if  you want to use YouTube Premium to avoid being interrupted by ads, click here to sign in.  You might as well use it to log into Karafun web as well. 
+Once you've done those things once, they should be remembered in the automated browser for a long while.  
+Note: be sure to CLOSE it when you're finished logging into things, or the app will probably not be able to launch the automated one successfully!"
 autowrap_mode = 2
 
-[node name="LaunchAutomatedHBox" type="HBoxContainer" parent="StartTabVBox"]
-layout_mode = 2
-
-[node name="LaunchAutomatedButton" type="Button" parent="StartTabVBox/LaunchAutomatedHBox"]
+[node name="LaunchAutomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Launch Browser Automated"
+size_flags_vertical = 0
+text = "Launch Browser 
+Automated"
 
-[node name="LaunchAutomatedExplanation" type="Label" parent="StartTabVBox/LaunchAutomatedHBox"]
+[node name="LaunchAutomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "<-- Use this to place the browser on the correct monitor ahead of time. (If it's not open it'll try to open it though)"
+theme_override_font_sizes/font_size = 13
+text = "<-- This launches the browser the same way that starting a song in this app does, so if you need to, you can use it to place the browser on the correct monitor ahead of time. 
+(This is generally remembered between sessions too though, so you may only need it once or never at all.)"
 autowrap_mode = 2
 
 [node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
@@ -43,28 +56,34 @@ layout_mode = 2
 
 [node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
-text = "Set monitor for info screen (next up or empty queue): "
+text = "Set monitor to show the \"next up\" / \"empty queue\" display screen: "
 
 [node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 
 [node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 text = "Apply"
 
 [node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 text = "Hide"
+
+[node name="GridContainer" type="GridContainer" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+layout_mode = 2
 
 [node name="WaitSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
 
 [node name="Wait between songs" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
 layout_mode = 2
-text = "Wait between songs:"
+text = "Length of \"next up\" countdown between songs: "
 
 [node name="WaitSpinbox" type="SpinBox" parent="StartTabVBox/WaitSettingsHbox"]
 unique_name_in_owner = true
@@ -84,7 +103,7 @@ layout_mode = 2
 [node name="Background Music" type="Label" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 2
-text = "Background Music"
+text = "Background Music:"
 
 [node name="BgMusicEnabledCheckBox" type="CheckBox" parent="StartTabVBox/BackgroundMusicVBox/HBoxContainer"]
 unique_name_in_owner = true
