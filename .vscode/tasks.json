@@ -17,6 +17,25 @@
           "showReuseMessage": true,
           "clear": false
         }
+      },
+      {
+        "label": "coverage",
+        "group": "test",
+        "command": "${workspaceFolder}/KOKTKaraokeParty.Tests/coverage.ps1",
+        "type": "shell",
+        "options": {
+          "cwd": "${workspaceFolder}/KOKTKaraokeParty.Tests"
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "silent",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true,
+          "close": true, 
+          "revealProblems": "onProblem"
+        },
       }
     ]
   }
