@@ -13,7 +13,7 @@ public interface ICdgRendererNode : ITextureRect
     event CdgRendererNode.PlaybackFinishedEventHandler PlaybackFinished;
 
     void Play(string filepath);
-    void Pause();
+    void TogglePaused(bool isPaused);
     void Stop();
 }
 
@@ -43,7 +43,12 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
     public void OnReady()
     {
         _isLoaded = false;
-        PositionSlider.ValueChanged += (value) => AudioStreamPlayer.Seek((float)value);
+        PositionSlider.ValueChanged += (value) => {
+            if (_isLoaded)
+            {
+                AudioStreamPlayer.Seek((float)value);
+            }
+        };
         SetProcess(true);
     }
 
@@ -160,16 +165,22 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         AudioStreamPlayer.Stream = LoadMP3(mp3Path);
     }
 
-    public void Pause()
+    public void TogglePaused(bool isPaused)
     {
-        _isPaused = true;
-        AudioStreamPlayer.StreamPaused = true;
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        _isPaused = isPaused;
+        AudioStreamPlayer.StreamPaused = isPaused;
     }
 
     public void Stop()
     {
         _isPaused = true;
         AudioStreamPlayer.Stop();
+        _isLoaded = false;
         Texture = null;
     }
 

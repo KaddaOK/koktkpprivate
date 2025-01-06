@@ -493,12 +493,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         if (IsPaused)
         {
             ResumeQueue();
-            DisplayScreen.ToggleCountdownPaused(false);
+            DisplayScreen.ToggleQueuePaused(false);
         }
         else
         {
             PauseQueue();
-            DisplayScreen.ToggleCountdownPaused(true);
+            DisplayScreen.ToggleQueuePaused(true);
         }
     }
 
@@ -508,6 +508,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         if (!IsPaused)
         {
             PlayingCancellationSource.Cancel();
+            DisplayScreen.CancelIfPlaying();
             RemoveQueueTreeRow(NowPlaying);
             NowPlaying = null; // this will cause _Process to dequeue the next item
         }
@@ -566,6 +567,10 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                     case ItemType.Youtube:
                         await PuppeteerPlayer.ToggleYoutube();
                         break;
+                    case ItemType.LocalMp3G:
+                    case ItemType.LocalMp3GZip:
+                        // this is taken care of by the display screen
+                        break;
                     default:
                         GD.PrintErr($"Unknown item type: {NowPlaying.ItemType}");
                         break;
@@ -590,6 +595,10 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         break;
                     case ItemType.Youtube:
                         await PuppeteerPlayer.ToggleYoutube();
+                        break;
+                    case ItemType.LocalMp3G:
+                    case ItemType.LocalMp3GZip:
+                        // this is taken care of by the display screen
                         break;
                     default:
                         GD.PrintErr($"Unknown item type: {NowPlaying.ItemType}");

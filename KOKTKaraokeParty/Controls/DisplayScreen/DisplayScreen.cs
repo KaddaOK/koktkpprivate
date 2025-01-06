@@ -18,11 +18,12 @@ public interface IDisplayScreen : IWindow
     void HideDisplayScreen();
     void ShowNextUp(string singer, string song, string artist, int launchCountdownLengthSeconds);
     void UpdateLaunchCountdownSecondsRemaining(int secondsRemaining);
-    void ToggleCountdownPaused(bool isPaused);
+    void ToggleQueuePaused(bool isPaused);
     void UpdateBgMusicNowPlaying(string nowPlaying);
     void UpdateBgMusicPaused(bool isPaused);
     void ShowEmptyQueueScreen();
     void PlayLocal(QueueItem item);
+    void CancelIfPlaying();
 }
 
 [Meta(typeof(IAutoNode))]
@@ -76,6 +77,14 @@ public partial class DisplayScreen : Window, IDisplayScreen
         }
     }
 
+    public void CancelIfPlaying()
+    {
+        if (CdgRendererNode.Visible)
+        {
+            CdgRendererNode.Stop();
+        }
+    }
+
     public void SetMonitorId(int monitorId)
     {
         MonitorId = monitorId;
@@ -87,7 +96,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
     }
     public void ShowDisplayScreen()
     {
-        // TODO: make this configurable
+        // TODO: make this configurable?
         Mode = Window.ModeEnum.Fullscreen;
 
         InitialPosition = Window.WindowInitialPosition.CenterOtherScreen;
@@ -121,9 +130,13 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.UpdateLaunchCountdownSecondsRemaining(secondsRemaining);
     }
 
-    public void ToggleCountdownPaused(bool isPaused)
+    public void ToggleQueuePaused(bool isPaused)
     {
         NextUpScene.ToggleCountdownPaused(isPaused);
+        if (CdgRendererNode.Visible)
+        {
+            CdgRendererNode.TogglePaused(isPaused);
+        }
     }
 
     public void UpdateBgMusicNowPlaying(string nowPlaying)
