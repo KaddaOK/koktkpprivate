@@ -1,3 +1,4 @@
+using System;
 using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
@@ -9,6 +10,8 @@ public interface IDisplayScreen : IWindow
 {
     public bool IsDismissed { get; }
 
+    event DisplayScreen.LocalPlaybackFinishedEventHandler LocalPlaybackFinished;
+
     void SetMonitorId(int monitorId);
     void Dismiss();
     void ShowDisplayScreen();
@@ -19,6 +22,7 @@ public interface IDisplayScreen : IWindow
     void UpdateBgMusicNowPlaying(string nowPlaying);
     void UpdateBgMusicPaused(bool isPaused);
     void ShowEmptyQueueScreen();
+    void PlayLocal(QueueItem item);
 }
 
 [Meta(typeof(IAutoNode))]
@@ -29,15 +33,47 @@ public partial class DisplayScreen : Window, IDisplayScreen
     public bool IsDismissed { get; private set; }
     public int MonitorId { get; private set; }
 
+    #region Nodes
+
     [Node] private INextUpDisplay NextUpScene { get; set; } = default!;
     [Node] private IControl EmptyQueueScene { get; set; } = default!;
 
+    [Node] private IHBoxContainer BgMusicPlayingListing { get; set; } = default!;
     [Node] private ILabel BgMusicNowPlayingLabel { get; set; } = default!;
     [Node] private ILabel BgMusicPausedIndicator { get; set; } = default!;
+
+    [Node] private CdgRendererNode CdgRendererNode { get; set; } = default!;
+
+    #endregion
+
+    #region Signals
+
+    [Signal] public delegate void LocalPlaybackFinishedEventHandler(string wasPlaying);
+
+    #endregion
 
     public void OnReady()
     {
         WindowInput += DisplayScreenWindowInput;
+        CdgRendererNode.PlaybackFinished += (wasPlaying) => EmitSignal(SignalName.LocalPlaybackFinished, wasPlaying);
+    }
+
+    public void PlayLocal(QueueItem item)
+    {
+
+        NextUpScene.Visible = false;
+        EmptyQueueScene.Visible = false;
+        BgMusicPlayingListing.Visible = false;
+        if (item.ItemType == ItemType.LocalMp3G || item.ItemType == ItemType.LocalMp3GZip)
+        {
+            CdgRendererNode.Visible = true;
+            ShowDisplayScreen();
+            CdgRendererNode.Play(item.PerformanceLink);
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public void SetMonitorId(int monitorId)
@@ -75,6 +111,8 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.SetNextUpInfo(singer, song, artist, launchCountdownLengthSeconds);
         NextUpScene.Visible = true;
         EmptyQueueScene.Visible = false;
+        BgMusicPlayingListing.Visible = true;
+        CdgRendererNode.Visible = false;
         ShowDisplayScreen();
     }
 
@@ -102,6 +140,8 @@ public partial class DisplayScreen : Window, IDisplayScreen
     {
         NextUpScene.Visible = false;
         EmptyQueueScene.Visible = true;
+        BgMusicPlayingListing.Visible = true;
+        CdgRendererNode.Visible = false;
         ShowDisplayScreen();
     }
 

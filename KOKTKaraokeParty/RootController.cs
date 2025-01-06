@@ -21,6 +21,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     private bool IsPaused { get; set; }
     private bool IsWaitingToReturnFromBrowserControl { get; set; }
+    private bool IsPlayingLocalFile => NowPlaying?.ItemType == ItemType.LocalMp3G || NowPlaying?.ItemType == ItemType.LocalMp3GZip;
     private Queue<QueueItem> Queue { get; set; }
     private QueueItem NowPlaying { get; set; }
     private string BackgroundMusicNowPlayingFilePath { get; set;}
@@ -75,6 +76,16 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
         SetupStartTab();
         GetTree().AutoAcceptQuit = false;
+
+        DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
+        {
+            GD.Print($"Local playback finished: {wasPlaying}");
+            if (wasPlaying == NowPlaying?.PerformanceLink)
+            {
+                RemoveQueueTreeRow(NowPlaying);
+                NowPlaying = null;
+            }
+        };
 
         this.Provide();
         SetProcess(true);
@@ -151,20 +162,29 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         GD.Print($"Playing {item.SongName} by {item.ArtistName} ({item.CreatorName}) from {item.PerformanceLink}");
-        DisplayScreen.HideDisplayScreen();
         switch (item.ItemType)
         {
             case ItemType.KarafunWeb:
                 IsWaitingToReturnFromBrowserControl = true;
+                DisplayScreen.HideDisplayScreen();
                 await PuppeteerPlayer.PlayKarafunUrl(item.PerformanceLink, cancellationToken);
                 IsWaitingToReturnFromBrowserControl = false;
                 GD.Print("Karafun playback finished.");
+                RemoveQueueTreeRow(NowPlaying);
+                NowPlaying = null;
                 break;
             case ItemType.Youtube:
                 IsWaitingToReturnFromBrowserControl = true;
+                DisplayScreen.HideDisplayScreen();
                 await PuppeteerPlayer.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
                 IsWaitingToReturnFromBrowserControl = false;
                 GD.Print("Youtube playback finished.");
+                RemoveQueueTreeRow(NowPlaying);
+                NowPlaying = null;
+                break;
+            case ItemType.LocalMp3G:
+            case ItemType.LocalMp3GZip:
+                DisplayScreen.PlayLocal(item);
                 break;
             default:
                 GD.PrintErr($"Unknown item type: {item.ItemType}");
@@ -175,8 +195,6 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             GD.Print("PlayItem cancelled.");
             return;
         }
-        RemoveQueueTreeRow(NowPlaying);
-        NowPlaying = null;
     }
 
     #region display screen stuff
@@ -212,7 +230,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             Settings.BgMusicEnabled = enable;
             Settings.SaveToDisk();
         }
-        if (Settings.BgMusicEnabled && !IsWaitingToReturnFromBrowserControl)
+        if (Settings.BgMusicEnabled && !IsWaitingToReturnFromBrowserControl && !IsPlayingLocalFile)
         {
             StartOrResumeBackgroundMusic();
         }
