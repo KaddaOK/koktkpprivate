@@ -184,6 +184,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                 break;
             case ItemType.LocalMp3G:
             case ItemType.LocalMp3GZip:
+            case ItemType.LocalMp4:
                 DisplayScreen.PlayLocal(item);
                 break;
             default:
@@ -569,6 +570,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
+                    case ItemType.LocalMp4:
                         // this is taken care of by the display screen
                         break;
                     default:
@@ -598,6 +600,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
+                    case ItemType.LocalMp4:
                         // this is taken care of by the display screen
                         break;
                     default:

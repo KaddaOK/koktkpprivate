@@ -1,8 +1,10 @@
 using System;
+using System.Threading.Tasks;
 using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
+using LibVLCSharp.Shared;
 
 namespace KOKTKaraokeParty;
 
@@ -71,6 +73,10 @@ public partial class DisplayScreen : Window, IDisplayScreen
             ShowDisplayScreen();
             CdgRendererNode.Play(item.PerformanceLink);
         }
+        else if (item.ItemType == ItemType.LocalMp4)
+        {
+            PlayVideo(item.PerformanceLink);
+        }
         else
         {
             throw new NotImplementedException();
@@ -79,9 +85,16 @@ public partial class DisplayScreen : Window, IDisplayScreen
 
     public void CancelIfPlaying()
     {
+        GD.Print("CancelIfPlaying");
         if (CdgRendererNode.Visible)
         {
+            GD.Print("CdgRendererNode is visible; calling Stop...");
             CdgRendererNode.Stop();
+        }
+        if (vlcMediaPlayer?.IsPlaying ?? false)
+        {
+            GD.Print("vlcMediaPlayer is playing; calling StopVideo...");
+            StopVideo();
         }
     }
 
@@ -137,6 +150,17 @@ public partial class DisplayScreen : Window, IDisplayScreen
         {
             CdgRendererNode.TogglePaused(isPaused);
         }
+        if (vlcMediaPlayer != null)
+        {
+            if (vlcMediaPlayer.IsPlaying && isPaused)
+            {
+                vlcMediaPlayer.Pause();
+            }
+            else if (!vlcMediaPlayer.IsPlaying && !isPaused)
+            {
+                vlcMediaPlayer.Play();
+            }
+        }
     }
 
     public void UpdateBgMusicNowPlaying(string nowPlaying)
@@ -162,10 +186,66 @@ public partial class DisplayScreen : Window, IDisplayScreen
     {
         if (@event is InputEventKey keyEvent)
         {
+            GD.Print($"Key event: {keyEvent.Pressed}, {keyEvent.Keycode}");
             if (keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
             {
                 Dismiss();
             }
         }
     }
+
+    #region libvlc stuff
+    private Media _media;
+    private IntPtr windowHandle;
+    private MediaPlayer vlcMediaPlayer;
+    private LibVLC libVLC;
+    private Window newWindow;
+    private string videoPathPlaying;
+
+    public void PlayVideo(string videoPath)
+    {
+        libVLC ??= new LibVLC();
+        vlcMediaPlayer = new MediaPlayer(libVLC);
+        // Create a new Media instance with the path to the video file
+        _media = new Media(libVLC, new Uri(videoPath));
+
+        // Set the window handle of the video player to the Godot window handle
+        windowHandle = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1);
+       
+        vlcMediaPlayer.Hwnd = windowHandle;
+
+        // Play the video
+        videoPathPlaying = videoPath;
+        vlcMediaPlayer.Play(_media);
+        vlcMediaPlayer.PositionChanged += (sender, args) => GD.Print($"Position: {vlcMediaPlayer.Position}");
+        // Subscribe to the EndReached event so we can clean up
+        vlcMediaPlayer.EndReached += MediaPlayerOnEndReached;
+        // We can clean up the Media instance now
+        _media.Dispose();
+    }
+
+    private async void MediaPlayerOnEndReached(object sender, EventArgs e)
+    {
+        // There will be issues if you try to clean up exactly when the video ends
+        // so we'll wait a tiny bit before cleaning up
+        await Task.Delay(100);
+        // Clean up
+        vlcMediaPlayer?.Dispose();
+        vlcMediaPlayer = null;
+        EmitSignal(SignalName.LocalPlaybackFinished, videoPathPlaying);
+        videoPathPlaying = null;
+    }
+
+    private async void StopVideo()
+    {
+        if (vlcMediaPlayer?.IsPlaying ?? false)
+        {
+            vlcMediaPlayer?.Stop();
+        }
+        await Task.Delay(100);
+        vlcMediaPlayer?.Dispose();
+        vlcMediaPlayer = null;
+    }
+
+    #endregion
 }

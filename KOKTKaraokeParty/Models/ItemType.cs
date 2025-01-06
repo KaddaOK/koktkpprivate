@@ -3,9 +3,9 @@ public enum ItemType
     KarafunWeb,
     Youtube,
     LocalMp3G,
-    LocalMp3GZip
+    LocalMp3GZip,
+    LocalMp4
     /* TODO: possible types to support:
-    KarafunRemote,
-    LocalMp4,
+    KarafunRemote
     */
 }
