@@ -16,6 +16,7 @@ public interface IDisplayScreen : IWindow
 
     void SetMonitorId(int monitorId);
     void Dismiss();
+    void ClearDismissed();
     void ShowDisplayScreen();
     void HideDisplayScreen();
     void ShowNextUp(string singer, string song, string artist, int launchCountdownLengthSeconds);
@@ -106,6 +107,10 @@ public partial class DisplayScreen : Window, IDisplayScreen
     {
         IsDismissed = true;
         HideDisplayScreen();
+    }
+    public void ClearDismissed()
+    {
+        IsDismissed = false;
     }
     public void ShowDisplayScreen()
     {

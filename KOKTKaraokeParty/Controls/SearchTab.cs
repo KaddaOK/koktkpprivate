@@ -36,6 +36,8 @@ public partial class SearchTab : MarginContainer, ISearchTab
     [Node] private ILoadableLabel KfnResultCount { get; set; } = default!;
     [Node] private Tree KNResultsTree { get; set; } = default!;
     [Node] private ILoadableLabel KNResultCount { get; set; } = default!;
+    [Node] private Tree LocalFilesResultsTree { get; set; } = default!;
+    [Node] private ILoadableLabel LocalFilesResultCount { get; set; } = default!;
     [Node] private LineEdit SearchText { get; set; } = default!;
     [Node] private Button SearchButton { get; set; } = default!;
     [Node] private Button ClearSearchButton { get; set; } = default!;
@@ -68,6 +70,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
         KfnResultCount.SetLoaded(true, "");
         KNResultCount.SetLoaded(true, "");
+        LocalFilesResultCount.SetLoaded(true, "");
     }
 
 

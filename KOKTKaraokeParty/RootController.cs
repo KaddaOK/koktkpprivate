@@ -89,6 +89,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             if (wasPlaying == NowPlaying?.PerformanceLink)
             {
                 RemoveQueueTreeRow(NowPlaying);
+                if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+                {
+                    // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
+                    DisplayScreen.ClearDismissed();
+                    DisplayScreen.Visible = false;
+                }
                 NowPlaying = null;
             }
         };
@@ -254,7 +260,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         DisplayScreen.ShowEmptyQueueScreen();
         if (Settings.BgMusicEnabled)
         {
-            StartOrResumeBackgroundMusic();
+            FadeInBackgroundMusic();
         }
     }
 
@@ -293,6 +299,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
         else
         {
+            if (BackgroundMusicPlayer.Playing && !BackgroundMusicPlayer.StreamPaused)
+            {
+                GD.Print("BG Music is already playing, not fading in.");
+                return;
+            }
             BackgroundMusicPlayer.VolumeDb = PercentToDb(0);
             var finalVolumeInDb = PercentToDb(Settings.BgMusicVolumePercent);
             GD.Print($"Fading in background music to {Settings.BgMusicVolumePercent}% ({finalVolumeInDb} dB)");
@@ -330,6 +341,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
             if (BackgroundMusicPlayer.StreamPaused)
             {
+                GD.Print($"Unpausing background music.");
                 BackgroundMusicPlayer.StreamPaused = false;
             }
         }
@@ -552,10 +564,21 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         GD.Print($"MainQueueSkipButton pressed, IsPaused: {IsPaused}");
         if (!IsPaused)
         {
+            // if the playback is remote, cancelling the play task will cause the 
+            //async to return and result in a skip anyway. TODO: change this to be clearer/more elegant
             PlayingCancellationSource.Cancel();
-            DisplayScreen.CancelIfPlaying();
-            RemoveQueueTreeRow(NowPlaying);
-            NowPlaying = null; // this will cause _Process to dequeue the next item
+
+            // a local playback, though, doesn't have a thread waiting on it, it's 
+            // signalled, so we need to do the things to clean up from it.
+            if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+            {
+                DisplayScreen.CancelIfPlaying();
+                RemoveQueueTreeRow(NowPlaying);
+                // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
+                DisplayScreen.ClearDismissed();
+                DisplayScreen.Visible = false;
+                NowPlaying = null; // this will cause _Process to dequeue the next item
+            }
         }
         else
         {
