@@ -8,6 +8,7 @@ using Godot;
 
 public interface ISearchTab : IMarginContainer
 {
+    void ExternalFileShowAddDialog(QueueItem item);
     event SearchTab.ItemAddedToQueueEventHandler ItemAddedToQueue;
 }
 
@@ -76,6 +77,12 @@ public partial class SearchTab : MarginContainer, ISearchTab
         KfnResultsTree.Clear();
         KNResultsTree.Clear();
         SearchText.GrabFocus();
+    }
+
+    public void ExternalFileShowAddDialog(QueueItem item)
+    {
+        itemBeingAdded = item;
+        ShowAddToQueueDialog(item.CreatorName, true, item.SongName, item.ArtistName);
     }
 
     private void SetupKfnTree()

@@ -183,9 +183,9 @@ layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 16
 
-[node name="From_" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
+[node name="Source_" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]
 layout_mode = 2
-text = "From:"
+text = "Source:"
 horizontal_alignment = 2
 
 [node name="QueueAddCreatorNameLabel" type="Label" parent="AddToQueueDialog/VBoxContainer/MarginContainer/GridContainer"]

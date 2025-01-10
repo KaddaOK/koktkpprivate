@@ -1,4 +1,5 @@
 using Chickensoft.AutoInject;
+using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 using NAudio.Flac;
@@ -36,6 +37,8 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private Settings Settings { get; set; }
     Settings IProvide<Settings>.Value() => Settings;
 
+    private LocalFileValidator LocalFileValidator { get; set; } = new LocalFileValidator(); // TODO: interface
+
     public void SetupForTesting(IPuppeteerPlayer puppeteerPlayer, Settings settings)
     {
         PuppeteerPlayer = puppeteerPlayer;
@@ -58,8 +61,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node("%Search")] // TODO: this name is annoying to me
     private ISearchTab SearchTab { get; set; } = default!;
 
+    [Node] private ITabContainer MainTabs { get; set; } = default!;
+
     [Node] private IDisplayScreen DisplayScreen { get; set; } = default!;
     [Node] private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
+    [Node] private IAcceptDialog MessageDialog { get; set; } = default!;
 
     #endregion
 
@@ -87,8 +93,46 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             }
         };
 
+
+        var root = GetTree().Root;
+        root.FilesDropped += FilesDropped;
+
         this.Provide();
         SetProcess(true);
+
+    }
+
+    public void FilesDropped(string[] files)
+    {
+        var acceptedExtensions = new[] { ".zip", ".cdg", ".mp3", ".mp4" };
+        var droppedFile = files.FirstOrDefault(f => acceptedExtensions.Contains(Path.GetExtension(f).ToLower()));
+        if (droppedFile != null)
+        {
+            var (isValid, message) = LocalFileValidator.IsValid(droppedFile);
+            if (!isValid)
+            {
+                ShowMessageDialog("Cannot import file", message);
+                return;
+            }
+            // TODO: log a warning somewhere if isValid but message isn't empty
+
+            // switch to the search tab if that's not where we are
+            if (!SearchTab.Visible)
+            {
+                MainTabs.CurrentTab = 1; // TODO: don't hardcode this index
+            }
+
+            var externalQueueItem = LocalFileValidator.GetBestGuessExternalQueueItem(droppedFile);
+
+            SearchTab.ExternalFileShowAddDialog(externalQueueItem);
+        }
+    }
+
+    public void ShowMessageDialog(string title, string message)
+    {
+        MessageDialog.DialogText = message;
+        MessageDialog.Title = title;
+        MessageDialog.Show();
     }
 
     private void BindSearchScreenControls()
