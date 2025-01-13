@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -31,12 +32,18 @@ public class LocalScanManager
 
     public bool CreateOrUpdateSongFileEntry(string filePath, bool saveAsYouGo = false)
     {
+        if (scanPathEntry == null)
+        {
+            throw new InvalidOperationException("Scan path entry not created or loaded.");
+        }
+
         var entry = context.LocalSongFiles.SingleOrDefault(lsf => lsf.FullPath == filePath);
         if (entry == null)
         {
             entry = new LocalSongFileEntry
             {
                 FullPath = filePath,
+                FileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath),
                 ParentPath = scanPathEntry
             };
             context.Add(entry);
@@ -48,7 +55,7 @@ public class LocalScanManager
         }
         else
         {
-            // TODO: update?
+            // in the future we might update here but only if IsCustomized is false
             return false;
         }
     }

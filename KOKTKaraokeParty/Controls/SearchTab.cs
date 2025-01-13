@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
@@ -19,7 +22,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
     private List<KarafunSearchScrapeResultItem> KarafunResults;
     private List<KNSearchResultItem> KNResults;
-    private bool isStreamingResults = false;
+    private bool isStreamingKfnResults = false;
 
     private QueueItem itemBeingAdded;
 
@@ -27,6 +30,8 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
     private TreeItem _kfnRoot;
     private TreeItem _knRoot;
+
+    private CancellationTokenSource SearchCancellationSource = new CancellationTokenSource();
 
     #region Nodes
 
@@ -76,9 +81,12 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
     private void ClearSearch()
     {
+        SearchCancellationSource.Cancel();
         SearchText.Text = "";
         KfnResultsTree.Clear();
+        KfnResultCount.SetLoaded(true, "");
         KNResultsTree.Clear();
+        KNResultCount.SetLoaded(true, "");
         SearchText.GrabFocus();
     }
 
@@ -156,18 +164,20 @@ public partial class SearchTab : MarginContainer, ISearchTab
         SearchText.Editable = !isSearching;
         SearchButton.Disabled = isSearching;
         SearchButton.Text = isSearching ? "Searching..." : "Search";
-        isStreamingResults = isSearching;
+        isStreamingKfnResults = isSearching;
         Input.SetDefaultCursorShape(isSearching ? Input.CursorShape.Busy : Input.CursorShape.Arrow);
         await ToSignal(GetTree(), "process_frame");
     }
 
     private async void Search(string query)
     {
-        if (isStreamingResults)
+        if (isStreamingKfnResults)
         {
             GD.Print("Already streaming results, skipping search.");
             return;
         }
+        SearchCancellationSource.Cancel(); // Cancel any existing searches
+        SearchCancellationSource = new CancellationTokenSource();
         await ToggleIsSearching(true);
 
         var searchKaraokenerds = true; // TODO: Implement a setting to enable/disable searching Karaokenerds?
@@ -184,7 +194,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
         {
             KfnResultsTree.Clear();
             _kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-            searchTasks.Add(StreamResultsFromKarafun(query));
+            searchTasks.Add(StreamResultsFromKarafun(query, SearchCancellationSource.Token));
         }
         await Task.WhenAll(searchTasks);
         await ToggleIsSearching(false);
@@ -205,16 +215,16 @@ public partial class SearchTab : MarginContainer, ISearchTab
         await ToSignal(GetTree(), "process_frame");
     }
 
-    private async Task StreamResultsFromKarafun(string query)
+    private async Task StreamResultsFromKarafun(string query, CancellationToken cancellationToken)
     {
         GD.Print($"Searching Karafun for: {query}");
         KfnResultCount.SetLoaded(false);
-        isStreamingResults = true;
+        isStreamingKfnResults = true;
         var mayHaveMore = false;
         var pageResults = new List<KarafunSearchScrapeResultItem>();
         var artistResults = new Dictionary<string, List<KarafunSearchScrapeResultItem>>();
         KarafunResults = new List<KarafunSearchScrapeResultItem>();
-        await foreach (var result in KarafunSearchScrape.Search(query))
+        await foreach (var result in KarafunSearchScrape.Search(query, cancellationToken))
         {
             GD.Print($"Received {result.Results.Count} results from Karafun");
             if (result.MayHaveMore)
@@ -256,8 +266,13 @@ public partial class SearchTab : MarginContainer, ISearchTab
                 .ToList();
 
             await UpdateKarafunResultsTree();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
-        isStreamingResults = false;
+        isStreamingKfnResults = false;
         KfnResultCount.SetLoaded(true, $"{KarafunResults.Count}");//{(mayHaveMore ? "*" : "")}");
     }
 

@@ -2,16 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using HtmlAgilityPack;
 
 public class KarafunSearchScrape
 {
-    public static async IAsyncEnumerable<KarafunSearchScrapeResponse> Search(string query)
+    public static async IAsyncEnumerable<KarafunSearchScrapeResponse> Search(string query, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         string url = "https://karafun.com/search/?query=" + HttpUtility.UrlEncode(query);
-        await foreach (var searchResponse in GetSearchResults(url))
+        await foreach (var searchResponse in GetSearchResults(url, cancellationToken))
         {
             yield return searchResponse;
         }
@@ -23,7 +25,7 @@ public class KarafunSearchScrape
         return GetDirectLinkForSong(htmlDoc, songInfoLink);
     }
 
-    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetSearchResults(string searchUrl)
+    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetSearchResults(string searchUrl, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         var htmlDoc = await Utils.LoadHtmlResponse(searchUrl);
 
@@ -48,15 +50,19 @@ public class KarafunSearchScrape
         var allResults = new List<KarafunSearchScrapeResultItem>(initialList);
         foreach (var artistItem in initialList.Where(item => item.ResultType == KarafunSearchScrapeResultItemType.Artist).ToList())
         {
+            if (cancellationToken.IsCancellationRequested) break;
+            
             // Fetch additional results from the artist page
-            await foreach (var artistPageResult in GetArtistPageResults(artistItem.ArtistLink))
+            await foreach (var artistPageResult in GetArtistPageResults(artistItem.ArtistLink, cancellationToken))
             {
+                if (cancellationToken.IsCancellationRequested) break;
+
                 yield return artistPageResult;
             }
         }
     }
 
-    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetArtistPageResults(string artistUrl)
+    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetArtistPageResults(string artistUrl, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         // get the first page of results
         var htmlDoc = await Utils.LoadHtmlResponse(artistUrl);
@@ -73,7 +79,7 @@ public class KarafunSearchScrape
 
         // add results from subsequent pagination
         var nextUrl = GetNextPageUrlOrNull(htmlDoc, artistUrl);
-        while (nextUrl != null)
+        while (nextUrl != null && !cancellationToken.IsCancellationRequested)
         {
             var nextDoc = await Utils.LoadHtmlResponse(nextUrl);
             var nextResultItemDivs = nextDoc.DocumentNode.SelectNodes(ResultItemXPath);

@@ -58,6 +58,7 @@ offset_top = -15.5
 offset_bottom = 15.5
 grow_horizontal = 0
 grow_vertical = 2
+tooltip_text = "Clear/Cancel"
 text = "x"
 flat = true
 
@@ -85,15 +86,15 @@ layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
 layout_mode = 2
 
-[node name="KNLabel" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid/HBoxContainer"]
+[node name="KNLabel" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid/KNSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karaokenerds:"
 
-[node name="KNResultCount" parent="SearchTabVBox/ResultsTwoColumnGrid/HBoxContainer" instance=ExtResource("2_pm6ve")]
+[node name="KNResultCount" parent="SearchTabVBox/ResultsTwoColumnGrid/KNSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
@@ -135,29 +136,30 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 13
 theme_override_font_sizes/title_button_font_size = 13
 
-[node name="VBoxContainer" type="VBoxContainer" parent="SearchTabVBox"]
+[node name="LocalResultsPane" type="VBoxContainer" parent="SearchTabVBox"]
+visible = false
 layout_mode = 2
 
-[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VBoxContainer"]
+[node name="LocalFilesSearchHeader" type="HBoxContainer" parent="SearchTabVBox/LocalResultsPane"]
 layout_mode = 2
 
-[node name="KfnLabel" type="Label" parent="SearchTabVBox/VBoxContainer/KfnSearchHeader"]
+[node name="LocalFilesLabel" type="Label" parent="SearchTabVBox/LocalResultsPane/LocalFilesSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Local Files:"
 
-[node name="LocalFilesResultCount" parent="SearchTabVBox/VBoxContainer/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="LocalFilesResultCount" parent="SearchTabVBox/LocalResultsPane/LocalFilesSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VBoxContainer"]
+[node name="LocalFilesResultsExplanation" type="Label" parent="SearchTabVBox/LocalResultsPane"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "(Not yet implemented, sorry)"
 
-[node name="LocalFilesResultsTree" type="Tree" parent="SearchTabVBox/VBoxContainer"]
+[node name="LocalFilesResultsTree" type="Tree" parent="SearchTabVBox/LocalResultsPane"]
 unique_name_in_owner = true
 layout_mode = 2
 

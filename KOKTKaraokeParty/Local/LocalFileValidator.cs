@@ -92,11 +92,13 @@ public class LocalFileValidator
                 returnItem.SongName = components[1];
                 break;
             case 3:
+                returnItem.Identifier = components[0];
                 returnItem.ArtistName = components[1];
                 returnItem.SongName = components[2];
                 break;
             case 4:
                 returnItem.CreatorName = components[0];
+                returnItem.Identifier = components[1];
                 returnItem.ArtistName = components[2];
                 returnItem.SongName = components[3];
                 break;

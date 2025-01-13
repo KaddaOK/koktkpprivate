@@ -39,14 +39,14 @@ public partial class DisplayScreen : Window, IDisplayScreen
 
     #region Nodes
 
-    [Node] private INextUpDisplay NextUpScene { get; set; } = default!;
-    [Node] private IControl EmptyQueueScene { get; set; } = default!;
+    [Node] public INextUpDisplay NextUpScene { get; private set; } = default!;
+    [Node] public IControl EmptyQueueScene { get; private set; } = default!;
 
-    [Node] private IHBoxContainer BgMusicPlayingListing { get; set; } = default!;
-    [Node] private ILabel BgMusicNowPlayingLabel { get; set; } = default!;
-    [Node] private ILabel BgMusicPausedIndicator { get; set; } = default!;
+    [Node] public IHBoxContainer BgMusicPlayingListing { get; private set; } = default!;
+    [Node] public ILabel BgMusicNowPlayingLabel { get; private set; } = default!;
+    [Node] public ILabel BgMusicPausedIndicator { get; private set; } = default!;
 
-    [Node] private CdgRendererNode CdgRendererNode { get; set; } = default!;
+    [Node] public ICdgRendererNode CdgRendererNode { get; private set; } = default!;
 
     #endregion
 
