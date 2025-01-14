@@ -1,4 +1,5 @@
 dotnet build
+Remove-Item ./coverageresulttemp -Recurse -Force -ErrorAction SilentlyContinue
 
 # generate coverage for the GoDotTest tests
 coverlet `
@@ -6,7 +7,7 @@ coverlet `
   --target $env:GODOT `
   --targetargs "--run-tests --coverage --quit-on-finish" `
   --format "opencover" `
-  --output "./coverage/coverage.godot.xml" `
+  --output "./coverageresulttemp/coverage.godot.xml" `
   --exclude-by-file "**/test/**/*.cs" `
   --exclude-by-file "**/*Microsoft.NET.Test.Sdk.Program.cs" `
   --exclude-by-file "**/Godot.SourceGenerators/**/*.cs" `
@@ -20,7 +21,7 @@ coverlet `
   --target "dotnet" `
   --targetargs "test --no-build" `
   --format "opencover" `
-  --output "./coverage/coverage.xunit.xml" `
+  --output "./coverageresulttemp/coverage.xunit.xml" `
   --exclude-by-file "**/test/**/*.cs" `
   --exclude-by-file "**/*Microsoft.NET.Test.Sdk.Program.cs" `
   --exclude-by-file "**/Godot.SourceGenerators/**/*.cs" `
@@ -35,10 +36,10 @@ coverlet `
 $ASSEMBLIES_TO_REMOVE="-KOKTKaraokeParty.Tests"
 
 reportgenerator `
-  -reports:"./coverage/**/coverage*.xml" `
-  -targetdir:"./coverage/report" `
+  -reports:"./coverageresulttemp/**/coverage*.xml" `
+  -targetdir:"./coverageresulttemp/report" `
   "-assemblyfilters:$ASSEMBLIES_TO_REMOVE" `
   "-classfilters:-GodotPlugins.Game.Main;-GameDemo.Main" `
   -reporttypes:"Html"
 
-Invoke-Expression ("cmd /c start coverage/report/index.htm")
+Invoke-Expression ("cmd /c start coverageresulttemp/report/index.htm")

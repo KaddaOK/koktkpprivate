@@ -1,13 +1,31 @@
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 
-public class LocalFileValidator
+public interface ILocalFileValidator
 {
+    (bool isValid, string message) IsValid(string path);
+}
+
+public class LocalFileValidator : ILocalFileValidator
+{
+    #region Initialized Dependencies
+
+    private IFileWrapper FileWrapper { get; set; }
+    private IZipFileManager ZipFileManager { get; set; }
+
+    public LocalFileValidator(IFileWrapper fileWrapper, IZipFileManager zipFileManager)
+    {
+        FileWrapper = fileWrapper;
+        ZipFileManager = zipFileManager;
+    }
+    public LocalFileValidator() : this(new FileWrapper(), new ZipFileManager()) {}
+
+    #endregion
+
     public (bool isValid, string message) IsValid(string path)
     {
-        if (!File.Exists(path))
+        if (!FileWrapper.Exists(path))
         {
             return (false, $"{path} does not exist.");
         }
@@ -32,7 +50,7 @@ public class LocalFileValidator
 
         var otherFile = isCdg ? Path.ChangeExtension(filepath, ".mp3") : Path.ChangeExtension(filepath, ".cdg");
 
-        if (!File.Exists(otherFile))
+        if (!FileWrapper.Exists(otherFile))
         {
             return (false, $"No matching {(isCdg ? "MP3" : "CDG")} file found beside '{Path.GetFileName(filepath)}'.");
         }
@@ -44,7 +62,7 @@ public class LocalFileValidator
     {
         var zipFileName = Path.GetFileName(filepath);
 
-        using (var zip = ZipFile.OpenRead(filepath))
+        using (var zip = ZipFileManager.OpenRead(filepath))
         {
             var cdgEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".cdg", StringComparison.OrdinalIgnoreCase));
             var mp3Entry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase));
@@ -62,50 +80,5 @@ public class LocalFileValidator
 
             return (true, null);
         }
-    }
-
-    public QueueItem GetBestGuessExternalQueueItem(string externalFilePath)
-    {
-        var returnItem = new QueueItem 
-            {
-                PerformanceLink = externalFilePath,
-                CreatorName = "(drag-and-drop)",
-                ItemType = Path.GetExtension(externalFilePath).ToLower() switch
-                {
-                    ".zip" => ItemType.LocalMp3GZip,
-                    ".cdg" => ItemType.LocalMp3G,
-                    ".mp3" => ItemType.LocalMp3G,
-                    ".mp4" => ItemType.LocalMp4,
-                    _ => throw new NotImplementedException()
-                }
-            };
-
-        // TODO: this is an ignorant rush job, meh
-        var components = Path.GetFileNameWithoutExtension(externalFilePath).Split(" - ");
-        switch (components.Length)
-        {
-            case 1:
-                returnItem.SongName = components[0];
-                break;
-            case 2:
-                returnItem.ArtistName = components[0];
-                returnItem.SongName = components[1];
-                break;
-            case 3:
-                returnItem.Identifier = components[0];
-                returnItem.ArtistName = components[1];
-                returnItem.SongName = components[2];
-                break;
-            case 4:
-                returnItem.CreatorName = components[0];
-                returnItem.Identifier = components[1];
-                returnItem.ArtistName = components[2];
-                returnItem.SongName = components[3];
-                break;
-            default:
-                throw new NotImplementedException();
-        }
-
-        return returnItem;
     }
 }

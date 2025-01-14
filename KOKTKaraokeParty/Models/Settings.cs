@@ -15,17 +15,17 @@ public partial class Settings
 
     private static string settingsFileName = Path.Combine(Utils.GetAppStoragePath(), "settings.json");
 
-    public static Settings LoadFromDiskIfExists()
+    public static Settings LoadFromDiskIfExists(IFileWrapper fileWrapper)
     {
         var settings = new Settings();
         try
         {
             // Check if the settings file exists
-            if (File.Exists(settingsFileName))
+            if (fileWrapper.Exists(settingsFileName))
             {
                 GD.Print("Loading settings from disk...");
                 // Read the JSON content from the file
-                var settingsJson = File.ReadAllText(settingsFileName);
+                var settingsJson = fileWrapper.ReadAllText(settingsFileName);
                 //GD.Print($"Settings JSON: {settingsJson}");
                 // Deserialize the JSON into the settings value to return
                 settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
@@ -38,14 +38,14 @@ public partial class Settings
         return settings;
     }
 
-    public void SaveToDisk()
+    public void SaveToDisk(IFileWrapper fileWrapper)
     {
         try
         {
             var settingsJson = JsonConvert.SerializeObject(this, Formatting.Indented);
             //GD.Print($"Settings JSON: {settingsJson}");
             // Write the JSON to the file
-            File.WriteAllText(settingsFileName, settingsJson);
+            fileWrapper.WriteAllText(settingsFileName, settingsJson);
         }
         catch (Exception ex)
         {

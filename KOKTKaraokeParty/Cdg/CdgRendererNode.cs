@@ -4,7 +4,6 @@ using Chickensoft.Introspection;
 using Godot;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,6 +25,28 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
     private string _nowPlaying;
     private bool _isPaused;
     private bool _isLoaded;
+
+    #region Initialized Dependencies
+
+    private IFileWrapper FileWrapper { get; set; }
+    private ILocalFileValidator LocalFileValidator { get; set; }
+    private IZipFileManager ZipFileManager { get; set; }
+
+    public void SetupForTesting(ILocalFileValidator localFileValidator, IFileWrapper fileWrapper, IZipFileManager zipFileManager)
+    {
+        LocalFileValidator = localFileValidator;
+        FileWrapper = fileWrapper;
+        ZipFileManager = zipFileManager;
+    }
+
+    public void Initialize()
+    {
+        LocalFileValidator = new LocalFileValidator();
+        FileWrapper = new FileWrapper();
+        ZipFileManager = new ZipFileManager();
+    }
+
+    #endregion
 
     #region Nodes
 
@@ -66,7 +87,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             var cdgPath = filepath;
             var mp3Path = Path.ChangeExtension(filepath, ".mp3");
 
-            if (!File.Exists(mp3Path))
+            if (!FileWrapper.Exists(mp3Path))
             {
                 GD.PrintErr("No matching .mp3 file found.");
                 return;
@@ -81,7 +102,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             var mp3Path = filepath;
             var cdgPath = Path.ChangeExtension(filepath, ".cdg");
 
-            if (!File.Exists(cdgPath))
+            if (!FileWrapper.Exists(cdgPath))
             {
                 GD.PrintErr("No matching .cdg file found.");
                 return;
@@ -108,7 +129,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
 
     public async Task LoadFromZip(string filepath)
     {
-        using (var zip = ZipFile.OpenRead(filepath))
+        using (var zip = ZipFileManager.OpenRead(filepath))
         {
             var cdgEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".cdg", StringComparison.OrdinalIgnoreCase));
             var mp3Entry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase));
@@ -149,13 +170,13 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
 
     public async Task LoadFromPath(string cdgPath, string mp3Path)
     {
-        if (!File.Exists(cdgPath))
+        if (!FileWrapper.Exists(cdgPath))
         {
             GD.PrintErr("No matching .cdg file found.");
             return;
         }
         
-        if (!File.Exists(mp3Path))
+        if (!FileWrapper.Exists(mp3Path))
         {
             GD.PrintErr("No matching .mp3 file found.");
             return;

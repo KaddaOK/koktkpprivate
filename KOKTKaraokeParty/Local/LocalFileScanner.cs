@@ -24,15 +24,12 @@ public partial class LocalFileScanner : ILocalFileScanner
 
     private IDirectoryWrapper DirectoryWrapper { get; set; }
 
-    public void SetupForTesting(IDirectoryWrapper directoryWrapper)
+    public LocalFileScanner(IDirectoryWrapper directoryWrapper)
     {
         DirectoryWrapper = directoryWrapper;
     }
 
-    public void Initialize()
-    {
-        DirectoryWrapper = new DirectoryWrapper();
-    }
+    public LocalFileScanner() : this(new DirectoryWrapper()) { }
 
     #endregion
 
@@ -106,23 +103,5 @@ public partial class LocalFileScanner : ILocalFileScanner
             }
         }
         IsScanning = false;
-    }
-}
-
-public interface IDirectoryWrapper
-{
-    string[] GetFiles(string path, string searchPattern);
-    string[] GetDirectories(string path);
-}
-public class DirectoryWrapper : IDirectoryWrapper
-{
-    public string[] GetFiles(string path, string searchPattern)
-    {
-        return Directory.GetFiles(path, searchPattern);
-    }
-
-    public string[] GetDirectories(string path)
-    {
-        return Directory.GetDirectories(path);
     }
 }

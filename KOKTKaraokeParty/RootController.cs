@@ -37,18 +37,27 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private Settings Settings { get; set; }
     Settings IProvide<Settings>.Value() => Settings;
 
-    private LocalFileValidator LocalFileValidator { get; set; } = new LocalFileValidator(); // TODO: interface
+    private ILocalFileValidator LocalFileValidator { get; set; }
+    private IFileWrapper FileWrapper { get; set;}
 
-    public void SetupForTesting(IPuppeteerPlayer puppeteerPlayer, Settings settings)
+    public void SetupForTesting(
+        IPuppeteerPlayer puppeteerPlayer, 
+        Settings settings,
+        ILocalFileValidator localFileValidator,
+        IFileWrapper fileWrapper)
     {
         PuppeteerPlayer = puppeteerPlayer;
         Settings = settings;
+        LocalFileValidator = localFileValidator;
+        FileWrapper = fileWrapper;
     }
 
     public void Initialize()
     {
+        FileWrapper = new FileWrapper();
         PuppeteerPlayer = new PuppeteerPlayer();
-        Settings = Settings.LoadFromDiskIfExists();
+        Settings = Settings.LoadFromDiskIfExists(FileWrapper);
+        LocalFileValidator = new LocalFileValidator();
     }
 
     #endregion
@@ -128,10 +137,60 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                 MainTabs.CurrentTab = 1; // TODO: don't hardcode this index
             }
 
-            var externalQueueItem = LocalFileValidator.GetBestGuessExternalQueueItem(droppedFile);
+            var externalQueueItem = GetBestGuessExternalQueueItem(droppedFile);
 
             SearchTab.ExternalFileShowAddDialog(externalQueueItem);
         }
+    }
+
+    // TODO: where should this live?  I had it in LocalFileValidator, but it 
+    // can't be tested by XUnit because QueueItem is a GodotObject which causes 
+    // anything but GoDotTest tests to throw AccessViolationException "Attempted 
+    // to read or write protected memory. This is often an indication that other 
+    // memory is corrupt" 🙄 It would be used by a live search as well
+    public QueueItem GetBestGuessExternalQueueItem(string externalFilePath)
+    {
+        var returnItem = new QueueItem 
+            {
+                PerformanceLink = externalFilePath,
+                CreatorName = "(drag-and-drop)",
+                ItemType = Path.GetExtension(externalFilePath).ToLower() switch
+                {
+                    ".zip" => ItemType.LocalMp3GZip,
+                    ".cdg" => ItemType.LocalMp3G,
+                    ".mp3" => ItemType.LocalMp3G,
+                    ".mp4" => ItemType.LocalMp4,
+                    _ => throw new NotImplementedException()
+                }
+            };
+
+        // TODO: this is an ignorant rush job, meh
+        var components = Path.GetFileNameWithoutExtension(externalFilePath).Split(" - ");
+        switch (components.Length)
+        {
+            case 1:
+                returnItem.SongName = components[0];
+                break;
+            case 2:
+                returnItem.ArtistName = components[0];
+                returnItem.SongName = components[1];
+                break;
+            case 3:
+                returnItem.Identifier = components[0];
+                returnItem.ArtistName = components[1];
+                returnItem.SongName = components[2];
+                break;
+            case 4:
+                returnItem.CreatorName = components[0];
+                returnItem.Identifier = components[1];
+                returnItem.ArtistName = components[2];
+                returnItem.SongName = components[3];
+                break;
+            default:
+                throw new NotImplementedException();
+        }
+
+        return returnItem;
     }
 
     public void ShowMessageDialog(string title, string message)
@@ -279,7 +338,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         if (Settings.BgMusicEnabled != enable)
         {
             Settings.BgMusicEnabled = enable;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         }
         if (Settings.BgMusicEnabled && !IsWaitingToReturnFromBrowserControl && !IsPlayingLocalFile)
         {
@@ -363,7 +422,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private void SetBgMusicVolumePercent(double volumePercent)
     {
         Settings.BgMusicVolumePercent = volumePercent;
-        Settings.SaveToDisk();
+        Settings.SaveToDisk(FileWrapper);
         BackgroundMusicPlayer.VolumeDb = PercentToDb(volumePercent);
         GD.Print($"BG Music volume set to {volumePercent}% ({BackgroundMusicPlayer.VolumeDb} dB)");
     }
@@ -729,7 +788,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             var queueJson = JsonConvert.SerializeObject(queueList, Formatting.Indented);
             //GD.Print($"Queue JSON: {queueJson}");
             // Write the JSON to the file
-            File.WriteAllText(savedQueueFileName, queueJson);
+            FileWrapper.WriteAllText(savedQueueFileName, queueJson);
         }
         catch (Exception ex)
         {
@@ -742,11 +801,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         try
         {
             // Check if the queue file exists
-            if (File.Exists(savedQueueFileName))
+            if (FileWrapper.Exists(savedQueueFileName))
             {
                 GD.Print("Loading queue from disk...");
                 // Read the JSON content from the file
-                var queueJson = File.ReadAllText(savedQueueFileName);
+                var queueJson = FileWrapper.ReadAllText(savedQueueFileName);
 
                 // Deserialize the JSON back into the Queue object
                 var queueList = JsonConvert.DeserializeObject<QueueItem[]>(queueJson);
@@ -805,13 +864,13 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         var appStoragePath = Utils.GetAppStoragePath();
         Directory.CreateDirectory(appStoragePath);
         sessionPlayHistoryFileName = Path.Combine(appStoragePath, $"history_{DateTime.Now:yyyy-MM-dd_HHmm}.log");
-        using (File.Create(sessionPlayHistoryFileName)) { }
+        using (FileWrapper.Create(sessionPlayHistoryFileName)) { }
     }
 
     private void AppendToPlayHistory(QueueItem queueItem)
     {
         var nowPlaying = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{queueItem.SingerName}|{queueItem.SongName}|{queueItem.ArtistName}|{queueItem.CreatorName}|{queueItem.PerformanceLink}";
-        File.AppendAllText(sessionPlayHistoryFileName, nowPlaying + "\n");
+        FileWrapper.AppendAllText(sessionPlayHistoryFileName, nowPlaying + "\n");
     }
     #endregion
 
@@ -821,12 +880,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupTab.CountdownLengthChanged += (value) =>
         {
             Settings.CountdownLengthSeconds = (int)value;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         };
         SetupTab.DisplayScreenMonitorChanged += (value) =>
         {
             Settings.DisplayScreenMonitor = (int)value;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
             GD.Print($"Monitor ID set to {Settings.DisplayScreenMonitor}");
             DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
             DisplayScreen.ShowDisplayScreen();
@@ -838,7 +897,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupTab.BgMusicItemRemoved += (pathToRemove) =>
         {
             Settings.BgMusicFiles.Remove(pathToRemove);
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
             // TODO: if the removed item was the one playing, skip it
         };
         SetupTab.BgMusicItemsAdded += (pathsToAdd) =>
@@ -850,7 +909,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                     Settings.BgMusicFiles.Add(file);
                 }
             }
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         };
         SetupTab.BgMusicToggle += ToggleBackgroundMusic;
         SetupTab.BgMusicVolumeChanged += SetBgMusicVolumePercent;
