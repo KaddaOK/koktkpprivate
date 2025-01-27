@@ -123,7 +123,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         AudioStreamPlayer.Play();
         AudioStreamPlayer.Finished += () => {
             Stop();
-            EmitSignal(nameof(PlaybackFinished), _nowPlaying);
+            EmitSignal(SignalName.PlaybackFinished, _nowPlaying);
         };
     }
 

@@ -1,0 +1,82 @@
+[gd_scene load_steps=6 format=3 uid="uid://d3x1a61anrsna"]
+
+[ext_resource type="Script" path="res://Controls/LocalFiles.cs" id="1_t4b7r"]
+[ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="2_0f81l"]
+[ext_resource type="PackedScene" uid="uid://bhu00mmmtwhcx" path="res://Controls/EditScanPathDialog.tscn" id="3_y375c"]
+[ext_resource type="PackedScene" uid="uid://da15k4fbi7nnc" path="res://Controls/ScanningPathDialog.tscn" id="4_mwolv"]
+[ext_resource type="Script" path="res://Controls/ScanningPathDialog.cs" id="5_bdli1"]
+
+[node name="Local Files" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_t4b7r")
+metadata/_tab_index = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "I haven't finished implementing a searchable catalog of local files yet, but it should add a file to the queue if you drag-and-drop it onto this window, if it is any one of the following: 
+
+  - a .mp4 video file, or,
+  - one of a matched pair of .cdg and .mp3 files (you can drag either one), or
+  - a .zip file that contains a matched pair of .cdg and .mp3 files
+
+If none of those, it just won't do anything."
+autowrap_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Local File Scan Paths:"
+
+[node name="AddNewPathButton" type="Button" parent="VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Add New..."
+
+[node name="PathsEmptyContainer" type="PanelContainer" parent="VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/PathsEmptyContainer"]
+layout_mode = 2
+theme = ExtResource("2_0f81l")
+
+[node name="Label" type="Label" parent="VBoxContainer/PathsEmptyContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "No paths have been added."
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LocalFilePathsContainer" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EditScanPathDialog" parent="." instance=ExtResource("3_y375c")]
+unique_name_in_owner = true
+visible = false
+
+[node name="ScanningPathDialog" parent="." instance=ExtResource("4_mwolv")]
+unique_name_in_owner = true
+visible = false
+script = ExtResource("5_bdli1")

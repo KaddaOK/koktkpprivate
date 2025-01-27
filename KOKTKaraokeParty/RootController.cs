@@ -692,7 +692,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         await PuppeteerPlayer.PauseKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutube();
+                        await PuppeteerPlayer.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
@@ -722,7 +722,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         await PuppeteerPlayer.ResumeKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutube();
+                        await PuppeteerPlayer.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:

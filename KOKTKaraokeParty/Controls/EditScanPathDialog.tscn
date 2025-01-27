@@ -1,0 +1,115 @@
+[gd_scene load_steps=3 format=3 uid="uid://bhu00mmmtwhcx"]
+
+[ext_resource type="Script" path="res://Controls/EditScanPathDialog.cs" id="1_7dp2e"]
+[ext_resource type="Theme" uid="uid://b5m5qwp4xbf06" path="res://richtext.tres" id="2_bafwn"]
+
+[node name="EditLocalFileScanPathDialog" type="ConfirmationDialog"]
+auto_translate_mode = 1
+title = "Local File Scan Path"
+initial_position = 2
+size = Vector2i(600, 150)
+visible = true
+ok_button_text = "Save"
+dialog_hide_on_ok = false
+script = ExtResource("1_7dp2e")
+
+[node name="GridContainer" type="GridContainer" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 592.0
+offset_bottom = 101.0
+theme_override_constants/h_separation = 20
+columns = 2
+
+[node name="Path" type="Label" parent="GridContainer"]
+layout_mode = 2
+text = "Path:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SelectedPathLabel" type="Label" parent="GridContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BrowsePathButton" type="Button" parent="GridContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Browse..."
+
+[node name="File name format" type="Label" parent="GridContainer"]
+layout_mode = 2
+text = "File name format:"
+
+[node name="FormatOptionButton" type="OptionButton" parent="GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 8
+popup/item_0/text = "{identifier} - {artist} - {title}"
+popup/item_1/text = "{identifier} - {title} - {artist}"
+popup/item_1/id = 1
+popup/item_2/text = "{artist} - {title} - {identifier}"
+popup/item_2/id = 2
+popup/item_3/text = "{title} - {artist} - {identifier}"
+popup/item_3/id = 3
+popup/item_4/text = "{artist} - {title}"
+popup/item_4/id = 4
+popup/item_5/text = "{title} - {artist}"
+popup/item_5/id = 5
+popup/item_6/text = "{identifier}_{title}_{artist}"
+popup/item_6/id = 6
+popup/item_7/text = "Custom..."
+popup/item_7/id = 7
+
+[node name="CustomFormatHeadingLabel" type="Label" parent="GridContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="CustomFormatVBoxContainer" type="VBoxContainer" parent="GridContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="GridContainer/CustomFormatVBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_bafwn")
+theme_override_font_sizes/bold_italics_font_size = 12
+theme_override_font_sizes/italics_font_size = 12
+theme_override_font_sizes/mono_font_size = 12
+theme_override_font_sizes/normal_font_size = 12
+theme_override_font_sizes/bold_font_size = 12
+bbcode_enabled = true
+text = "Specify a custom format of how files are named in this path. 
+TODO: finish explaining this!"
+fit_content = true
+
+[node name="CustomFormatLineEdit" type="LineEdit" parent="GridContainer/CustomFormatVBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="EditPathFileDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 1
+title = "Open a Directory"
+initial_position = 2
+size = Vector2i(350, 180)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+use_native_dialog = true
+
+[node name="CustomFormatValidationErrorDialog" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+title = "Invalid Custom Format"
+initial_position = 2
+
+[node name="CustomFormatErrorLabel" type="Label" parent="CustomFormatValidationErrorDialog"]
+unique_name_in_owner = true
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 92.0
+offset_bottom = 51.0
+text = "Error"

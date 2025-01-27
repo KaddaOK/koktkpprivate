@@ -10,10 +10,9 @@ public class LocalScanPathEntry
     [Column("rowid")]
     public int Id { get; set; }
     public string Path { get; set; }
+    public string FormatSpecifier { get; set;}
     public DateTime? LastFullScanStarted { get; set; }
     public DateTime? LastFullScanCompleted { get; set; }
-
-    // TODO: format configuration
 
     public virtual ICollection<LocalSongFileEntry> Files { get; set; }
 }

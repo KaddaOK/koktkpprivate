@@ -3,12 +3,25 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-public class LocalFileNameMetadataParser
+public interface ILocalFileNameMetadataParser
+{
+    SongMetadata Parse(string fileName, string formatSpecification);
+    string GetRegexEquivalent(string formatSpecification);
+    (bool isValid, string validationError) ValidateFormatSpecification(string formatSpecification);
+}
+
+public class LocalFileNameMetadataParser : ILocalFileNameMetadataParser
 {
     public SongMetadata Parse(string fileName, string formatSpecification)
     {
         var metadata = new SongMetadata();
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+        // if the formatSpecification starts with a *, / or \, we should start the filename with one as well, so that I don't die of frustration
+        if (formatSpecification.StartsWith("*") || formatSpecification.StartsWith("/") || formatSpecification.StartsWith("\\"))
+        {
+            fileName = "/" + fileName;
+        }
 
         // Match the file name against the regex pattern
         var regex = new Regex(GetRegexEquivalent(formatSpecification), RegexOptions.IgnoreCase);
@@ -25,16 +38,18 @@ public class LocalFileNameMetadataParser
         return metadata;
     }
 
-    string outputRegexToMatchEitherPathSeparator = @"[\\/]";
-    string outputRegexForExtensionAndFileEnd = @"\..+$";
+    string eitherSlash = @"[\\/]";
+    string noSlashesBehind = @$"(?<![\\/])";
+    string noSlashesAhead = @"(?![\\/])";
+    string extensionAndFileEnd = @"\..+$";
     string outputRegexForDiscardedFolder = @"(?:[^\\/]+[\\/])";
-    string matcherForAlreadyReplacedPathSeparators => Regex.Escape(outputRegexToMatchEitherPathSeparator);
-    private string matcherForPathWildcard(object numberOfPaths) => @$"{matcherForAlreadyReplacedPathSeparators}(?:\\\*){{{numberOfPaths}}}{matcherForAlreadyReplacedPathSeparators}";
+    string alreadyReplacedEitherSlash => Regex.Escape(eitherSlash);
+    private string matcherForPathWildcard(object numberOfPaths) => @$"{alreadyReplacedEitherSlash}(?:\\\*){{{numberOfPaths}}}{alreadyReplacedEitherSlash}";
     private string namedCapture(string name) => @$"(?<{name}>[^\\/]+?)";
 
     private string AllowEitherPathSeparatorInAlreadyEscapedInput(string alreadyEscapedInput)
     {
-        return Regex.Replace(alreadyEscapedInput, @"(?:\\\\|/)", outputRegexToMatchEitherPathSeparator);
+        return Regex.Replace(alreadyEscapedInput, @"(?:\\\\|/)", eitherSlash);
     }
 
     private string ReplaceDirectoryMatchersInAlreadyReplacedInput(string alreadyReplacedInput)
@@ -43,9 +58,9 @@ public class LocalFileNameMetadataParser
         return
         Regex.Replace(
             // double asterisks get an asterisk
-            Regex.Replace(alreadyReplacedInput, matcherForPathWildcard("2,"), @$"{outputRegexToMatchEitherPathSeparator}{outputRegexForDiscardedFolder}*")
+            Regex.Replace(alreadyReplacedInput, matcherForPathWildcard("2,"), @$"{eitherSlash}{outputRegexForDiscardedFolder}*")
         // single asterisks do not
-        , matcherForPathWildcard(1), @$"{outputRegexToMatchEitherPathSeparator}{outputRegexForDiscardedFolder}");
+        , matcherForPathWildcard(1), @$"{eitherSlash}{outputRegexForDiscardedFolder}");
 
     }
 
@@ -54,19 +69,49 @@ public class LocalFileNameMetadataParser
         return alreadyReplacedInput.Replace(@"\*", @"[^\\/]*");
     }
 
-    public string GetRegexEquivalent(string formatSpecification)
+    public (bool isValid, string validationError) ValidateFormatSpecification(string formatSpecification)
     {
         if (formatSpecification.Contains("}*") || formatSpecification.Contains("*{"))
         {
-            throw new ArgumentException("An asterisk ('*') cannot go right next to a {token}.");
+            return (false, "An asterisk ('*') cannot go right next to a {token}.");
         }
-        if (Regex.IsMatch(formatSpecification, @$"{outputRegexToMatchEitherPathSeparator}\*+{outputRegexToMatchEitherPathSeparator}\*+{outputRegexToMatchEitherPathSeparator}"))
+        var badAsterisksMatch = Regex.Match(formatSpecification, @$"{eitherSlash}\*{{3,}}{eitherSlash}");
+        if (badAsterisksMatch.Success)
         {
-            throw new ArgumentException("It is an error to have two directory wildcards ('/*/' or '/**/') in a row.");
+            return (false, $"Bad syntax at {badAsterisksMatch.Index}: '{badAsterisksMatch.Value}' (maximum 2 asterisks in a row is allowed inside slashes)");
+        }
+        badAsterisksMatch = Regex.Match(formatSpecification, $@"{noSlashesBehind}\*{{2,}}|\*{{2,}}{noSlashesAhead}");
+        if (badAsterisksMatch.Success)
+        {
+            return (false, $"Bad syntax at {badAsterisksMatch.Index}: '{badAsterisksMatch.Value}' (only one asterisk in a row is allowed when not wrapped in slashes)");
+        }
+        if (Regex.IsMatch(formatSpecification, @$"{eitherSlash}\*\*{eitherSlash}\*{eitherSlash}") ||
+            Regex.IsMatch(formatSpecification, @$"{eitherSlash}\*{eitherSlash}\*\*{eitherSlash}"))
+        {
+            return (false, "Single-asterisk paths /*/ cannot be adjacent to double-asterisk paths /**/ in the format specifier.");
+        }
+        if (Regex.Matches(formatSpecification, @$"\*\*").Count > 1)
+        {
+            return (false, "You cannot have more than one double-asterisk path /**/ in the format specifier.");
+        }
+
+        return (true, null);
+    }
+
+    public string GetRegexEquivalent(string formatSpecification)
+    {
+        var validation = ValidateFormatSpecification(formatSpecification);
+        if (!validation.isValid)
+        {
+            throw new ArgumentException(validation.validationError);
         }
 
         // there's no value in including any leading slashes or asterisks because we're not using the ^ start
-        formatSpecification = formatSpecification.TrimStart('*', '/', '\\');
+        //formatSpecification = formatSpecification.TrimStart('*', '/', '\\');
+        // ok no that got a bit messed up, so I guess instead if it starts with an asterisk let's add a slash and we'll also do so when parsing?  idfk
+        if (formatSpecification.StartsWith("*")) {
+            formatSpecification = "/" + formatSpecification;
+        }
 
         // escape the user's input for regex literally
         var escapedFormat = Regex.Escape(formatSpecification);
@@ -87,9 +132,7 @@ public class LocalFileNameMetadataParser
         escapedFormat = ReplaceAnyRemainingUnescapedAsterisks(escapedFormat);
 
         // expect the extension and end of the string
-        escapedFormat += outputRegexForExtensionAndFileEnd;
-
-        // TODO: probably don't want any leading slashes?
+        escapedFormat += extensionAndFileEnd;
 
         return escapedFormat;
     }

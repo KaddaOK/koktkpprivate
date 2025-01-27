@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=10 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" uid="uid://dvyxhpdbi8cjs" path="res://Controls/SearchTab.tscn" id="3_vhkgr"]
 [ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
 [ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
+[ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
+[ext_resource type="Script" path="res://Controls/LocalFiles.cs" id="8_gabyh"]
 
 [node name="RootController" type="Node"]
 script = ExtResource("1_fuv7c")
@@ -88,7 +90,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-current_tab = 2
+current_tab = 1
 
 [node name="Setup" parent="Main GUI/Main Margin/HSplitContainer/MainTabs" instance=ExtResource("4_4si77")]
 unique_name_in_owner = true
@@ -98,30 +100,13 @@ script = ExtResource("5_mkmvn")
 
 [node name="Search" parent="Main GUI/Main Margin/HSplitContainer/MainTabs" instance=ExtResource("3_vhkgr")]
 unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Local Files" parent="Main GUI/Main Margin/HSplitContainer/MainTabs" instance=ExtResource("7_o1jyo")]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
-
-[node name="Local Files" type="MarginContainer" parent="Main GUI/Main Margin/HSplitContainer/MainTabs"]
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/Main Margin/HSplitContainer/MainTabs/Local Files"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/Main Margin/HSplitContainer/MainTabs/Local Files/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="Main GUI/Main Margin/HSplitContainer/MainTabs/Local Files/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "I haven't finished implementing a searchable catalog of local files yet, but it should add a file to the queue if you drag-and-drop it onto this window, if it is any one of the following: 
-
-  - a .mp4 video file, or,
-  - one of a matched pair of .cdg and .mp3 files (you can drag either one), or
-  - a .zip file that contains a matched pair of .cdg and .mp3 files
-
-If none of those, it just won't do anything."
-autowrap_mode = 2
+script = ExtResource("8_gabyh")
 
 [node name="MessageDialog" type="AcceptDialog" parent="Main GUI"]
 unique_name_in_owner = true

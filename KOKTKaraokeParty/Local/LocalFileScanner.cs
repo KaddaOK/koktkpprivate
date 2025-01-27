@@ -42,8 +42,9 @@ public partial class LocalFileScanner : ILocalFileScanner
 
     public bool IsScanning { get; private set; }
 
-    public async IAsyncEnumerable<string> FindAllFilesAsync(string path, [EnumeratorCancellation]CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> FindAllFilesAsync(string path, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
+        GD.Print($"FindAllFilesAsync(): Starting scan of {path}...");
         int totalPathsFound = 0;
         int totalFilesFound = 0;
         List<string> orphanedCDGFiles = new List<string>();
@@ -51,21 +52,46 @@ public partial class LocalFileScanner : ILocalFileScanner
         var directories = new Stack<string>();
         directories.Push(path);
         IsScanning = true;
+        int batchSize = 10; // Adjust this value as needed
+        int batchCount = 0;
         while (directories.Count > 0 && !cancellationToken.IsCancellationRequested)
         {
             var currentDir = directories.Pop();
             totalPathsFound++;
+            GD.Print(currentDir);
             UpdatePathsFoundCount?.Invoke(totalPathsFound, currentDir);
             var files = new List<string>();
             string[] subDirs = null;
 
             try
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 var mp4Files = DirectoryWrapper.GetFiles(currentDir, "*.mp4");
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 var zipFiles = DirectoryWrapper.GetFiles(currentDir, "*.zip");
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
 
                 // we only include the CDG files, and only if they have a corresponding MP3 file
                 var mp3Files = DirectoryWrapper.GetFiles(currentDir, "*.mp3").ToHashSet();
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 var allCdgFiles = DirectoryWrapper.GetFiles(currentDir, "*.cdg");
                 var matchedCdgFiles = allCdgFiles.Where(cdg => mp3Files.Contains(Path.ChangeExtension(cdg, ".mp3")));
                 var unmatchedCdgFiles = allCdgFiles.Except(matchedCdgFiles);
@@ -83,18 +109,27 @@ public partial class LocalFileScanner : ILocalFileScanner
             catch (PathTooLongException) { }
             catch (DirectoryNotFoundException) { }
 
-            if (files?.Any() ?? false)
+            if (files?.Any() ?? false && !cancellationToken.IsCancellationRequested)
             {
                 totalFilesFound += files.Count;
                 UpdateFilesFoundCount?.Invoke(totalFilesFound);
                 foreach (var file in files)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
                     yield return file;
-                    await Task.Yield(); // Yield control to allow asynchronous operation
+                    batchCount++;
+                    if (batchCount >= batchSize)
+                    {
+                        batchCount = 0;
+                        await Task.Delay(1); // Yield control to allow asynchronous operation
+                    }
                 }
             }
-
-            if (subDirs != null)
+            await Task.Delay(1); // Yield control to allow asynchronous operation
+            if (subDirs != null && !cancellationToken.IsCancellationRequested)
             {
                 foreach (var subDir in subDirs)
                 {
@@ -102,6 +137,7 @@ public partial class LocalFileScanner : ILocalFileScanner
                 }
             }
         }
+        GD.Print($"FindAllFilesAsync(): Scan complete. {totalFilesFound} files found in {totalPathsFound} folders.");
         IsScanning = false;
     }
 }
