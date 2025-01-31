@@ -6,7 +6,7 @@ public class KaraokenerdsSearchScrape
 {
     public static async Task<List<KNSearchResultItem>> Search(string query)
     {
-        string url = $"https://karaokenerds.com/Search?query={HttpUtility.UrlEncode(query)}&webFilter=OnlyCommunity";
+        string url = $"https://karaokenerds.com/Search?query={HttpUtility.UrlEncode(query)}&webFilter=OnlyWeb";
         return await GetSearchResults(url);
     }
 
