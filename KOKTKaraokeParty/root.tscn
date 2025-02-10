@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=9 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
 [ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 [ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
-[ext_resource type="Script" path="res://Controls/LocalFiles.cs" id="8_gabyh"]
 
 [node name="RootController" type="Node"]
 script = ExtResource("1_fuv7c")
@@ -106,7 +105,6 @@ layout_mode = 2
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-script = ExtResource("8_gabyh")
 
 [node name="MessageDialog" type="AcceptDialog" parent="Main GUI"]
 unique_name_in_owner = true

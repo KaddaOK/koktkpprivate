@@ -4,6 +4,7 @@ using Chickensoft.Introspection;
 using Godot;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 public interface IScanningPathDialog : IAcceptDialog
 {
     void SetScanPathEntry(int scanPathEntryId);
+    event ScanningPathDialog.LocalFileScanPathsStaleEventHandler LocalFileScanPathsStale;
 }
 
 [Meta(typeof(IAutoNode))]
@@ -31,7 +33,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
     private int _zipsVerified;
     private int _filesFound;
     private int _filesProcessed;
-    private Queue<string> _filesToProcess;
+    private ConcurrentQueue<string> _filesToProcess;
     private List<string> _orphanedCDGFiles;
 
     #region Nodes
@@ -48,6 +50,10 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
     [Node] private ILabel ZIPsFoundLabel { get; set; } = default!;
     [Node] private ILabel QueueProgressLabel { get; set; } = default!;
     
+    #endregion
+
+    #region Signals
+    [Signal] public delegate void LocalFileScanPathsStaleEventHandler();
     #endregion
 
     #region Initialized Dependencies
@@ -78,6 +84,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
     
     public void OnReady()
     {
+        ResetTotals();
         _cancellationTokenSource = new CancellationTokenSource();
         StartScanButton.Pressed += StartScanButtonPressed;
         StopScanButton.Pressed += StopScanButtonPressed;
@@ -92,6 +99,10 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
     {
         if (!_isScanning)
         {
+            if (_filesProcessed > 0)
+            {
+                EmitSignal(nameof(LocalFileScanPathsStale));
+            }
             Hide();
         }
     }
@@ -130,7 +141,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
         }
         else
         {
-            ScanStatusLabel.Text = "";
+            ScanStatusLabel.Text = _filesProcessed > 0 ? "Scan complete!" : "";
         }
     }
 
@@ -147,7 +158,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
         UpdateFilesFoundCount(0);
         UpdatePathsFoundCount(0, "");
         UpdateOrphanedCDGFilesFound(Array.Empty<string>());
-        _filesToProcess = new Queue<string>();
+        _filesToProcess = new ConcurrentQueue<string>();
     }
 
     private async void StartScanButtonPressed()
@@ -234,7 +245,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
                 return;
             }
 
-            var metadataResult = MetadataParser.Parse(path, _scanPathEntry.FormatSpecifier);
+            var metadataResult = MetadataParser.Parse(path, _scanPathEntry.FormatSpecifier, _scanPathEntry.Path);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -288,6 +299,7 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
         }
         catch (Exception ex)
         {
+            // TODO: resolve this throwing NullReferenceExceptions when path is blank (why is path ever blank??)
             GD.PrintErr($"Error processing {path}: {ex.Message}");
         }
     }
@@ -301,12 +313,20 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
 
     private void UpdatePathsFoundCount(int totalPathsFound, string currentPath)
     {
-        string relativePath = currentPath.StartsWith(_scanPathEntry.Path) 
-            ? currentPath.Substring(_scanPathEntry.Path.Length)
-            : currentPath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            CurrentPathLabel.Text = "";
+        }
+        else
+        {        
+            string relativePath = currentPath.StartsWith(_scanPathEntry.Path) 
+                ? currentPath.Substring(_scanPathEntry.Path.Length)
+                : currentPath;
+            CurrentPathLabel.Text = relativePath;
+        }
 
         PathsFoundLabel.Text = totalPathsFound.ToString();
-        CurrentPathLabel.Text = relativePath;
+
     }
 
 

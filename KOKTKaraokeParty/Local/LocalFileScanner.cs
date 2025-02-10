@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -45,6 +46,8 @@ public partial class LocalFileScanner : ILocalFileScanner
     public async IAsyncEnumerable<string> FindAllFilesAsync(string path, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         GD.Print($"FindAllFilesAsync(): Starting scan of {path}...");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
         int totalPathsFound = 0;
         int totalFilesFound = 0;
         List<string> orphanedCDGFiles = new List<string>();
@@ -137,7 +140,8 @@ public partial class LocalFileScanner : ILocalFileScanner
                 }
             }
         }
-        GD.Print($"FindAllFilesAsync(): Scan complete. {totalFilesFound} files found in {totalPathsFound} folders.");
+
+        GD.Print($"FindAllFilesAsync(): Scan complete. {totalFilesFound} files found in {totalPathsFound} folders in {stopwatch.Elapsed}.");
         IsScanning = false;
     }
 }

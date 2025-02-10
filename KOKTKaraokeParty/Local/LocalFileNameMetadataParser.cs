@@ -5,18 +5,22 @@ using System.Text.RegularExpressions;
 
 public interface ILocalFileNameMetadataParser
 {
-    SongMetadata Parse(string fileName, string formatSpecification);
+    SongMetadata Parse(string fileName, string formatSpecification, string scanPath);
     string GetRegexEquivalent(string formatSpecification);
     (bool isValid, string validationError) ValidateFormatSpecification(string formatSpecification);
 }
 
 public class LocalFileNameMetadataParser : ILocalFileNameMetadataParser
 {
-    public SongMetadata Parse(string fileName, string formatSpecification)
+    public SongMetadata Parse(string fileName, string formatSpecification, string scanPath)
     {
         var metadata = new SongMetadata();
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
 
+        if (!string.IsNullOrEmpty(scanPath) && fileName.StartsWith(scanPath))
+        {
+            fileName = fileName.Replace(scanPath, "");
+        }
         // if the formatSpecification starts with a *, / or \, we should start the filename with one as well, so that I don't die of frustration
         if (formatSpecification.StartsWith("*") || formatSpecification.StartsWith("/") || formatSpecification.StartsWith("\\"))
         {

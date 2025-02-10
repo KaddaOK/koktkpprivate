@@ -22,7 +22,7 @@ public class LocalFileNameMetadataParserTests
                 "Awful artist_a test song_bad taste media_whotfknows-88.cdg", "bad taste media|whotfknows-88|Awful artist|a test song")]
     public void CanParse(string formatSpecification, string fileName, string expectedResultPipeDelimitedNullToTilde)
     {
-        var results = _parser.Parse(fileName, formatSpecification);
+        var results = _parser.Parse(fileName, formatSpecification, "");
         Assert.Equal(expectedResultPipeDelimitedNullToTilde, PipeDelimitedNullToTilde(results));
     }
 
@@ -37,35 +37,38 @@ public class LocalFileNameMetadataParserTests
                 @"//ignore most/creative/folder/skip/junk/here/not/trouble - 999.mp3", "creative|999|here|trouble")]
     public void CanFoldersParticipate(string formatSpecification, string fileName, string expectedResultPipeDelimitedNullToTilde)
     {
-        var results = _parser.Parse(fileName, formatSpecification);
+        var results = _parser.Parse(fileName, formatSpecification, "");
         Assert.Equal(expectedResultPipeDelimitedNullToTilde, PipeDelimitedNullToTilde(results));
     }
 
     [Theory]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"/diveBar/Aghastronaut's Karaoke From Space MP4/KFS 0501-1000/KFS-00607 - Belle and Sebastian - Funny Little Frog.mp4", 
                 "Aghastronaut's Karaoke From Space MP4|KFS-00607|Belle and Sebastian|Funny Little Frog")]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"diveBar/Aghastronaut's Karaoke From Space MP4/KFS 0501-1000/KFS-00607 - Belle and Sebastian - Funny Little Frog.mp4", 
                 "Aghastronaut's Karaoke From Space MP4|KFS-00607|Belle and Sebastian|Funny Little Frog")]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"\diveBar\Andrew The Nomad MP4\MP4\NOMAD 0501-0750\NOMAD-0674 - Alabama - The Fans.mp4", 
                 "Andrew The Nomad MP4|NOMAD-0674|Alabama|The Fans")]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"diveBar\Andrew The Nomad MP4\MP4\NOMAD 0501-0750\NOMAD-0674 - Alabama - The Fans.mp4", 
                 "Andrew The Nomad MP4|NOMAD-0674|Alabama|The Fans")]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"\Other well-known creators\2RK 2 Reel Karaoke Entertainment Homemade\2RK0009\2RK0009-01 - Tragically Hip - In View.zip", 
                 "2RK 2 Reel Karaoke Entertainment Homemade|2RK0009-01|Tragically Hip|In View")]
-    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"/*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"Other well-known creators\2RK 2 Reel Karaoke Entertainment Homemade\2RK0009\2RK0009-01 - Tragically Hip - In View.zip", 
                 "2RK 2 Reel Karaoke Entertainment Homemade|2RK0009-01|Tragically Hip|In View")]
-    [InlineData(@"*/{creator}/**/{identifier} - {artist} - {title}", 
+    [InlineData(@"*/{creator}/**/{identifier} - {artist} - {title}", "",
                 @"Other well-known creators\2RK 2 Reel Karaoke Entertainment Homemade\2RK0009\2RK0009-01 - Tragically Hip - In View.zip", 
                 "2RK 2 Reel Karaoke Entertainment Homemade|2RK0009-01|Tragically Hip|In View")]
-    public void VariableNumberOfFoldersIsAGodDamnNightmare(string formatSpecification, string fileName, string expectedResultPipeDelimitedNullToTilde)
+    [InlineData(@"/*/*/{creator}/**/{identifier} - {artist} - {title}", @"\\SCORPIO\Karaoke2",
+                @"\\SCORPIO\Karaoke2\diveBar and other well-known creators 01-12-24\Other well-known creators\2RK 2 Reel Karaoke Entertainment Homemade\2RK0009\2RK0009-01 - Tragically Hip - In View.zip", 
+                "2RK 2 Reel Karaoke Entertainment Homemade|2RK0009-01|Tragically Hip|In View")]
+    public void VariableNumberOfFoldersIsAGodDamnNightmare(string formatSpecification, string scanPath, string fileName, string expectedResultPipeDelimitedNullToTilde)
     {
-        var results = _parser.Parse(fileName, formatSpecification);
+        var results = _parser.Parse(fileName, formatSpecification, scanPath);
         Assert.Equal(expectedResultPipeDelimitedNullToTilde, PipeDelimitedNullToTilde(results));
     }
 
@@ -75,7 +78,7 @@ public class LocalFileNameMetadataParserTests
                 "whatever|026|Siouxsie|Banshees")]
     public void ShouldExpandWildcards(string formatSpecification, string fileName, string expectedResultPipeDelimitedNullToTilde)
     {
-        var results = _parser.Parse(fileName, formatSpecification);
+        var results = _parser.Parse(fileName, formatSpecification, "");
         Assert.Equal(expectedResultPipeDelimitedNullToTilde, PipeDelimitedNullToTilde(results));
     }
 

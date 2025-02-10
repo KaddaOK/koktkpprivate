@@ -46,7 +46,7 @@ text = "File name format:"
 [node name="FormatOptionButton" type="OptionButton" parent="GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-item_count = 8
+item_count = 10
 popup/item_0/text = "{identifier} - {artist} - {title}"
 popup/item_1/text = "{identifier} - {title} - {artist}"
 popup/item_1/id = 1
@@ -60,8 +60,12 @@ popup/item_5/text = "{title} - {artist}"
 popup/item_5/id = 5
 popup/item_6/text = "{identifier}_{title}_{artist}"
 popup/item_6/id = 6
-popup/item_7/text = "Custom..."
-popup/item_7/id = 7
+popup/item_7/text = "/*/{creator}/**/{identifier} - {artist} - {title}"
+popup/item_7/id = 8
+popup/item_8/text = "/*/*/{creator}/**/{identifier} - {artist} - {title}"
+popup/item_8/id = 9
+popup/item_9/text = "Custom..."
+popup/item_9/id = 7
 
 [node name="CustomFormatHeadingLabel" type="Label" parent="GridContainer"]
 unique_name_in_owner = true

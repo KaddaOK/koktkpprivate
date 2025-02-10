@@ -43,6 +43,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
     [Node] public IControl EmptyQueueScene { get; private set; } = default!;
 
     [Node] public IHBoxContainer BgMusicPlayingListing { get; private set; } = default!;
+    [Node] public ILabel TemporarilyDismissLabel { get; private set; } = default!;
     [Node] public ILabel BgMusicNowPlayingLabel { get; private set; } = default!;
     [Node] public ILabel BgMusicPausedIndicator { get; private set; } = default!;
 
@@ -68,6 +69,8 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.Visible = false;
         EmptyQueueScene.Visible = false;
         BgMusicPlayingListing.Visible = false;
+        TemporarilyDismissLabel.Visible = false;
+
         if (item.ItemType == ItemType.LocalMp3G || item.ItemType == ItemType.LocalMp3GZip)
         {
             CdgRendererNode.Visible = true;
@@ -139,6 +142,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.Visible = true;
         EmptyQueueScene.Visible = false;
         BgMusicPlayingListing.Visible = true;
+        TemporarilyDismissLabel.Visible = true;
         CdgRendererNode.Visible = false;
         ShowDisplayScreen();
     }
@@ -183,6 +187,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.Visible = false;
         EmptyQueueScene.Visible = true;
         BgMusicPlayingListing.Visible = true;
+        TemporarilyDismissLabel.Visible = true;
         CdgRendererNode.Visible = false;
         ShowDisplayScreen();
     }
@@ -222,7 +227,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
         // Play the video
         videoPathPlaying = videoPath;
         vlcMediaPlayer.Play(_media);
-        vlcMediaPlayer.PositionChanged += (sender, args) => GD.Print($"Position: {vlcMediaPlayer.Position}");
+        // TODO: report progress: vlcMediaPlayer.PositionChanged += (sender, args) => GD.Print($"Position: {vlcMediaPlayer.Position}");
         // Subscribe to the EndReached event so we can clean up
         vlcMediaPlayer.EndReached += MediaPlayerOnEndReached;
         // We can clean up the Media instance now

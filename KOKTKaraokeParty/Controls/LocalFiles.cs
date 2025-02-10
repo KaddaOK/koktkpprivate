@@ -47,6 +47,7 @@ public partial class LocalFiles : MarginContainer, ILocalFiles
         RefreshFromSqlite();
         AddNewPathButton.Pressed += AddNewPathButtonPressed;
         EditScanPathDialog.ScanPathSaved += EditScanPathDialog_ScanPathSaved;
+        ScanningPathDialog.LocalFileScanPathsStale += RefreshFromSqlite;
     }
 
     private void RefreshFromSqlite()

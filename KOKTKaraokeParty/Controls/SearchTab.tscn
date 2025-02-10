@@ -67,55 +67,59 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Search"
 
-[node name="ResultsTwoColumnGrid" type="GridContainer" parent="SearchTabVBox"]
+[node name="VSplitContainer" type="VSplitContainer" parent="SearchTabVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ResultsTwoColumnGrid" type="GridContainer" parent="SearchTabVBox/VSplitContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 columns = 2
 
-[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 
-[node name="KfnLabel" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid/KfnSearchHeader"]
+[node name="KfnLabel" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karafun:"
 
-[node name="KfnResultCount" parent="SearchTabVBox/ResultsTwoColumnGrid/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="KfnResultCount" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 
-[node name="KNLabel" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid/KNSearchHeader"]
+[node name="KNLabel" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karaokenerds:"
 
-[node name="KNResultCount" parent="SearchTabVBox/ResultsTwoColumnGrid/KNSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="KNResultCount" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Will play on karafun.com/web. (Requires an active Karafun subscription.)"
 
-[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Will play on youtube.com. (YouTube Premium is recommended for ad-free consumption.)"
 
-[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/ResultsTwoColumnGrid/KfnScrollContainer"]
+[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -123,12 +127,12 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 13
 theme_override_font_sizes/title_button_font_size = 13
 
-[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/ResultsTwoColumnGrid"]
+[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/ResultsTwoColumnGrid/KNScrollContainer"]
+[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -136,32 +140,40 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 13
 theme_override_font_sizes/title_button_font_size = 13
 
-[node name="LocalResultsPane" type="VBoxContainer" parent="SearchTabVBox"]
-visible = false
+[node name="LocalResultsPane" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LocalFilesSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/LocalResultsPane"]
 layout_mode = 2
 
-[node name="LocalFilesSearchHeader" type="HBoxContainer" parent="SearchTabVBox/LocalResultsPane"]
-layout_mode = 2
-
-[node name="LocalFilesLabel" type="Label" parent="SearchTabVBox/LocalResultsPane/LocalFilesSearchHeader"]
+[node name="LocalFilesLabel" type="Label" parent="SearchTabVBox/VSplitContainer/LocalResultsPane/LocalFilesSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Local Files:"
 
-[node name="LocalFilesResultCount" parent="SearchTabVBox/LocalResultsPane/LocalFilesSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="LocalFilesResultCount" parent="SearchTabVBox/VSplitContainer/LocalResultsPane/LocalFilesSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="LocalFilesResultsExplanation" type="Label" parent="SearchTabVBox/LocalResultsPane"]
+[node name="LocalFilesResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/LocalResultsPane"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
-text = "(Not yet implemented, sorry)"
+text = "(Experimental, YMMV)"
 
-[node name="LocalFilesResultsTree" type="Tree" parent="SearchTabVBox/LocalResultsPane"]
+[node name="ScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/LocalResultsPane"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LocalFilesResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/LocalResultsPane/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/title_button_font_size = 13
 
 [node name="AddToQueueDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
