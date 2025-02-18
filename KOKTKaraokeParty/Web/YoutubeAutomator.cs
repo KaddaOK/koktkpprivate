@@ -8,9 +8,19 @@ public interface IYoutubeAutomator
 {
     Task PlayYoutubeUrl(IPage page, string url, CancellationToken cancellationToken);
     Task ToggleYoutubePlayback(IPage youtubePage);
+
+    event PlaybackProgressEventHandler PlaybackProgress;
+    event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 public class YoutubeAutomator : IYoutubeAutomator
 {
+    public string CurrentPath { get; private set; }
+    public long? CurrentPositionMs { get; private set; }
+    public long? ItemDurationMs { get; private set; }
+
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
+
     public async Task ToggleYoutubePlayback(IPage youtubePage)
     {
         if (youtubePage != null)
@@ -67,8 +77,40 @@ public class YoutubeAutomator : IYoutubeAutomator
         }
 
         // let it play
+        string previousTime = null;
         while (!cancellationToken.IsCancellationRequested)
         {
+            // get the duration if we don't already have it 
+            if (ItemDurationMs == 0)
+            {
+                // TODO: move common!
+                var duration = await page.EvaluateFunctionAsync<string>(@"(selector) => {
+                    const el = document.querySelector(selector);
+                    return el ? el.textContent.trim() : null;
+                }", ".ytp-time-duration");
+                if (duration != null &&TryParseMinutesSecondsTimeSpan(duration, out TimeSpan durationTimespan))
+                {
+                    ItemDurationMs = (long)durationTimespan.TotalMilliseconds;
+                    PlaybackDurationChanged?.Invoke(ItemDurationMs.Value);
+                }
+            }
+
+            // you can try to get the current time, but it only updates if it's visible :(
+            // TODO: move common!
+            var currentTime = await page.EvaluateFunctionAsync<string>(@"(selector) => {
+                const el = document.querySelector(selector);
+                return el ? el.textContent.trim() : null;
+            }", ".ytp-time-current");
+            if (currentTime != null && currentTime != previousTime)
+            {
+                previousTime = currentTime;
+                if (TryParseMinutesSecondsTimeSpan(currentTime, out TimeSpan currentTimespan))
+                {
+                    CurrentPositionMs = (long)currentTimespan.TotalMilliseconds;
+                    PlaybackProgress?.Invoke(CurrentPositionMs.Value);
+                }
+            }
+
             // grab the play button title again
             playButtonTitle = await GetAttributeValue(page, ".ytp-play-button", "data-title-no-tooltip");
             if (playButtonTitle == "Replay")
@@ -107,5 +149,25 @@ public class YoutubeAutomator : IYoutubeAutomator
             GD.Print($"{selector} {attribute}=\"{result}\"");
         }
         return result;
+    }
+
+    // TODO: move common!
+    private bool TryParseMinutesSecondsTimeSpan(string input, out TimeSpan result)
+    {
+        result = TimeSpan.Zero;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        input = input.TrimStart('-');
+        var parts = input.Split(':');
+        if (parts.Length == 2 && int.TryParse(parts[0], out int minutes) && int.TryParse(parts[1], out int seconds))
+        {
+            result = new TimeSpan(0, minutes, seconds);
+            return true;
+        }
+
+        return false;
     }
 }

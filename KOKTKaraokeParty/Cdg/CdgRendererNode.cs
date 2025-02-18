@@ -5,15 +5,11 @@ using Godot;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-public interface ICdgRendererNode : ITextureRect
+public interface ICdgRendererNode : ITextureRect, IItemPlayer
 {
-    event CdgRendererNode.PlaybackFinishedEventHandler PlaybackFinished;
-
-    void Play(string filepath);
-    void TogglePaused(bool isPaused);
-    void Stop();
 }
 
 [Meta(typeof(IAutoNode))]
@@ -22,9 +18,12 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
     public override void _Notification(int what) => this.Notify(what);
 
     private CdgGraphicsFile _cdgGraphic;
-    private string _nowPlaying;
-    private bool _isPaused;
+    public string CurrentPath { get; private set; }
+    public bool IsPaused { get; private set; }
     private bool _isLoaded;
+    public bool IsPlaying => _isLoaded && !IsPaused;
+    public long? CurrentPositionMs => _isLoaded ? (long)(AudioStreamPlayer.GetPlaybackPosition() * 1000) : null;
+    public long? ItemDurationMs => _isLoaded ? (long)(AudioStreamPlayer.Stream.GetLength() * 1000) : null;
 
     #region Initialized Dependencies
 
@@ -57,7 +56,10 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
 
     #region Signals
 
-    [Signal] public delegate void PlaybackFinishedEventHandler(string wasPlaying);
+    //[Signal] public delegate void PlaybackFinishedEventHandler(string wasPlaying);
+    public event PlaybackFinishedEventHandler PlaybackFinished;
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 
     #endregion
 
@@ -73,7 +75,18 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         SetProcess(true);
     }
 
-    public async void Play(string filepath)
+    public Task Seek(long positionMs)
+    {
+        if (_isLoaded)
+        {
+            AudioStreamPlayer.Seek(positionMs / 1000f);
+            PositionSlider.SetValueNoSignal(positionMs / 1000f);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task Start(string filepath, CancellationToken cancellationToken)
     {
         if (filepath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
@@ -115,15 +128,16 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             GD.PrintErr("File must be a .cdg, .mp3, or .zip.");
             return;
         }
-        _nowPlaying = filepath;
+        CurrentPath = filepath;
         _isLoaded = true;
-        _isPaused = false;
+        IsPaused = false;
         AudioStreamPlayer.StreamPaused = false;
         PositionSlider.MaxValue = AudioStreamPlayer.Stream.GetLength();
+        PlaybackDurationChanged?.Invoke((long)(AudioStreamPlayer.Stream.GetLength() * 1000));
         AudioStreamPlayer.Play();
         AudioStreamPlayer.Finished += () => {
             Stop();
-            EmitSignal(SignalName.PlaybackFinished, _nowPlaying);
+            PlaybackFinished?.Invoke(CurrentPath);
         };
     }
 
@@ -186,28 +200,29 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         AudioStreamPlayer.Stream = LoadMP3(mp3Path);
     }
 
-    public void TogglePaused(bool isPaused)
+    public Task TogglePaused(bool isPaused)
     {
-        if (!_isLoaded)
+        if (_isLoaded)
         {
-            return;
+            IsPaused = isPaused;
+            AudioStreamPlayer.StreamPaused = isPaused;
         }
 
-        _isPaused = isPaused;
-        AudioStreamPlayer.StreamPaused = isPaused;
+        return Task.CompletedTask;
     }
 
-    public void Stop()
+    public Task Stop()
     {
-        _isPaused = true;
+        IsPaused = true;
         AudioStreamPlayer.Stop();
         _isLoaded = false;
         Texture = null;
+        return Task.CompletedTask;
     }
 
     public void OnProcess(double delta)
     {
-        if (_isPaused || !_isLoaded)
+        if (IsPaused || !_isLoaded)
         {
             return;
         }
@@ -223,6 +238,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         }
 
         PositionSlider.SetValueNoSignal(AudioStreamPlayer.GetPlaybackPosition());
+        PlaybackProgress?.Invoke(currentTime);
     }
 
     public AudioStreamMP3 LoadMP3(string path)

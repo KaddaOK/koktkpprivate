@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Godot;
@@ -8,9 +9,15 @@ public interface IKarafunAutomator
     Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken);
     Task PauseKarafun(IPage page);
     Task ResumeKarafun(IPage page);
+    event PlaybackProgressEventHandler PlaybackProgress;
+    event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 public class KarafunAutomator : IKarafunAutomator
 {
+    public string CurrentPath { get; private set; }
+    public long? CurrentPositionMs { get; private set; }
+    public long? ItemDurationMs { get; private set; }
+
     public async Task PauseKarafun(IPage page)
     {
         if (page != null)
@@ -35,8 +42,15 @@ public class KarafunAutomator : IKarafunAutomator
         }
     }
 
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
+
     public async Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken)
     {
+        CurrentPath = url;
+        CurrentPositionMs = 0;
+        ItemDurationMs = 0;
+
         GD.Print("Navigating to the track page...");
         await page.GoToAsync(
             $"{url}", // why? idk; sometimes it fails "failed to deserialize params.url" for no reason
@@ -135,14 +149,28 @@ public class KarafunAutomator : IKarafunAutomator
         while (!cancellationToken.IsCancellationRequested)
         {
             var currentTime = await page.EvaluateFunctionAsync<string>(@"(selector) => {
-				const el = document.querySelector(selector);
-				return el ? el.textContent.trim() : null;
-			}", playerTimeSelector);
+                const el = document.querySelector(selector);
+                return el ? el.textContent.trim() : null;
+            }", playerTimeSelector);
 
             if (currentTime != null && currentTime != previousTime)
             {
-                //GD.Print($"player__audio__time text changed: '{currentTime}'");
                 previousTime = currentTime;
+                if (TryParseMinutesSecondsTimeSpan(currentTime, out TimeSpan negativeTimeSpanRemaining))
+                {
+                    // note that this is a count DOWN
+                    if (ItemDurationMs == 0)
+                    {
+                        ItemDurationMs = (long)negativeTimeSpanRemaining.TotalMilliseconds;
+                        PlaybackDurationChanged?.Invoke(ItemDurationMs.Value);
+                    }
+                    CurrentPositionMs = (long?)(ItemDurationMs - negativeTimeSpanRemaining.TotalMilliseconds);
+                    PlaybackProgress?.Invoke((long)CurrentPositionMs);
+                }
+                else
+                {
+                    GD.PrintErr($"Failed to parse player__audio__time text: '{currentTime}'");
+                }
             }
 
             // Break the loop if the player time text becomes empty
@@ -165,5 +193,24 @@ public class KarafunAutomator : IKarafunAutomator
         {
             GD.Print("Playback finished.");
         }
+    }
+
+    private bool TryParseMinutesSecondsTimeSpan(string input, out TimeSpan result)
+    {
+        result = TimeSpan.Zero;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        input = input.TrimStart('-');
+        var parts = input.Split(':');
+        if (parts.Length == 2 && int.TryParse(parts[0], out int minutes) && int.TryParse(parts[1], out int seconds))
+        {
+            result = new TimeSpan(0, minutes, seconds);
+            return true;
+        }
+
+        return false;
     }
 }

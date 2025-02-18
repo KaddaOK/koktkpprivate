@@ -76,6 +76,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node] private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
     [Node] private IAcceptDialog MessageDialog { get; set; } = default!;
 
+    [Node] private ILabel ProgressSliderLabel { get; set; } = default!;
+    [Node] private ILabel CurrentTimeLabel { get; set; } = default!;
+    [Node] private ILabel DurationLabel { get; set; } = default!;
+    [Node] private IHSlider MainWindowProgressSlider { get; set; } = default!;
+
     #endregion
 
 	public void OnReady()
@@ -92,29 +97,14 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupStartTab();
         GetTree().AutoAcceptQuit = false;
 
-        DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
-        {
-            GD.Print($"Local playback finished: {wasPlaying}");
-            if (wasPlaying == NowPlaying?.PerformanceLink)
-            {
-                RemoveQueueTreeRow(NowPlaying);
-                if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
-                {
-                    // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
-                    DisplayScreen.ClearDismissed();
-                    DisplayScreen.Visible = false;
-                }
-                NowPlaying = null;
-            }
-        };
-
-
         var root = GetTree().Root;
         root.FilesDropped += FilesDropped;
 
         this.Provide();
         SetProcess(true);
 
+        PuppeteerPlayer.PlaybackDurationChanged += (durationMs) => UpdatePlaybackDuration(durationMs, false);
+        PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
     }
 
     public void FilesDropped(string[] files)
@@ -248,7 +238,8 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         DisplayScreen.ShowNextUp(item.SingerName, item.SongName, item.ArtistName, Settings.CountdownLengthSeconds);
-
+        SetProgressSlider($"Next up is {item.SingerName} in {Settings.CountdownLengthSeconds} seconds...", Settings.CountdownLengthSeconds, 0);
+        
         // Countdown logic
         int launchSecondsRemaining = Settings.CountdownLengthSeconds;
         while (launchSecondsRemaining > 0)
@@ -261,6 +252,9 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             if (!IsPaused)
             {
                 DisplayScreen.UpdateLaunchCountdownSecondsRemaining(launchSecondsRemaining);
+                SetProgressSlider($"Next up is {item.SingerName} in {launchSecondsRemaining} seconds...", 
+                                    Settings.CountdownLengthSeconds, 
+                                    Settings.CountdownLengthSeconds - launchSecondsRemaining);
                 launchSecondsRemaining--;
             }
             await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
@@ -271,6 +265,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         GD.Print($"Playing {item.SongName} by {item.ArtistName} ({item.CreatorName}) from {item.PerformanceLink}");
+        SetProgressSlider($"{item.ArtistName} - {item.SongName}");
         switch (item.ItemType)
         {
             case ItemType.KarafunWeb:
@@ -307,16 +302,81 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
     }
 
+    private void SetProgressSlider(string stateText = null, int maxSeconds = 0, int valueSeconds = 0, bool enableEditing = false)
+    {
+        ProgressSliderLabel.Text = stateText;
+        MainWindowProgressSlider.SetValueNoSignal(valueSeconds);
+        MainWindowProgressSlider.MaxValue = maxSeconds;
+        MainWindowProgressSlider.Editable = enableEditing;
+        CurrentTimeLabel.Text = TimeSpan.FromSeconds(valueSeconds).ToString(@"mm\:ss");
+        DurationLabel.Text = TimeSpan.FromSeconds(maxSeconds).ToString(@"mm\:ss");
+    }
+
     #region display screen stuff
 
     public void BindDisplayScreenControls()
     {
         DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
+
+        DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
+        {
+            GD.Print($"Local playback finished: {wasPlaying}");
+            if (wasPlaying == NowPlaying?.PerformanceLink)
+            {
+                RemoveQueueTreeRow(NowPlaying);
+                if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+                {
+                    // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
+                    DisplayScreen.ClearDismissed();
+                    DisplayScreen.Visible = false;
+                }
+                NowPlaying = null;
+            }
+        };
+
+        DisplayScreen.LocalPlaybackDurationChanged += (durationMs) => UpdatePlaybackDuration(durationMs, true);
+
+        DisplayScreen.LocalPlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
+
+        MainWindowProgressSlider.ValueChanged += (value) => {
+            DisplayScreen.SeekLocal((long)value);
+        };
+    }
+
+    public void UpdatePlaybackDuration(long durationMs, bool canSeek)
+    {
+        if (durationMs <= 0)
+        {
+            return;
+        }
+
+        GD.Print($"Playback duration changed: {durationMs}");
+        //if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+        //{
+            DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
+            MainWindowProgressSlider.MaxValue = durationMs;
+            MainWindowProgressSlider.Editable = canSeek;
+        //}
+    }
+
+    public void UpdatePlaybackProgress(long progressMs)
+    {
+        if (progressMs <= 0)
+        {
+            return;
+        }
+
+        //if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+        //{
+            CurrentTimeLabel.Text = TimeSpan.FromMilliseconds(progressMs).ToString(@"mm\:ss");
+            MainWindowProgressSlider.SetValueNoSignal(progressMs);
+        //}
     }
 
     public void ShowEmptyQueueScreenAndBgMusic()
     {
         DisplayScreen.ShowEmptyQueueScreen();
+        SetProgressSlider("(The queue is empty)");
         if (Settings.BgMusicEnabled)
         {
             FadeInBackgroundMusic();

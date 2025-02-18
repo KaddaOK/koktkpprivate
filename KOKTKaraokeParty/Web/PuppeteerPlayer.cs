@@ -16,10 +16,16 @@ public interface IPuppeteerPlayer
     Task PauseKarafun();
     Task ResumeKarafun();
     Task ToggleYoutubePlayback();
+
+    event PlaybackProgressEventHandler PlaybackProgress;
+    event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 
 public class PuppeteerPlayer : IPuppeteerPlayer
 {
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
+    
     private IBrowser _browser;
     private IPage _page;
 
@@ -29,6 +35,8 @@ public class PuppeteerPlayer : IPuppeteerPlayer
     {
         _youtubeAutomator = youtubeAutomator;
         _karafunAutomator = karafunAutomator;
+        _karafunAutomator.PlaybackProgress += (progressMs) => PlaybackProgress?.Invoke(progressMs);
+        _karafunAutomator.PlaybackDurationChanged += (durationMs) => PlaybackDurationChanged?.Invoke(durationMs);
     }
     public PuppeteerPlayer() : this(new YoutubeAutomator(), new KarafunAutomator()) { }
 

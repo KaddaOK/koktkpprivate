@@ -71,55 +71,39 @@ text = "Search"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ResultsTwoColumnGrid" type="GridContainer" parent="SearchTabVBox/VSplitContainer"]
+[node name="HSplitContainer" type="HSplitContainer" parent="SearchTabVBox/VSplitContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-columns = 2
 
-[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="KfnLabel" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnSearchHeader"]
+[node name="KfnLabel" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer/KfnSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karafun:"
 
-[node name="KfnResultCount" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="KfnResultCount" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
-layout_mode = 2
-
-[node name="KNLabel" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNSearchHeader"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Results from Karaokenerds:"
-
-[node name="KNResultCount" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNSearchHeader" instance=ExtResource("2_pm6ve")]
-unique_name_in_owner = true
-layout_mode = 2
-script = ExtResource("3_h8wwf")
-FontSize = 14
-
-[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
+[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Will play on karafun.com/web. (Requires an active Karafun subscription.)"
 
-[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 9
-text = "Will play on youtube.com. (YouTube Premium is recommended for ad-free consumption.)"
-
-[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
+[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KfnScrollContainer"]
+[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer/KfnScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -127,12 +111,35 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 13
 theme_override_font_sizes/title_button_font_size = 13
 
-[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="KNLabel" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2/KNSearchHeader"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Results from Karaokenerds:"
+
+[node name="KNResultCount" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2/KNSearchHeader" instance=ExtResource("2_pm6ve")]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("3_h8wwf")
+FontSize = 14
+
+[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 9
+text = "Will play on youtube.com. (YouTube Premium is recommended for ad-free consumption.)"
+
+[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/ResultsTwoColumnGrid/KNScrollContainer"]
+[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2/KNScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

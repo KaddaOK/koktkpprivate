@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
@@ -13,6 +14,8 @@ public interface IDisplayScreen : IWindow
     public bool IsDismissed { get; }
 
     event DisplayScreen.LocalPlaybackFinishedEventHandler LocalPlaybackFinished;
+    event DisplayScreen.LocalPlaybackProgressEventHandler LocalPlaybackProgress;
+    event DisplayScreen.LocalPlaybackDurationChangedEventHandler LocalPlaybackDurationChanged;
 
     void SetMonitorId(int monitorId);
     void Dismiss();
@@ -26,6 +29,7 @@ public interface IDisplayScreen : IWindow
     void UpdateBgMusicPaused(bool isPaused);
     void ShowEmptyQueueScreen();
     void PlayLocal(QueueItem item);
+    void SeekLocal(long positionMs);
     void CancelIfPlaying();
 }
 
@@ -52,15 +56,42 @@ public partial class DisplayScreen : Window, IDisplayScreen
     #endregion
 
     #region Signals
-
+/*
     [Signal] public delegate void LocalPlaybackFinishedEventHandler(string wasPlaying);
-
+    [Signal] public delegate void LocalPlaybackProgressEventHandler(long progressMs);
+    [Signal] public delegate void LocalPlaybackDurationChangedEventHandler(long durationMs);
+*/
+    public delegate void LocalPlaybackFinishedEventHandler(string wasPlaying);
+    public delegate void LocalPlaybackProgressEventHandler(long progressMs);
+    public delegate void LocalPlaybackDurationChangedEventHandler(long durationMs);
+    public event LocalPlaybackFinishedEventHandler LocalPlaybackFinished;
+    public event LocalPlaybackProgressEventHandler LocalPlaybackProgress;
+    public event LocalPlaybackDurationChangedEventHandler LocalPlaybackDurationChanged;
     #endregion
+
+    private IItemPlayer VlcMp4Player { get; set; } // TODO: this properly
 
     public void OnReady()
     {
+        VlcMp4Player = new VlcMp4Player(); // TODO: this properly
+/*
+        VlcMp4Player.PlaybackFinished += (wasPlaying) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackFinished, wasPlaying);
+        VlcMp4Player.PlaybackProgress += (progressMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackProgress, progressMs);
+        VlcMp4Player.PlaybackDurationChanged += (durationMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackDurationChanged, durationMs);
+        */
+        VlcMp4Player.PlaybackFinished += (wasPlaying) => LocalPlaybackFinished?.Invoke(wasPlaying);
+        VlcMp4Player.PlaybackProgress += (progressMs) => LocalPlaybackProgress?.Invoke(progressMs);
+        VlcMp4Player.PlaybackDurationChanged += (durationMs) => LocalPlaybackDurationChanged?.Invoke(durationMs);
+        
         WindowInput += DisplayScreenWindowInput;
-        CdgRendererNode.PlaybackFinished += (wasPlaying) => EmitSignal(SignalName.LocalPlaybackFinished, wasPlaying);
+/*
+        CdgRendererNode.PlaybackFinished += (wasPlaying) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackFinished, wasPlaying);
+        CdgRendererNode.PlaybackProgress += (progressMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackProgress, progressMs);
+        CdgRendererNode.PlaybackDurationChanged += (durationMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackDurationChanged, durationMs);
+        */
+        CdgRendererNode.PlaybackFinished += (wasPlaying) => LocalPlaybackFinished?.Invoke(wasPlaying);
+        CdgRendererNode.PlaybackProgress += (progressMs) => LocalPlaybackProgress?.Invoke(progressMs);
+        CdgRendererNode.PlaybackDurationChanged += (durationMs) => LocalPlaybackDurationChanged?.Invoke(durationMs);
     }
 
     public void PlayLocal(QueueItem item)
@@ -75,15 +106,28 @@ public partial class DisplayScreen : Window, IDisplayScreen
         {
             CdgRendererNode.Visible = true;
             ShowDisplayScreen();
-            CdgRendererNode.Play(item.PerformanceLink);
+            CdgRendererNode.Start(item.PerformanceLink, CancellationToken.None);
         }
         else if (item.ItemType == ItemType.LocalMp4)
         {
-            PlayVideo(item.PerformanceLink);
+            VlcMp4Player.Start(item.PerformanceLink, CancellationToken.None);
         }
         else
         {
             throw new NotImplementedException();
+        }
+    }
+
+    public void SeekLocal(long positionMs)
+    {
+        // TODO: why don't you save the item being played so you can do it on item.ItemType instead of this garbage
+        if (CdgRendererNode.Visible)
+        {
+            CdgRendererNode.Seek(positionMs);
+        }
+        else if (VlcMp4Player.IsPlaying || VlcMp4Player.IsPaused)
+        {
+            VlcMp4Player.Seek(positionMs);
         }
     }
 
@@ -95,10 +139,10 @@ public partial class DisplayScreen : Window, IDisplayScreen
             GD.Print("CdgRendererNode is visible; calling Stop...");
             CdgRendererNode.Stop();
         }
-        if (vlcMediaPlayer?.IsPlaying ?? false)
+        if (VlcMp4Player.IsPlaying || VlcMp4Player.IsPaused)
         {
-            GD.Print("vlcMediaPlayer is playing; calling StopVideo...");
-            StopVideo();
+            GD.Print("VlcMp4Player was ready to do something; calling Stop...");
+            VlcMp4Player.Stop();
         }
     }
 
@@ -152,24 +196,22 @@ public partial class DisplayScreen : Window, IDisplayScreen
         NextUpScene.UpdateLaunchCountdownSecondsRemaining(secondsRemaining);
     }
 
-    public void ToggleQueuePaused(bool isPaused)
+    public void ToggleQueuePaused(bool isPause)
     {
-        NextUpScene.ToggleCountdownPaused(isPaused);
+        NextUpScene.ToggleCountdownPaused(isPause);
         if (CdgRendererNode.Visible)
         {
-            CdgRendererNode.TogglePaused(isPaused);
+            CdgRendererNode.TogglePaused(isPause);
         }
-        if (vlcMediaPlayer != null)
+        VlcMp4Player.TogglePaused(isPause);
+        /*if (VlcMp4Player.IsPlaying && isPause)
         {
-            if (vlcMediaPlayer.IsPlaying && isPaused)
-            {
-                vlcMediaPlayer.Pause();
-            }
-            else if (!vlcMediaPlayer.IsPlaying && !isPaused)
-            {
-                vlcMediaPlayer.Play();
-            }
+            VlcMp4Player.Pause();
         }
+        else if (VlcMp4Player.IsPaused && !isPause)
+        {
+            VlcMp4Player.Resume();
+        }*/
     }
 
     public void UpdateBgMusicNowPlaying(string nowPlaying)
@@ -203,59 +245,4 @@ public partial class DisplayScreen : Window, IDisplayScreen
             }
         }
     }
-
-    #region libvlc stuff
-    private Media _media;
-    private IntPtr windowHandle;
-    private MediaPlayer vlcMediaPlayer;
-    private LibVLC libVLC;
-    private Window newWindow;
-    private string videoPathPlaying;
-
-    public void PlayVideo(string videoPath)
-    {
-        libVLC ??= new LibVLC();
-        vlcMediaPlayer = new MediaPlayer(libVLC);
-        // Create a new Media instance with the path to the video file
-        _media = new Media(libVLC, new Uri(videoPath));
-
-        // Set the window handle of the video player to the Godot window handle
-        windowHandle = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1);
-       
-        vlcMediaPlayer.Hwnd = windowHandle;
-
-        // Play the video
-        videoPathPlaying = videoPath;
-        vlcMediaPlayer.Play(_media);
-        // TODO: report progress: vlcMediaPlayer.PositionChanged += (sender, args) => GD.Print($"Position: {vlcMediaPlayer.Position}");
-        // Subscribe to the EndReached event so we can clean up
-        vlcMediaPlayer.EndReached += MediaPlayerOnEndReached;
-        // We can clean up the Media instance now
-        _media.Dispose();
-    }
-
-    private async void MediaPlayerOnEndReached(object sender, EventArgs e)
-    {
-        // There will be issues if you try to clean up exactly when the video ends
-        // so we'll wait a tiny bit before cleaning up
-        await Task.Delay(100);
-        // Clean up
-        vlcMediaPlayer?.Dispose();
-        vlcMediaPlayer = null;
-        EmitSignal(SignalName.LocalPlaybackFinished, videoPathPlaying);
-        videoPathPlaying = null;
-    }
-
-    private async void StopVideo()
-    {
-        if (vlcMediaPlayer?.IsPlaying ?? false)
-        {
-            vlcMediaPlayer?.Stop();
-        }
-        await Task.Delay(100);
-        vlcMediaPlayer?.Dispose();
-        vlcMediaPlayer = null;
-    }
-
-    #endregion
 }
