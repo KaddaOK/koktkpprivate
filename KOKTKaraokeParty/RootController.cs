@@ -103,7 +103,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         this.Provide();
         SetProcess(true);
 
-        PuppeteerPlayer.PlaybackDurationChanged += (durationMs) => UpdatePlaybackDuration(durationMs, false);
+        PuppeteerPlayer.PlaybackDurationChanged += UpdatePlaybackDuration;
         PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
     }
 
@@ -334,16 +334,27 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             }
         };
 
-        DisplayScreen.LocalPlaybackDurationChanged += (durationMs) => UpdatePlaybackDuration(durationMs, true);
+        DisplayScreen.LocalPlaybackDurationChanged += UpdatePlaybackDuration;
 
         DisplayScreen.LocalPlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
 
         MainWindowProgressSlider.ValueChanged += (value) => {
-            DisplayScreen.SeekLocal((long)value);
+            if (NowPlaying.ItemType == ItemType.Youtube)
+            {
+                PuppeteerPlayer.SeekYouTube((long)value);
+            }
+            else if (NowPlaying.ItemType == ItemType.KarafunWeb)
+            {
+                PuppeteerPlayer.SeekKarafun((long)value);
+            }
+            else
+            {
+                DisplayScreen.SeekLocal((long)value);
+            }
         };
     }
 
-    public void UpdatePlaybackDuration(long durationMs, bool canSeek)
+    public void UpdatePlaybackDuration(long durationMs)
     {
         if (durationMs <= 0)
         {
@@ -351,12 +362,9 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         GD.Print($"Playback duration changed: {durationMs}");
-        //if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
-        //{
-            DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
-            MainWindowProgressSlider.MaxValue = durationMs;
-            MainWindowProgressSlider.Editable = canSeek;
-        //}
+        DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
+        MainWindowProgressSlider.MaxValue = durationMs;
+        MainWindowProgressSlider.Editable = true;
     }
 
     public void UpdatePlaybackProgress(long progressMs)

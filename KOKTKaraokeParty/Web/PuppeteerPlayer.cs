@@ -15,7 +15,9 @@ public interface IPuppeteerPlayer
     Task PlayKarafunUrl(string url, CancellationToken cancellationToken);
     Task PauseKarafun();
     Task ResumeKarafun();
+    Task SeekKarafun(long positionMs);
     Task ToggleYoutubePlayback();
+    Task SeekYouTube(long positionMs);
 
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
@@ -37,6 +39,8 @@ public class PuppeteerPlayer : IPuppeteerPlayer
         _karafunAutomator = karafunAutomator;
         _karafunAutomator.PlaybackProgress += (progressMs) => PlaybackProgress?.Invoke(progressMs);
         _karafunAutomator.PlaybackDurationChanged += (durationMs) => PlaybackDurationChanged?.Invoke(durationMs);
+        _youtubeAutomator.PlaybackProgress += (progressMs) => PlaybackProgress?.Invoke(progressMs);
+        _youtubeAutomator.PlaybackDurationChanged += (durationMs) => PlaybackDurationChanged?.Invoke(durationMs);
     }
     public PuppeteerPlayer() : this(new YoutubeAutomator(), new KarafunAutomator()) { }
 
@@ -95,6 +99,36 @@ public class PuppeteerPlayer : IPuppeteerPlayer
         var initialPages = await _browser.PagesAsync();
         // create a new page, and then
         _page = await _browser.NewPageAsync();
+        // add custom CSS to make it less intrusive to wait for the fullscreen button
+        await _page.SetBypassCSPAsync(true);
+        await _page.EvaluateExpressionOnNewDocumentAsync(@"
+            const windowTimeout = () => {
+                const head = document.getElementsByTagName('head');
+                if (head && head.length > 0) {
+                    console.log('creating style element');
+                    const style = document.createElement('style');
+                    style.type = 'text/css';
+                    style.innerHTML = 
+                    `/* Helps for Karafun; YouTube doesn't care */
+                    body { background-color: black !important; }
+
+                    /* Hides for Karafun that don't affect YouTube */
+                    #app .left { display: none !important; }
+                    #app .queue { display: none !important; }
+
+                    /* Hides for YouTube that don't affect Karafun */
+                    #secondary { display: none !important; }
+                    #below { display: none !important; }
+                    #center { display: none !important; }'`;
+                    head[0].appendChild(style);
+                } else {
+                    console.log('no head element found; trying again in 10 ms');
+                    window.setTimeout(windowTimeout, 10);
+                }
+            };
+            window.setTimeout(windowTimeout, 0);
+        ");
+
         // close the initial page(s) because, well, otherwise weird shenanigans happen
         foreach (var initialPage in initialPages)
         {
@@ -117,6 +151,8 @@ public class PuppeteerPlayer : IPuppeteerPlayer
         await _youtubeAutomator.PlayYoutubeUrl(_page, url, cancellationToken);
     }
 
+    public async Task SeekYouTube(long positionMs) => await _youtubeAutomator.Seek(_page, positionMs);
+
     public async Task ToggleYoutubePlayback() => await _youtubeAutomator.ToggleYoutubePlayback(_page);
 
     public async Task PauseKarafun() => await _karafunAutomator.PauseKarafun(_page);
@@ -133,4 +169,6 @@ public class PuppeteerPlayer : IPuppeteerPlayer
 
         await _karafunAutomator.PlayKarafunUrl(_page, url, cancellationToken);
     }
+
+    public async Task SeekKarafun(long positionMs) => await _karafunAutomator.Seek(_page, positionMs);
 }

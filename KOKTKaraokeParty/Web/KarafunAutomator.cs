@@ -9,10 +9,11 @@ public interface IKarafunAutomator
     Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken);
     Task PauseKarafun(IPage page);
     Task ResumeKarafun(IPage page);
+    Task Seek(IPage page, long positionMs);
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
-public class KarafunAutomator : IKarafunAutomator
+public class KarafunAutomator : WebAutomatorBase, IKarafunAutomator
 {
     public string CurrentPath { get; private set; }
     public long? CurrentPositionMs { get; private set; }
@@ -38,6 +39,38 @@ public class KarafunAutomator : IKarafunAutomator
             if (playButton != null)
             {
                 await playButton.ClickAsync();
+            }
+        }
+    }
+
+public async Task Seek(IPage page, long positionMs)
+    {
+        if (CurrentPositionMs != null && ItemDurationMs != null)
+        {
+            if (positionMs < 0)
+            {
+                positionMs = 0;
+            }
+            else if (positionMs > ItemDurationMs)
+            {
+                return;
+            }
+
+            if (page != null)
+            {
+                var seekBar = await page.QuerySelectorAsync(".player__audio__bar");
+                if (seekBar != null)
+                {
+                    var seekBarRect = await seekBar.BoundingBoxAsync();
+                    var seekBarWidth = seekBarRect.Width;
+                    var seekBarX = seekBarRect.X;
+                    var seekBarY = seekBarRect.Y;
+                    var seekBarCenterX = seekBarX + seekBarWidth / 2;
+                    var seekBarCenterY = seekBarY + seekBarRect.Height / 2;
+                    var seekBarClickX = seekBarX + (seekBarWidth * positionMs / ItemDurationMs.Value);
+                    var seekBarClickY = seekBarCenterY;
+                    await page.Mouse.ClickAsync(seekBarClickX, seekBarClickY);
+                }
             }
         }
     }
@@ -87,13 +120,13 @@ public class KarafunAutomator : IKarafunAutomator
 
         // Check if the fullscreen button needs to be clicked
         var isEnlargeIcon = await page.EvaluateFunctionAsync<bool>(@"(selector) => {
-				const fullscreenButton = document.querySelector(selector);
-				if (fullscreenButton) {
-					const svg = fullscreenButton.querySelector('use');
-					return svg && svg.getAttribute('xlink:href') === '#icon-enlarge';
-				}
-				return false;
-			}", fullscreenButtonSelector);
+                const fullscreenButton = document.querySelector(selector);
+                if (fullscreenButton) {
+                    const svg = fullscreenButton.querySelector('use');
+                    return svg && svg.getAttribute('xlink:href') === '#icon-enlarge';
+                }
+                return false;
+            }", fullscreenButtonSelector);
 
         if (isEnlargeIcon && !cancellationToken.IsCancellationRequested)
         {
@@ -110,10 +143,7 @@ public class KarafunAutomator : IKarafunAutomator
         var playerTimeSelector = ".player__audio__time";
         await page.WaitForSelectorAsync(playerTimeSelector, new WaitForSelectorOptions { Visible = true, Timeout = 0 });
 
-        var playerTime = await page.EvaluateFunctionAsync<string>(@"(selector) => {
-				const el = document.querySelector(selector);
-				return el ? el.textContent.trim() : null;
-			}", playerTimeSelector);
+        var playerTime = await GetElementTextContent(page, playerTimeSelector);
         GD.Print($"Initial player__audio__time text: {playerTime}");
 
         // Wait for the play button to be clickable
@@ -148,10 +178,7 @@ public class KarafunAutomator : IKarafunAutomator
         var previousTime = playerTime;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var currentTime = await page.EvaluateFunctionAsync<string>(@"(selector) => {
-                const el = document.querySelector(selector);
-                return el ? el.textContent.trim() : null;
-            }", playerTimeSelector);
+            var currentTime = await GetElementTextContent(page, playerTimeSelector);
 
             if (currentTime != null && currentTime != previousTime)
             {
@@ -193,24 +220,5 @@ public class KarafunAutomator : IKarafunAutomator
         {
             GD.Print("Playback finished.");
         }
-    }
-
-    private bool TryParseMinutesSecondsTimeSpan(string input, out TimeSpan result)
-    {
-        result = TimeSpan.Zero;
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return false;
-        }
-
-        input = input.TrimStart('-');
-        var parts = input.Split(':');
-        if (parts.Length == 2 && int.TryParse(parts[0], out int minutes) && int.TryParse(parts[1], out int seconds))
-        {
-            result = new TimeSpan(0, minutes, seconds);
-            return true;
-        }
-
-        return false;
     }
 }
