@@ -12,6 +12,8 @@ config_version=5
 
 config/name="KOKT Karaoke Party"
 run/main_scene="res://root.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="KOKTKaraokeParty"
 config/features=PackedStringArray("4.3", "C#", "Mobile")
 boot_splash/show_image=false
 config/icon="res://Graphics/Kadda OK 2025 1024.png"

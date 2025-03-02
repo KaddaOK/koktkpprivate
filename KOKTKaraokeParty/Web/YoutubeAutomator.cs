@@ -51,19 +51,6 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
             if (page != null)
             {
                 await SetElementFieldValue(page, ".video-stream", "currentTime", positionMs / 1000.0);
-                /*var seekBar = await youtubePage.QuerySelectorAsync(".ytp-scrubber-container");
-                if (seekBar != null)
-                {
-                    var seekBarRect = await seekBar.BoundingBoxAsync();
-                    var seekBarWidth = seekBarRect.Width;
-                    var seekBarX = seekBarRect.X;
-                    var seekBarY = seekBarRect.Y;
-                    var seekBarCenterX = seekBarX + seekBarWidth / 2;
-                    var seekBarCenterY = seekBarY + seekBarRect.Height / 2;
-                    var seekBarClickX = seekBarX + (seekBarWidth * positionMs / ItemDurationMs.Value);
-                    var seekBarClickY = seekBarCenterY;
-                    await youtubePage.Mouse.ClickAsync(seekBarClickX, seekBarClickY);
-                }*/
             }
         }
     }
@@ -79,6 +66,12 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         GD.Print($"GoToAsync DOMContentLoaded after {stopwatch.ElapsedMilliseconds}ms");
         stopwatch.Restart();
 
+        // Wait for the video-stream to be present
+        GD.Print("Waiting for the video stream...");
+        await page.WaitForSelectorAsync(".video-stream");
+        GD.Print($"Video stream appeared after another {stopwatch.ElapsedMilliseconds}ms");
+        stopwatch.Restart();
+
         // Wait for the play/pause button to be present
         GD.Print("Waiting for the play button...");
         await page.WaitForSelectorAsync(".ytp-play-button");
@@ -91,15 +84,6 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         GD.Print($"Fullscreen button appeared after another {stopwatch.ElapsedMilliseconds}ms");
         stopwatch.Restart();
 
-        // Check if the video is fullscreen
-        var fullscreenButton = await page.QuerySelectorAsync(".ytp-fullscreen-button");
-        var fullscreenButtonTitle = await GetElementAttributeValue(page, ".ytp-fullscreen-button", "data-title-no-tooltip");
-        if (fullscreenButtonTitle == "Full screen" && !cancellationToken.IsCancellationRequested)
-        {
-            GD.Print("Fullscreen button needs to be clicked. Clicking...");
-            await fullscreenButton.ClickAsync();
-        }
-
         // Check if the video is playing
         var playButton = await page.QuerySelectorAsync(".ytp-play-button");
         var playButtonTitle = await GetElementAttributeValue(page, ".ytp-play-button", "data-title-no-tooltip");
@@ -108,6 +92,15 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         {
             GD.Print("Play button needs to be clicked. Clicking...");
             await playButton.ClickAsync();
+        }
+
+        // Check if the video is fullscreen
+        var fullscreenButton = await page.QuerySelectorAsync(".ytp-fullscreen-button");
+        var fullscreenButtonTitle = await GetElementAttributeValue(page, ".ytp-fullscreen-button", "data-title-no-tooltip");
+        if (fullscreenButtonTitle == "Full screen" && !cancellationToken.IsCancellationRequested)
+        {
+            GD.Print("Fullscreen button needs to be clicked. Clicking...");
+            await fullscreenButton.ClickAsync();
         }
 
         // Disable autoplay for the next video
@@ -186,7 +179,12 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
             playButtonTitle = await GetElementAttributeValue(page, ".ytp-play-button", "data-title-no-tooltip");
             if (playButtonTitle == "Replay")
             {
-                GD.Print("Playback has stopped.");
+                GD.Print("Play button text shows that playback is finished.");
+                break;
+            }
+            if (CurrentPositionMs >= ItemDurationMs)
+            {
+                GD.Print("CurrentPositionMs shows that playback is finished.");
                 break;
             }
 

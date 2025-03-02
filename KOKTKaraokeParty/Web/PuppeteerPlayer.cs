@@ -47,8 +47,12 @@ public class PuppeteerPlayer : IPuppeteerPlayer
     public async Task LaunchUnautomatedBrowser(params string[] sites)
     {
         var executablePath = await Utils.EnsureBrowser();
+        GD.Print($"Browser executable: {executablePath}");
         var userDataDir = GetBrowserUserProfileDir();
-        OS.CreateProcess(executablePath, new[] { $"--user-data-dir=\"{userDataDir}\"" }.Concat(sites).ToArray());
+        GD.Print($"User data directory: {userDataDir}");
+        var paramsArray = new[] { $"--user-data-dir=\"{userDataDir}\"" }.Concat(sites).ToArray();
+        GD.Print($"Launching browser with parameters: {string.Join("|", paramsArray)}");
+        OS.CreateProcess(executablePath, paramsArray);
     }
 
     public async Task CloseAutomatedBrowser()
@@ -109,7 +113,8 @@ public class PuppeteerPlayer : IPuppeteerPlayer
                     const style = document.createElement('style');
                     style.type = 'text/css';
                     style.innerHTML = 
-                    `/* Helps for Karafun; YouTube doesn't care */
+                    `
+                    /* Helps for Karafun; YouTube doesn't care */
                     body { background-color: black !important; }
 
                     /* Hides for Karafun that don't affect YouTube */
@@ -117,9 +122,11 @@ public class PuppeteerPlayer : IPuppeteerPlayer
                     #app .queue { display: none !important; }
 
                     /* Hides for YouTube that don't affect Karafun */
-                    #secondary { display: none !important; }
-                    #below { display: none !important; }
-                    #center { display: none !important; }'`;
+                    #secondary { opacity: 0; }
+                    #below { opacity: 0; }
+                    #center { opacity: 0; }
+                    .ytp-endscreen-content { opacity: 0; }
+                    `;
                     head[0].appendChild(style);
                 } else {
                     console.log('no head element found; trying again in 10 ms');

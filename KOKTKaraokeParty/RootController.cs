@@ -929,7 +929,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     private void SetupHistoryLogFile()
     {
-        var appStoragePath = Utils.GetAppStoragePath();
+        var appStoragePath = Path.Combine(Utils.GetAppStoragePath(), "history");
         Directory.CreateDirectory(appStoragePath);
         sessionPlayHistoryFileName = Path.Combine(appStoragePath, $"history_{DateTime.Now:yyyy-MM-dd_HHmm}.log");
         using (FileWrapper.Create(sessionPlayHistoryFileName)) { }
