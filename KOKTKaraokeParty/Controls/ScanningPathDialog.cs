@@ -176,7 +176,9 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
 
         var processingTask = Task.Run(() => ProcessQueueAsync(_cancellationTokenSource.Token));
 
-        await foreach (var result in LocalFileScanner.FindAllFilesAsync(_scanPathEntry.Path, _cancellationTokenSource.Token))
+        await foreach (var result in LocalFileScanner.FindAllFilesAsync(_scanPathEntry.Path,
+                                                                        true, true, true, // TODO: make these options
+                                                                        _cancellationTokenSource.Token))
         {
             switch (Path.GetExtension(result).ToLowerInvariant())
             {
@@ -194,7 +196,6 @@ public partial class ScanningPathDialog : AcceptDialog, IScanningPathDialog
                     break;
             }
             _filesToProcess.Enqueue(result);
-            // TODO: how do I process the queue one at a time even if it runs behind?
         }
 
         if (_cancellationTokenSource.Token.IsCancellationRequested)

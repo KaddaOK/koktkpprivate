@@ -697,7 +697,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
             // a local playback, though, doesn't have a thread waiting on it, it's 
             // signalled, so we need to do the things to clean up from it.
-            if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+            if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
             {
                 DisplayScreen.CancelIfPlaying();
                 RemoveQueueTreeRow(NowPlaying);

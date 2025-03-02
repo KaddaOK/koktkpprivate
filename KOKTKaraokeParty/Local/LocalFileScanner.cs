@@ -13,7 +13,8 @@ using Godot;
 public interface ILocalFileScanner
 {
     bool IsScanning { get; }
-    IAsyncEnumerable<string> FindAllFilesAsync(string path, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<string> FindAllFilesAsync(string path, bool includeMp4, bool includeCdgPairs, bool includeZips, CancellationToken cancellationToken = default);
+    Task<List<string>> FindFirstFewFilesAsync(string path, int count, bool includeMp4, bool includeCdgPairs, bool includeZips, CancellationToken cancellationToken);
     event LocalFileScanner.UpdatePathsFoundCountEventHandler UpdatePathsFoundCount;
     event LocalFileScanner.UpdateFilesFoundCountEventHandler UpdateFilesFoundCount;
     event LocalFileScanner.UpdateOrphanedCDGFilesFoundEventHandler UpdateOrphanedCDGFilesFound;
@@ -43,7 +44,90 @@ public partial class LocalFileScanner : ILocalFileScanner
 
     public bool IsScanning { get; private set; }
 
-    public async IAsyncEnumerable<string> FindAllFilesAsync(string path, [EnumeratorCancellation]CancellationToken cancellationToken)
+    public async Task<List<string>> FindFirstFewFilesAsync(string path, int count, bool includeMp4, bool includeCdgPairs, bool includeZips, CancellationToken cancellationToken)
+    {
+        var files = new List<string>();
+        GD.Print($"FindFirstFewFilesAsync(): Starting scan of {path}...");
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        var directories = new Stack<string>();
+        int totalPathsFound = 0;
+        directories.Push(path);
+        IsScanning = true;
+        await Task.Run(() => {
+            while (directories.Count > 0 && files.Count < count && !cancellationToken.IsCancellationRequested)
+            {
+                var currentDir = directories.Pop();
+                totalPathsFound++;
+                //GD.Print(currentDir);
+                string[] subDirs = null;
+
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    if (includeMp4)
+                    {
+                        files.AddRange(DirectoryWrapper.GetFiles(currentDir, "*.mp4"));
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (includeZips)
+                    {
+                        files.AddRange(DirectoryWrapper.GetFiles(currentDir, "*.zip"));
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (includeCdgPairs)
+                    {
+                        // we only include the CDG files, and only if they have a corresponding MP3 file
+                        var mp3Files = DirectoryWrapper.GetFiles(currentDir, "*.mp3").ToHashSet();
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        var allCdgFiles = DirectoryWrapper.GetFiles(currentDir, "*.cdg");
+                        var matchedCdgFiles = allCdgFiles.Where(cdg => mp3Files.Contains(Path.ChangeExtension(cdg, ".mp3")));
+
+                        files.AddRange(matchedCdgFiles);
+                    }
+                    
+                    if (files.Count < count)
+                    {
+                        subDirs = DirectoryWrapper.GetDirectories(currentDir);
+                        foreach (var subDir in subDirs)
+                        {
+                            directories.Push(subDir);
+                        }
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (PathTooLongException) { }
+                catch (DirectoryNotFoundException) { }
+            }
+        });
+
+        GD.Print($"FindFirstFewFilesAsync(): Asked for at least {count} files, found {files.Count} across {totalPathsFound} paths in {stopwatch.Elapsed}.");
+        IsScanning = false;
+
+        return files.Take(count).ToList();
+    }
+
+    public async IAsyncEnumerable<string> FindAllFilesAsync(string path, bool includeMp4, bool includeCdgPairs, bool includeZips, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         GD.Print($"FindAllFilesAsync(): Starting scan of {path}...");
         var stopwatch = new Stopwatch();
@@ -73,38 +157,52 @@ public partial class LocalFileScanner : ILocalFileScanner
                     break;
                 }
 
-                var mp4Files = DirectoryWrapper.GetFiles(currentDir, "*.mp4");
-
-                if (cancellationToken.IsCancellationRequested)
+                if (includeMp4)
                 {
-                    break;
+                    files.AddRange(DirectoryWrapper.GetFiles(currentDir, "*.mp4"));
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
                 }
 
-                var zipFiles = DirectoryWrapper.GetFiles(currentDir, "*.zip");
-
-                if (cancellationToken.IsCancellationRequested)
+                if (includeZips)
                 {
-                    break;
+                    files.AddRange(DirectoryWrapper.GetFiles(currentDir, "*.zip"));
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
                 }
 
-                // we only include the CDG files, and only if they have a corresponding MP3 file
-                var mp3Files = DirectoryWrapper.GetFiles(currentDir, "*.mp3").ToHashSet();
-
-                if (cancellationToken.IsCancellationRequested)
+                if (includeCdgPairs)
                 {
-                    break;
-                }
+                    // we only include the CDG files, and only if they have a corresponding MP3 file
+                    var mp3Files = DirectoryWrapper.GetFiles(currentDir, "*.mp3").ToHashSet();
 
-                var allCdgFiles = DirectoryWrapper.GetFiles(currentDir, "*.cdg");
-                var matchedCdgFiles = allCdgFiles.Where(cdg => mp3Files.Contains(Path.ChangeExtension(cdg, ".mp3")));
-                var unmatchedCdgFiles = allCdgFiles.Except(matchedCdgFiles);
-                if (unmatchedCdgFiles.Any())
-                {
-                    orphanedCDGFiles.AddRange(unmatchedCdgFiles);
-                    UpdateOrphanedCDGFilesFound?.Invoke(orphanedCDGFiles.ToArray());
-                }
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
-                files = mp4Files.Concat(zipFiles).Concat(matchedCdgFiles).ToList();
+                    var allCdgFiles = DirectoryWrapper.GetFiles(currentDir, "*.cdg");
+                    var matchedCdgFiles = allCdgFiles.Where(cdg => mp3Files.Contains(Path.ChangeExtension(cdg, ".mp3")));
+                    var unmatchedCdgFiles = allCdgFiles.Except(matchedCdgFiles);
+                    if (unmatchedCdgFiles.Any())
+                    {
+                        orphanedCDGFiles.AddRange(unmatchedCdgFiles);
+                        UpdateOrphanedCDGFilesFound?.Invoke(orphanedCDGFiles.ToArray());
+                    }
+
+                    files.AddRange(matchedCdgFiles);
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                }
 
                 subDirs = DirectoryWrapper.GetDirectories(currentDir);
             }

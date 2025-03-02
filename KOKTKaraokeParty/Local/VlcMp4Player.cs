@@ -114,9 +114,17 @@ public class VlcMp4Player : IItemPlayer
         // Subscribe to the EndReached event so we can clean up and report back when the video ends
         vlcMediaPlayer.EndReached += MediaPlayerOnEndReached;
         
-        GD.Print($"vlcMediaPlayer Hwnd: {vlcMediaPlayer.Hwnd}");
-        GD.Print($"Godot native handle 0: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 0)}");
-        GD.Print($"Godot native handle 1: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1)}");
+        try
+        {
+            GD.Print($"vlcMediaPlayer Hwnd: {vlcMediaPlayer.Hwnd}");
+            GD.Print($"Godot native handle 0: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 0)}");
+            GD.Print($"Godot native handle 1: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1)}");           
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"Error getting window handle: {e.Message}");
+        }
+
 
         // We can clean up the Media instance now
         media.Dispose();

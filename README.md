@@ -98,7 +98,7 @@ and the outline of the window should now follow your mouse around until you left
 ### I can hear the music from a local .mp4 file but just see an empty purple-plasma window!
 
 Yeah... Sometimes libvlc doesn't take over the display screen properly and spawns its own window instead, and I haven't figured out why yet (I can't reproduce it on my dev machine but it happens on the one I'm actually using the app regularly on).  
-Press Esc to hide the display window, and you should see its video window on one of your screens; drag it to the right one if it isn't.  Sorry if you missed the beginning of the song; as of typing this I haven't implemented any way to rewind .mp4 playback.  When this has happened to me, it also didn't detect the song ending and I had to push the skip button to get the queue to advance.  Hopefully I'll get that figured out (or it just doesn't happen to anyone else ever, that would also be okay)
+Press Esc to hide the display window, and you should see its video window on one of your screens; drag it to the right one if it isn't.  You should be able to rewind the song to the beginning using the progress bar at the top of the app.  When this has happened to me, it also didn't detect the song ending and I had to push the skip button to get the queue to advance.  Hopefully I'll get that figured out (or it just doesn't happen to anyone else ever, that would also be okay)
 
 ### Something weird happened and I don't know what to do now
 
@@ -122,8 +122,6 @@ Close and reopen the software.  The queue is saved to disk so it should come bac
   - That would allow sorting, for one thing, which is painful to be missing. Also resizing columns with the mouse like you'd expect to be able to do.
   - It could also open up the possibility of combining the search results into one big list (which I don't want to even entertain without sorting because some results are trash)
   - Also could display, as disabled, results from Karafun that are no longer licensed (which is a nicer user experience than just feeling gaslit when something that clearly should be there doesn't show up)
-- Copy/move the progress/seek bar to the top of the main window
-  - (I have to do this in order to provide seek for MP4 playback, as libvlc takes over the window in a way that I can't easily put any controls overtop of playback... but the problem is, I don't think I can get progress back from YouTube, as nothing is updated in the DOM whenever the progress bar isn't being displayed on the screen.  So I'm not sure what that would look like, being indeterminate when playing back YouTube.)
 - Add configuration options for saving history
   - It just writes to a flat file per session right now
   - There's structure for it in the sqlite database but I haven't implemented writing to it yet

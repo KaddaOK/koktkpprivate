@@ -1,51 +1,152 @@
-[gd_scene load_steps=3 format=3 uid="uid://bhu00mmmtwhcx"]
+[gd_scene load_steps=12 format=3 uid="uid://bhu00mmmtwhcx"]
 
 [ext_resource type="Script" path="res://Controls/EditScanPathDialog.cs" id="1_7dp2e"]
 [ext_resource type="Theme" uid="uid://b5m5qwp4xbf06" path="res://richtext.tres" id="2_bafwn"]
+[ext_resource type="PackedScene" uid="uid://b6jf7t6d0cjvj" path="res://Controls/LoadingSpinner.tscn" id="2_eio7e"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_n3av6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4qrkl"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yqpl5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7115o"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_v2tm5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_uwa6a"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_a8en8"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vwx6e"]
 
 [node name="EditLocalFileScanPathDialog" type="ConfirmationDialog"]
 auto_translate_mode = 1
 title = "Local File Scan Path"
 initial_position = 2
-size = Vector2i(600, 150)
+size = Vector2i(750, 500)
 visible = true
 ok_button_text = "Save"
 dialog_hide_on_ok = false
 script = ExtResource("1_7dp2e")
 
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 592.0
-offset_bottom = 101.0
-theme_override_constants/h_separation = 20
-columns = 2
+offset_right = 742.0
+offset_bottom = 451.0
+theme_override_constants/separation = 11
 
-[node name="Path" type="Label" parent="GridContainer"]
+[node name="PathRow" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
-text = "Path:"
+theme_override_constants/separation = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="GridContainer"]
+[node name="Path" type="Label" parent="VBoxContainer/PathRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Path:"
+horizontal_alignment = 2
+
+[node name="PathSelectorHBoxContainer" type="HBoxContainer" parent="VBoxContainer/PathRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SelectedPathLabel" type="Label" parent="GridContainer/HBoxContainer"]
+[node name="SelectedPathLabel" type="Label" parent="VBoxContainer/PathRow/PathSelectorHBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="BrowsePathButton" type="Button" parent="GridContainer/HBoxContainer"]
+[node name="BrowsePathButton" type="Button" parent="VBoxContainer/PathRow/PathSelectorHBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Browse..."
 
-[node name="File name format" type="Label" parent="GridContainer"]
+[node name="ExampleFilesRow" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
-text = "File name format:"
+theme_override_constants/separation = 10
 
-[node name="FormatOptionButton" type="OptionButton" parent="GridContainer"]
+[node name="Matching files" type="Label" parent="VBoxContainer/ExampleFilesRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Example files:"
+horizontal_alignment = 2
+
+[node name="MatchingFilesVBoxContainer" type="VBoxContainer" parent="VBoxContainer/ExampleFilesRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MatchingFilesRefreshButton" type="Button" parent="VBoxContainer/ExampleFilesRow/MatchingFilesVBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Refresh"
+
+[node name="MatchingFilesLoadingHBox" type="HBoxContainer" parent="VBoxContainer/ExampleFilesRow/MatchingFilesVBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="LoadingSpinner" parent="VBoxContainer/ExampleFilesRow/MatchingFilesVBoxContainer/MatchingFilesLoadingHBox" instance=ExtResource("2_eio7e")]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="LoadingLabel" type="Label" parent="VBoxContainer/ExampleFilesRow/MatchingFilesVBoxContainer/MatchingFilesLoadingHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Loading..."
+vertical_alignment = 1
+
+[node name="MatchingFilesItemList" type="ItemList" parent="VBoxContainer/ExampleFilesRow/MatchingFilesVBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hovered_color = Color(1, 1, 1, 1)
+theme_override_constants/icon_margin = 0
+theme_override_constants/line_separation = 0
+theme_override_constants/outline_size = 0
+theme_override_constants/v_separation = 0
+theme_override_constants/h_separation = 5
+theme_override_font_sizes/font_size = 14
+theme_override_styles/focus = SubResource("StyleBoxEmpty_n3av6")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_4qrkl")
+theme_override_styles/hovered = SubResource("StyleBoxEmpty_yqpl5")
+theme_override_styles/selected = SubResource("StyleBoxEmpty_7115o")
+theme_override_styles/selected_focus = SubResource("StyleBoxEmpty_v2tm5")
+theme_override_styles/cursor_unfocused = SubResource("StyleBoxEmpty_uwa6a")
+theme_override_styles/cursor = SubResource("StyleBoxEmpty_a8en8")
+auto_height = true
+item_count = 2
+item_0/text = "Example Item"
+item_0/selectable = false
+item_1/text = "Example item 2"
+item_1/selectable = false
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+theme_override_styles/separator = SubResource("StyleBoxEmpty_vwx6e")
+
+[node name="FileNameFormatRow" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="File name format" type="Label" parent="VBoxContainer/FileNameFormatRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "File name format:"
+horizontal_alignment = 2
+
+[node name="FormatOptionButton" type="OptionButton" parent="VBoxContainer/FileNameFormatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 item_count = 10
 popup/item_0/text = "{identifier} - {artist} - {title}"
 popup/item_1/text = "{identifier} - {title} - {artist}"
@@ -67,17 +168,22 @@ popup/item_8/id = 9
 popup/item_9/text = "Custom..."
 popup/item_9/id = 7
 
-[node name="CustomFormatHeadingLabel" type="Label" parent="GridContainer"]
+[node name="CustomFormatRow" type="HBoxContainer" parent="VBoxContainer"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_constants/separation = 10
 
-[node name="CustomFormatVBoxContainer" type="VBoxContainer" parent="GridContainer"]
-unique_name_in_owner = true
-visible = false
+[node name="CustomFormatHeadingLabel" type="Label" parent="VBoxContainer/CustomFormatRow"]
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+size_flags_horizontal = 0
 
-[node name="RichTextLabel" type="RichTextLabel" parent="GridContainer/CustomFormatVBoxContainer"]
+[node name="CustomFormatVBoxContainer" type="VBoxContainer" parent="VBoxContainer/CustomFormatRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RichTextLabel" type="RichTextLabel" parent="VBoxContainer/CustomFormatRow/CustomFormatVBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_bafwn")
 theme_override_font_sizes/bold_italics_font_size = 12
@@ -90,9 +196,42 @@ text = "Specify a custom format of how files are named in this path.
 TODO: finish explaining this!"
 fit_content = true
 
-[node name="CustomFormatLineEdit" type="LineEdit" parent="GridContainer/CustomFormatVBoxContainer"]
+[node name="CustomFormatLineEdit" type="LineEdit" parent="VBoxContainer/CustomFormatRow/CustomFormatVBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="ValidationErrorLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.346577, 0.280009, 1)
+text = "Validation error"
+horizontal_alignment = 1
+
+[node name="ExampleResultsPane" type="VBoxContainer" parent="VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer/ExampleResultsPane"]
+layout_mode = 2
+theme_override_constants/separation = 10
+theme_override_styles/separator = SubResource("StyleBoxEmpty_vwx6e")
+
+[node name="Example results" type="Label" parent="VBoxContainer/ExampleResultsPane"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Example Results:"
+horizontal_alignment = 1
+
+[node name="ExampleResultsTree" type="Tree" parent="VBoxContainer/ExampleResultsPane"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/title_button_font_size = 13
 
 [node name="EditPathFileDialog" type="FileDialog" parent="."]
 unique_name_in_owner = true
