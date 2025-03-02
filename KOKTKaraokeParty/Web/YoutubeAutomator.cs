@@ -120,6 +120,8 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         }
 
         // let it play
+        ItemDurationMs = null;
+        CurrentPositionMs = null;
         string previousTimeDisplay = null;
         double? previousTimeSeconds = null;
         while (!cancellationToken.IsCancellationRequested)
@@ -201,5 +203,7 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         {
             GD.Print("Playback finished.");
         }
+        CurrentPositionMs = null;
+        ItemDurationMs = null;
     }
 }
