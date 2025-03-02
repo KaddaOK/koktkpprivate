@@ -14,6 +14,8 @@ public interface ISetupTab: IMarginContainer
     event SetupTab.BgMusicItemsAddedEventHandler BgMusicItemsAdded;
     event SetupTab.BgMusicToggleEventHandler BgMusicToggle;
     event SetupTab.BgMusicVolumeChangedEventHandler BgMusicVolumeChanged;
+    event SetupTab.VlcResetPluginsCacheEventHandler VlcResetPluginsCache;
+    event SetupTab.InitializeVlcEventHandler InitializeVlc;
 
     void SetBgMusicItemsUIValues(List<string> bgMusicFiles);
     void SetBgMusicEnabledUIValue(bool enabled);
@@ -44,6 +46,9 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Node] private CheckBox BgMusicEnabledCheckBox { get; set; } = default!;
     [Node] private SpinBox BgMusicVolumeSpinBox { get; set; } = default!;
     [Node] private Button BgMusicAddButton { get; set; } = default!;
+
+    [Node] private Button GenerateVlcPluginsCacheButton { get; set; } = default!;
+    [Node] private Button PreloadVlcButton { get; set; } = default!;
     #endregion
 
     #region Signals
@@ -56,6 +61,8 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Signal] public delegate void BgMusicToggleEventHandler(bool enabled);
     [Signal] public delegate void BgMusicVolumeChangedEventHandler(double newVolume);
 
+    [Signal] public delegate void VlcResetPluginsCacheEventHandler();
+    [Signal] public delegate void InitializeVlcEventHandler();
     #endregion
 
     public void OnReady()
@@ -71,6 +78,9 @@ public partial class SetupTab : MarginContainer, ISetupTab
         BgMusicAddFileDialog.FilesSelected += OnBgMusicFilesSelected;
         BgMusicAddButton.Pressed += () => BgMusicAddFileDialog.Visible = true;
         BgMusicVolumeSpinBox.ValueChanged += (double value) => EmitSignal(SignalName.BgMusicVolumeChanged, value);
+
+        GenerateVlcPluginsCacheButton.Pressed += () => EmitSignal(SignalName.VlcResetPluginsCache);
+        PreloadVlcButton.Pressed += () => EmitSignal(SignalName.InitializeVlc);
     }
 
     private void BgMusicItemListGuiInput(InputEvent @event)

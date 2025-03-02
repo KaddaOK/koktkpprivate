@@ -51,6 +51,35 @@ text = "<-- This launches the browser the same way that starting a song in this 
 (This is generally remembered between sessions too though, so you may only need it once or never at all.)"
 autowrap_mode = 2
 
+[node name="GenerateVlcPluginsCacheButton" type="Button" parent="StartTabVBox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+text = "VLC Reset 
+Plugins Cache"
+
+[node name="GenerateVlcPluginsCacheExplanation" type="Label" parent="StartTabVBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "<-- Doing this once for a new install may make doing the next button faster"
+autowrap_mode = 2
+
+[node name="PreloadVlcButton" type="Button" parent="StartTabVBox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+text = "Initialize VLC"
+
+[node name="PreloadVlcExplanation" type="Label" parent="StartTabVBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "<-- Doing this when you first launch the app should incur that delay that you otherwise get when you first play a local MP4."
+autowrap_mode = 2
+
 [node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
 

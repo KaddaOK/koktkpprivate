@@ -988,5 +988,15 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupTab.SetDisplayScreenMonitorUIValue(Settings.DisplayScreenMonitor);
         SetupTab.SetDisplayScreenMonitorMaxValue(DisplayServer.GetScreenCount() - 1);
         SetupTab.SetCountdownLengthSecondsUIValue(Settings.CountdownLengthSeconds);
+
+        SetupTab.VlcResetPluginsCache += () =>
+        {
+            DisplayScreen.GeneratePluginsCache();
+        };
+
+        SetupTab.InitializeVlc += () =>
+        {
+            DisplayScreen.InitializeVlc();
+        };
     }
 }

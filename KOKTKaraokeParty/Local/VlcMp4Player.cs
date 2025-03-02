@@ -4,7 +4,13 @@ using System.Threading.Tasks;
 using Godot;
 using LibVLCSharp.Shared;
 
-public class VlcMp4Player : IItemPlayer
+public interface IVlcMp4Player : IItemPlayer
+{
+    Task GeneratePluginsCache();
+    Task InitializeVlc();
+}
+
+public class VlcMp4Player : IVlcMp4Player
 {
     private IntPtr windowHandle;
     private MediaPlayer vlcMediaPlayer;
@@ -71,6 +77,16 @@ public class VlcMp4Player : IItemPlayer
                 vlcMediaPlayer.SeekTo(TimeSpan.FromMilliseconds(positionMs));
         }
         return Task.CompletedTask;
+    }
+
+    public async Task GeneratePluginsCache()
+    {
+        await Task.Run(() => new LibVLC("--reset-plugins-cache"));
+    }
+
+    public async Task InitializeVlc()
+    {
+        await Task.Run(() => libVLC ??= new LibVLC());
     }
 
     public async Task Start(string videoPath, CancellationToken cancellationToken)
