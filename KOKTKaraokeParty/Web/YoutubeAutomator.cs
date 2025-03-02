@@ -14,7 +14,16 @@ public interface IYoutubeAutomator
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
-public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
+
+public enum YouTubeStatus
+{
+    NotLoggedIn,
+    Premium,
+    NotPremium,
+    Unknown
+}
+
+public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomator
 {
     public string CurrentPath { get; private set; }
     public long? CurrentPositionMs { get; private set; }
@@ -206,4 +215,58 @@ public class YoutubeAutomator : WebAutomatorBase, IYoutubeAutomator
         CurrentPositionMs = null;
         ItemDurationMs = null;
     }
+
+    public override async Task<StatusCheckResult<YouTubeStatus>> CheckStatus(IPage page)
+    {
+        string accountName = null;
+        await page.GoToAsync("https://www.youtube.com/premium_benefits", WaitUntilNavigation.Networkidle0);
+
+        // if they're logged in, there should be an avatar button
+        var avatarButton = await page.QuerySelectorAsync("#avatar-btn");
+        
+        if (avatarButton == null)
+        {
+            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.NotLoggedIn, null, null);
+        }
+        
+        // have to click on it to get the account name items to materialize
+        await avatarButton.ClickAsync();
+        await page.WaitForNetworkIdleAsync();
+        
+        // there are two possibilities: an email address, or an account handle
+        var emailElement = await page.QuerySelectorAsync("#email");
+        if (emailElement != null)
+        {
+            accountName = await GetInnerTextContent(page, "#email");
+        }
+        if (string.IsNullOrWhiteSpace(accountName))
+        {
+            var channelHandleElement = await page.QuerySelectorAsync("#channel-handle");
+            if (channelHandleElement != null)
+            {
+                accountName = await GetInnerTextContent(page, "#channel-handle");
+            }
+        }
+
+        var premiumBadgeSelector = ".badge[aria-label='Premium']";
+        var premiumBadge = await page.QuerySelectorAsync(premiumBadgeSelector);
+        var getPremiumButtonSelector = "a[aria-label='Get Premium']";
+        var getPremiumButton = await page.QuerySelectorAsync(getPremiumButtonSelector);
+        if (premiumBadge != null)
+        {
+            if (getPremiumButton != null)
+            {
+                return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Unknown, accountName, "Detected both premium and non-premium indicators");
+            }
+            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Premium, accountName, null);
+        }
+        
+        if (getPremiumButton != null)
+        {
+            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.NotPremium, accountName, null);
+        }
+        
+        return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Unknown, accountName, "User seemed to be logged in but neither premium nor non-premium indications were detected");
+    }
+
 }

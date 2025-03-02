@@ -13,7 +13,16 @@ public interface IKarafunAutomator
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
-public class KarafunAutomator : WebAutomatorBase, IKarafunAutomator
+
+public enum KarafunStatus
+{
+    NotLoggedIn,
+    Active,
+    Inactive,
+    Unknown
+}
+
+public class KarafunAutomator : WebAutomatorBase<KarafunStatus>, IKarafunAutomator
 {
     public string CurrentPath { get; private set; }
     public long? CurrentPositionMs { get; private set; }
@@ -221,4 +230,69 @@ public async Task Seek(IPage page, long positionMs)
             GD.Print("Playback finished.");
         }
     }
+
+    public override async Task<StatusCheckResult<KarafunStatus>> CheckStatus(IPage page)
+    {
+        string accountName = null;
+        await page.GoToAsync("https://www.karafun.com/my/", WaitUntilNavigation.Networkidle0);
+
+        // if they're logged in, there should be a main header section for their account name 
+        var accountTitleWhenLoggedInSelector = ".main__header--account";
+        var accountTitleWhenLoggedIn = await page.QuerySelectorAsync(accountTitleWhenLoggedInSelector);
+        if (accountTitleWhenLoggedIn != null)
+        {
+            var accountNameText = await GetInnerTextContent(page, accountTitleWhenLoggedInSelector);
+            if (!string.IsNullOrWhiteSpace(accountNameText))
+            {
+                if (accountNameText.StartsWith("Account"))
+                {
+                    accountNameText = accountNameText.Substring(7);
+                }
+                accountName = accountNameText.Replace("\n", "").Trim();
+            }
+        }
+
+        // if they're not logged in, it would have redirected them to a login screen with the title "Log in to KaraFun"
+        var pageTitleWhenNotLoggedInSelector = ".title-section";
+        var pageTitleWhenNotLoggedIn = await page.QuerySelectorAsync(pageTitleWhenNotLoggedInSelector);
+        if (pageTitleWhenNotLoggedIn != null)
+        {
+            var titleText = await GetInnerTextContent(page, pageTitleWhenNotLoggedInSelector);
+            if (titleText == "Log in to KaraFun")
+            {
+                return new StatusCheckResult<KarafunStatus>(KarafunStatus.NotLoggedIn, accountName, null);
+            }
+            else
+            {
+                return new StatusCheckResult<KarafunStatus>(KarafunStatus.Unknown, accountName, $"Page title found was '{titleText}'");
+            }
+        }
+        
+        // if they're logged in, the first subsection should be the text of their account status
+        var firstSectionTitleSelector = ".title-section-tiny";
+        var firstSectionTitle = await page.QuerySelectorAsync(firstSectionTitleSelector);
+        if (firstSectionTitle != null)
+        {
+            var accountStatusText = await GetParentInnerTextContent(page, firstSectionTitleSelector);
+            if (!string.IsNullOrWhiteSpace(accountStatusText))
+            {
+                if (accountStatusText.Contains("inactive", StringComparison.InvariantCultureIgnoreCase)
+                    || accountStatusText.Contains("ended", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return new StatusCheckResult<KarafunStatus>(KarafunStatus.Inactive, accountName, accountStatusText);
+                }
+                else if (accountStatusText.Contains("active", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return new StatusCheckResult<KarafunStatus>(KarafunStatus.Active, accountName, accountStatusText);
+                }
+                else 
+                {
+                    return new StatusCheckResult<KarafunStatus>(KarafunStatus.Unknown, accountName, $"Account status was not parsed correctly: '{accountStatusText}'");
+                }
+            }
+        }
+
+        return new StatusCheckResult<KarafunStatus>(KarafunStatus.Unknown, accountName, "No sections were recognized.");
+    }
+
 }

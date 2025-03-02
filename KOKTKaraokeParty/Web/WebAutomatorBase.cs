@@ -2,13 +2,44 @@ using System;
 using System.Threading.Tasks;
 using PuppeteerSharp;
 
-public class WebAutomatorBase
+public class StatusCheckResult<T> where T : Enum
 {
+    public T StatusResult { get; private set; }
+    public string AccountName { get; private set; }
+    public string ErrorMessage { get; private set; }
+    public StatusCheckResult(T statusResult, string accountName, string errorMessage)
+    {
+        StatusResult = statusResult;
+        AccountName = accountName;
+        ErrorMessage = errorMessage;
+    }
+}
+
+public abstract class WebAutomatorBase<T> where T : Enum
+{
+    public abstract Task<StatusCheckResult<T>> CheckStatus(IPage page);
+
     protected async Task<string> GetElementTextContent(IPage page, string selector)
     {
         return await page.EvaluateFunctionAsync<string>(@"(selector) => {
             const el = document.querySelector(selector);
             return el ? el.textContent.trim() : null;
+        }", selector);
+    }
+
+    protected async Task<string> GetInnerTextContent(IPage page, string selector)
+    {
+        return await page.EvaluateFunctionAsync<string>(@"(selector) => {
+            const el = document.querySelector(selector);
+            return el?.innerText?.trim();
+        }", selector);
+    }
+
+    protected async Task<string> GetParentInnerTextContent(IPage page, string selector)
+    {
+        return await page.EvaluateFunctionAsync<string>(@"(selector) => {
+            const el = document.querySelector(selector);
+            return el?.parentElement?.innerText?.trim();
         }", selector);
     }
 

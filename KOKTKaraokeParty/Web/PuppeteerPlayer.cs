@@ -83,13 +83,13 @@ public class PuppeteerPlayer : IPuppeteerPlayer
                     Browser = SupportedBrowser.Chromium,
                     ExecutablePath = executablePath,
                     Args = new[] {
-						//"--start-fullscreen", // Fullscreen mode on launch
-						"--no-default-browser-check", // Skip the default browser check
-					},
+                        //"--start-fullscreen", // browser fullscreen on launch actually makes karafun stretch wrong :(
+                        "--no-default-browser-check", // Skip the default browser check
+                    },
                     IgnoredDefaultArgs = new[] {
                         "--enable-automation", // Disable the "Chrome is being controlled by automated test software" notification
-						"--enable-blink-features=IdleDetection" // May or may not get some message about that
-						},
+                        "--enable-blink-features=IdleDetection" // May or may not get some message about that
+                    },
                     UserDataDir = userDataDir // Path to store user session
                 });
             }
