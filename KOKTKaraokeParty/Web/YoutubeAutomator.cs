@@ -11,16 +11,20 @@ public interface IYoutubeAutomator
     Task ToggleYoutubePlayback(IPage youtubePage);
     Task Seek(IPage youtubePage, long positionMs);
 
+    Task<StatusCheckResult<YouTubeStatus>> CheckStatus(IPage page);
+
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 
 public enum YouTubeStatus
 {
+    Checking,
     NotLoggedIn,
     Premium,
     NotPremium,
-    Unknown
+    Unknown,
+    FatalError
 }
 
 public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomator

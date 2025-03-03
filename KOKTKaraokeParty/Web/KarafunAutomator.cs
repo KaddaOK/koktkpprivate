@@ -9,6 +9,7 @@ public interface IKarafunAutomator
     Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken);
     Task PauseKarafun(IPage page);
     Task ResumeKarafun(IPage page);
+    Task<StatusCheckResult<KarafunStatus>> CheckStatus(IPage page);
     Task Seek(IPage page, long positionMs);
     event PlaybackProgressEventHandler PlaybackProgress;
     event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
@@ -16,10 +17,12 @@ public interface IKarafunAutomator
 
 public enum KarafunStatus
 {
+    Checking,
     NotLoggedIn,
     Active,
     Inactive,
-    Unknown
+    Unknown,
+    FatalError
 }
 
 public class KarafunAutomator : WebAutomatorBase<KarafunStatus>, IKarafunAutomator

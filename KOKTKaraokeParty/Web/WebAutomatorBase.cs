@@ -5,13 +5,13 @@ using PuppeteerSharp;
 public class StatusCheckResult<T> where T : Enum
 {
     public T StatusResult { get; private set; }
-    public string AccountName { get; private set; }
-    public string ErrorMessage { get; private set; }
-    public StatusCheckResult(T statusResult, string accountName, string errorMessage)
+    public string Identity { get; private set; }
+    public string Message { get; private set; }
+    public StatusCheckResult(T statusResult, string identity, string message)
     {
         StatusResult = statusResult;
-        AccountName = accountName;
-        ErrorMessage = errorMessage;
+        Identity = identity;
+        Message = message;
     }
 }
 

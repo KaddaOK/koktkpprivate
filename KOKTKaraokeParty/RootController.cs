@@ -81,6 +81,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node] private ILabel DurationLabel { get; set; } = default!;
     [Node] private IHSlider MainWindowProgressSlider { get; set; } = default!;
 
+    [Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
+    [Node] private IConfirmationDialog PrepareSessionDialog { get; set; } = default!;
+    [Node] private IButton RunChecksButton { get; set; } = default!;
+    [Node] private ILabel RunChecksResultLabel { get; set; } = default!;
+
     #endregion
 
 	public void OnReady()
@@ -101,10 +106,15 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         root.FilesDropped += FilesDropped;
 
         this.Provide();
-        SetProcess(true);
+        //SetProcess(true);
 
         PuppeteerPlayer.PlaybackDurationChanged += UpdatePlaybackDuration;
         PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
+
+        BrowserProvider.BrowserAvailabilityStatusChecked += (status) => RunChecksResultLabel.Text += $"Browser: {status.StatusResult} {status.Identity} {status.Message}\n";
+        BrowserProvider.YouTubeStatusChecked += (status) => RunChecksResultLabel.Text += $"YouTube: {status.StatusResult} {status.Identity} {status.Message}\n";
+        BrowserProvider.KarafunStatusChecked += (status) => RunChecksResultLabel.Text += $"Karafun: {status.StatusResult} {status.Identity} {status.Message}\n";
+        RunChecksButton.Pressed += async () => await BrowserProvider.CheckStatus();
     }
 
     public void FilesDropped(string[] files)

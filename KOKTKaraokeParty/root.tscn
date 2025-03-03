@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=11 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
 [ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 [ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
+[ext_resource type="Script" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
@@ -173,6 +174,33 @@ unique_name_in_owner = true
 title = "Message"
 initial_position = 2
 
+[node name="PrepareSessionDialog" type="ConfirmationDialog" parent="Main GUI"]
+unique_name_in_owner = true
+title = "Prepare Session"
+initial_position = 2
+size = Vector2i(800, 600)
+visible = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 792.0
+offset_bottom = 551.0
+
+[node name="RunChecksButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Test"
+
+[node name="RunChecksResultLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="DisplayScreen" parent="." instance=ExtResource("3_f0j17")]
 unique_name_in_owner = true
 visible = false
+
+[node name="BrowserProvider" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("9_fqu17")
