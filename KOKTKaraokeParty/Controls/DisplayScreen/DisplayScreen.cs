@@ -31,6 +31,10 @@ public interface IDisplayScreen : IWindow
     void PlayLocal(QueueItem item);
     void SeekLocal(long positionMs);
     void CancelIfPlaying();
+
+    // TODO: doesn't belong here
+    Task GeneratePluginsCache();
+    Task InitializeVlc();
 }
 
 [Meta(typeof(IAutoNode))]
@@ -69,7 +73,7 @@ public partial class DisplayScreen : Window, IDisplayScreen
     public event LocalPlaybackDurationChangedEventHandler LocalPlaybackDurationChanged;
     #endregion
 
-    private IItemPlayer VlcMp4Player { get; set; } // TODO: this properly
+    private IVlcMp4Player VlcMp4Player { get; set; } // TODO: this properly
 
     public void OnReady()
     {
@@ -92,6 +96,16 @@ public partial class DisplayScreen : Window, IDisplayScreen
         CdgRendererNode.PlaybackFinished += (wasPlaying) => LocalPlaybackFinished?.Invoke(wasPlaying);
         CdgRendererNode.PlaybackProgress += (progressMs) => LocalPlaybackProgress?.Invoke(progressMs);
         CdgRendererNode.PlaybackDurationChanged += (durationMs) => LocalPlaybackDurationChanged?.Invoke(durationMs);
+    }
+
+    // TODO: doesn't belong here
+    public async Task GeneratePluginsCache()
+    {
+        await VlcMp4Player.GeneratePluginsCache();
+    }
+    public async Task InitializeVlc()
+    {
+        await VlcMp4Player.InitializeVlc();
     }
 
     public void PlayLocal(QueueItem item)

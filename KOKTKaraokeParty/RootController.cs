@@ -81,10 +81,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node] private ILabel DurationLabel { get; set; } = default!;
     [Node] private IHSlider MainWindowProgressSlider { get; set; } = default!;
 
+    // TODO: improve this section of junk
     [Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
     [Node] private IConfirmationDialog PrepareSessionDialog { get; set; } = default!;
     [Node] private IButton RunChecksButton { get; set; } = default!;
     [Node] private ILabel RunChecksResultLabel { get; set; } = default!;
+    [Node] private IButton GeneratePluginCacheButton { get; set; } = default!;
 
     #endregion
 
@@ -111,11 +113,32 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         PuppeteerPlayer.PlaybackDurationChanged += UpdatePlaybackDuration;
         PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
 
+        // TODO: all of this is a mess
         BrowserProvider.BrowserAvailabilityStatusChecked += (status) => RunChecksResultLabel.Text += $"Browser: {status.StatusResult} {status.Identity} {status.Message}\n";
         BrowserProvider.YouTubeStatusChecked += (status) => RunChecksResultLabel.Text += $"YouTube: {status.StatusResult} {status.Identity} {status.Message}\n";
         BrowserProvider.KarafunStatusChecked += (status) => RunChecksResultLabel.Text += $"Karafun: {status.StatusResult} {status.Identity} {status.Message}\n";
-        RunChecksButton.Pressed += async () => await BrowserProvider.CheckStatus();
+        RunChecksButton.Pressed += async () => await PrepareSession();
+        PrepareSessionDialog.Confirmed += () => SetProcess(true);
+        GeneratePluginCacheButton.Pressed += async () => await GeneratePluginsCache();
     }
+
+    // TODO: move these to be more sensible
+    private async Task PrepareSession()
+    {
+        await BrowserProvider.CheckStatus();
+        RunChecksResultLabel.Text += "Initializing VLC...\n";
+        await ToSignal(GetTree(), "process_frame");
+        await DisplayScreen.InitializeVlc();
+        RunChecksResultLabel.Text += "Done.\n";
+    }
+    private async Task GeneratePluginsCache()
+    {   
+        RunChecksResultLabel.Text += "Regenerating VLC plugins cache...\n";
+        await ToSignal(GetTree(), "process_frame");
+        await DisplayScreen.GeneratePluginsCache();
+        RunChecksResultLabel.Text += "Done.\n";
+    }
+
 
     public void FilesDropped(string[] files)
     {

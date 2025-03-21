@@ -1,10 +1,17 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Godot;
 using LibVLCSharp.Shared;
 
-public class VlcMp4Player : IItemPlayer
+public interface IVlcMp4Player : IItemPlayer
+{
+    Task GeneratePluginsCache();
+    Task InitializeVlc();
+}
+
+public class VlcMp4Player : IVlcMp4Player
 {
     private IntPtr windowHandle;
     private MediaPlayer vlcMediaPlayer;
@@ -73,6 +80,16 @@ public class VlcMp4Player : IItemPlayer
         return Task.CompletedTask;
     }
 
+    public async Task GeneratePluginsCache()
+    {
+        await Task.Run(() => new LibVLC("--reset-plugins-cache"));
+    }
+
+    public async Task InitializeVlc()
+    {
+        await Task.Run(() => libVLC ??= new LibVLC());
+    }
+
     public async Task Start(string videoPath, CancellationToken cancellationToken)
     {
         libVLC ??= new LibVLC();
@@ -85,8 +102,31 @@ public class VlcMp4Player : IItemPlayer
         PlaybackDurationChanged?.Invoke(media.Duration);
         
         // Set the window handle of the video player to the Godot window handle
-        // TODO: make sure the window exists first, because if it has already dismissed then we won't get a handle here!
-        windowHandle = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1);
+        // Something is real weird here, so we're going to loop through them and see what we can see
+        // TODO: This will break HARD if someone is adding a song while an mp4 starts playing because it will grab the wrong window handle!
+        // But for some reason there only ARE ever two windows, which I guess is the main one and whichever one last opened.
+        // Which is no good.
+        var windowList = DisplayServer.GetWindowList();
+        GD.Print($"Windows: {string.Join(',', windowList.Select(w => w.ToString()))}");
+        foreach (var windowDigit in windowList)
+        {
+            var hwnd = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, windowDigit);
+            GD.Print($"Window {windowDigit} handle: {hwnd}");
+        }
+
+        // logically, window 0 is probably the main window.  we would just use the last one, but that will break if 
+        // someone is using the add song popup while something is about to play.  So what we will do for now is get 
+        // the *second* window handle... TODO: do something more robust than this, involving actual reference to the 
+        // window we want instead of guessing :/
+        if (windowList.Count() > 1)
+        {
+            windowHandle = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, windowList.Skip(1).First());
+            GD.Print($"Selected window handle: {windowHandle}");
+        }
+        else
+        {
+            GD.PrintErr("Not enough windows were found!");
+        }
        
         // TODO: this will only work in Windows; I think we need to set .XWindow for Linux, and ihni about macOS
         vlcMediaPlayer.Hwnd = windowHandle;
@@ -117,8 +157,6 @@ public class VlcMp4Player : IItemPlayer
         try
         {
             GD.Print($"vlcMediaPlayer Hwnd: {vlcMediaPlayer.Hwnd}");
-            GD.Print($"Godot native handle 0: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 0)}");
-            GD.Print($"Godot native handle 1: ${DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, 1)}");           
         }
         catch (Exception e)
         {

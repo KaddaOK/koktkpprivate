@@ -187,10 +187,16 @@ offset_top = 8.0
 offset_right = 792.0
 offset_bottom = 551.0
 
+[node name="GeneratePluginCacheButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Generate VLC Plugin Cache (first-run)"
+
 [node name="RunChecksButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Test"
+text = "Run Checks"
 
 [node name="RunChecksResultLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 unique_name_in_owner = true
