@@ -97,6 +97,15 @@ public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomat
         GD.Print($"Fullscreen button appeared after another {stopwatch.ElapsedMilliseconds}ms");
         stopwatch.Restart();
 
+        // Check if the video is fullscreen
+        var fullscreenButton = await page.QuerySelectorAsync(".ytp-fullscreen-button");
+        var fullscreenButtonTitle = await GetElementAttributeValue(page, ".ytp-fullscreen-button", "data-title-no-tooltip");
+        if (fullscreenButtonTitle == "Full screen" && !cancellationToken.IsCancellationRequested)
+        {
+            GD.Print("Fullscreen button needs to be clicked. Clicking...");
+            await fullscreenButton.ClickAsync();
+        }
+
         // Check if the video is playing
         var playButton = await page.QuerySelectorAsync(".ytp-play-button");
         var playButtonTitle = await GetElementAttributeValue(page, ".ytp-play-button", "data-title-no-tooltip");
@@ -105,15 +114,6 @@ public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomat
         {
             GD.Print("Play button needs to be clicked. Clicking...");
             await playButton.ClickAsync();
-        }
-
-        // Check if the video is fullscreen
-        var fullscreenButton = await page.QuerySelectorAsync(".ytp-fullscreen-button");
-        var fullscreenButtonTitle = await GetElementAttributeValue(page, ".ytp-fullscreen-button", "data-title-no-tooltip");
-        if (fullscreenButtonTitle == "Full screen" && !cancellationToken.IsCancellationRequested)
-        {
-            GD.Print("Fullscreen button needs to be clicked. Clicking...");
-            await fullscreenButton.ClickAsync();
         }
 
         // Disable autoplay for the next video
