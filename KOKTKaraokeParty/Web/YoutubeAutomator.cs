@@ -70,6 +70,21 @@ public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomat
 
     public async Task PlayYoutubeUrl(IPage page, string url, CancellationToken cancellationToken)
     {
+        // Check if the URL is valid (it must be `?v=`)
+        if (string.IsNullOrWhiteSpace(url) || !url.Contains("?v="))
+        {
+            GD.PrintErr($"Not a youtube '?v=' URL: {url}");
+            return; // TODO: this would not be helpful and in fact would I think just skip the video altogether
+        }        
+        
+        // and we should cut off any additional query params because they can be playlists and other disruptive things
+        int ampIndex = url.IndexOf("&");
+        if (ampIndex != -1)
+        {
+            GD.PushWarning($"Removed additional queryparams from youtube URL '{url}'");
+            url = url.Substring(0, ampIndex);
+        }
+
         var stopwatch = new Stopwatch();
         stopwatch.Start();
         GD.Print("Navigating to the video page...");
