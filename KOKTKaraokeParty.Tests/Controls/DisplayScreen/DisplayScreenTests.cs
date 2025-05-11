@@ -17,6 +17,8 @@ public class DisplayScreenTests(Node testScene) : TestClass(testScene)
     private Mock<IControl> _emptyQueueScene = default!;
     private Mock<ILabel> _bgMusicNowPlayingLabel = default!;
     private Mock<ILabel> _bgMusicPausedIndicator = default!;
+    private Mock<IHBoxContainer> _bgMusicPlayingListing = default!;
+    private Mock<ICdgRendererNode> _cdgRendererNode = default!;
 
     [Setup]
     public async Task Setup()
@@ -27,14 +29,18 @@ public class DisplayScreenTests(Node testScene) : TestClass(testScene)
         _emptyQueueScene = new();
         _bgMusicNowPlayingLabel = new();
         _bgMusicPausedIndicator = new();
+        _bgMusicPlayingListing = new();
+        _cdgRendererNode = new();
 
         _scene = new DisplayScreen();
         _scene.FakeNodeTree(new()
         {
-            ["%NextUpScene"] = _nextUpScene.Object,
-            ["%EmptyQueueScene"] = _emptyQueueScene.Object,
-            ["%BgMusicNowPlayingLabel"] = _bgMusicNowPlayingLabel.Object,
-            ["%BgMusicPausedIndicator"] = _bgMusicPausedIndicator.Object,
+            [$"%{nameof(DisplayScreen.NextUpScene)}"] = _nextUpScene.Object,
+            [$"%{nameof(DisplayScreen.EmptyQueueScene)}"] = _emptyQueueScene.Object,
+            [$"%{nameof(DisplayScreen.BgMusicNowPlayingLabel)}"] = _bgMusicNowPlayingLabel.Object,
+            [$"%{nameof(DisplayScreen.BgMusicPausedIndicator)}"] = _bgMusicPausedIndicator.Object,
+            [$"%{nameof(DisplayScreen.BgMusicPlayingListing)}"] = _bgMusicPlayingListing.Object,
+            [$"%{nameof(DisplayScreen.CdgRendererNode)}"] = _cdgRendererNode.Object,
         });
 
         await _fixture.AddToRoot(_scene);

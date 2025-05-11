@@ -4,17 +4,12 @@ using Chickensoft.Introspection;
 using Godot;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-public interface ICdgRendererNode : ITextureRect
+public interface ICdgRendererNode : ITextureRect, IItemPlayer
 {
-    event CdgRendererNode.PlaybackFinishedEventHandler PlaybackFinished;
-
-    void Play(string filepath);
-    void TogglePaused(bool isPaused);
-    void Stop();
 }
 
 [Meta(typeof(IAutoNode))]
@@ -23,9 +18,34 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
     public override void _Notification(int what) => this.Notify(what);
 
     private CdgGraphicsFile _cdgGraphic;
-    private string _nowPlaying;
-    private bool _isPaused;
+    public string CurrentPath { get; private set; }
+    public bool IsPaused { get; private set; }
     private bool _isLoaded;
+    public bool IsPlaying => _isLoaded && !IsPaused;
+    public long? CurrentPositionMs => _isLoaded ? (long)(AudioStreamPlayer.GetPlaybackPosition() * 1000) : null;
+    public long? ItemDurationMs => _isLoaded ? (long)(AudioStreamPlayer.Stream.GetLength() * 1000) : null;
+
+    #region Initialized Dependencies
+
+    private IFileWrapper FileWrapper { get; set; }
+    private ILocalFileValidator LocalFileValidator { get; set; }
+    private IZipFileManager ZipFileManager { get; set; }
+
+    public void SetupForTesting(ILocalFileValidator localFileValidator, IFileWrapper fileWrapper, IZipFileManager zipFileManager)
+    {
+        LocalFileValidator = localFileValidator;
+        FileWrapper = fileWrapper;
+        ZipFileManager = zipFileManager;
+    }
+
+    public void Initialize()
+    {
+        LocalFileValidator = new LocalFileValidator();
+        FileWrapper = new FileWrapper();
+        ZipFileManager = new ZipFileManager();
+    }
+
+    #endregion
 
     #region Nodes
 
@@ -36,7 +56,10 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
 
     #region Signals
 
-    [Signal] public delegate void PlaybackFinishedEventHandler(string wasPlaying);
+    //[Signal] public delegate void PlaybackFinishedEventHandler(string wasPlaying);
+    public event PlaybackFinishedEventHandler PlaybackFinished;
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 
     #endregion
 
@@ -52,7 +75,18 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         SetProcess(true);
     }
 
-    public async void Play(string filepath)
+    public Task Seek(long positionMs)
+    {
+        if (_isLoaded)
+        {
+            AudioStreamPlayer.Seek(positionMs / 1000f);
+            PositionSlider.SetValueNoSignal(positionMs / 1000f);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task Start(string filepath, CancellationToken cancellationToken)
     {
         if (filepath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
@@ -66,7 +100,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             var cdgPath = filepath;
             var mp3Path = Path.ChangeExtension(filepath, ".mp3");
 
-            if (!File.Exists(mp3Path))
+            if (!FileWrapper.Exists(mp3Path))
             {
                 GD.PrintErr("No matching .mp3 file found.");
                 return;
@@ -81,7 +115,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             var mp3Path = filepath;
             var cdgPath = Path.ChangeExtension(filepath, ".cdg");
 
-            if (!File.Exists(cdgPath))
+            if (!FileWrapper.Exists(cdgPath))
             {
                 GD.PrintErr("No matching .cdg file found.");
                 return;
@@ -94,21 +128,22 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
             GD.PrintErr("File must be a .cdg, .mp3, or .zip.");
             return;
         }
-        _nowPlaying = filepath;
+        CurrentPath = filepath;
         _isLoaded = true;
-        _isPaused = false;
+        IsPaused = false;
         AudioStreamPlayer.StreamPaused = false;
         PositionSlider.MaxValue = AudioStreamPlayer.Stream.GetLength();
+        PlaybackDurationChanged?.Invoke((long)(AudioStreamPlayer.Stream.GetLength() * 1000));
         AudioStreamPlayer.Play();
         AudioStreamPlayer.Finished += () => {
             Stop();
-            EmitSignal(nameof(PlaybackFinished), _nowPlaying);
+            PlaybackFinished?.Invoke(CurrentPath);
         };
     }
 
     public async Task LoadFromZip(string filepath)
     {
-        using (var zip = ZipFile.OpenRead(filepath))
+        using (var zip = ZipFileManager.OpenRead(filepath))
         {
             var cdgEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".cdg", StringComparison.OrdinalIgnoreCase));
             var mp3Entry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase));
@@ -149,13 +184,13 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
 
     public async Task LoadFromPath(string cdgPath, string mp3Path)
     {
-        if (!File.Exists(cdgPath))
+        if (!FileWrapper.Exists(cdgPath))
         {
             GD.PrintErr("No matching .cdg file found.");
             return;
         }
         
-        if (!File.Exists(mp3Path))
+        if (!FileWrapper.Exists(mp3Path))
         {
             GD.PrintErr("No matching .mp3 file found.");
             return;
@@ -165,28 +200,29 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         AudioStreamPlayer.Stream = LoadMP3(mp3Path);
     }
 
-    public void TogglePaused(bool isPaused)
+    public Task TogglePaused(bool isPaused)
     {
-        if (!_isLoaded)
+        if (_isLoaded)
         {
-            return;
+            IsPaused = isPaused;
+            AudioStreamPlayer.StreamPaused = isPaused;
         }
 
-        _isPaused = isPaused;
-        AudioStreamPlayer.StreamPaused = isPaused;
+        return Task.CompletedTask;
     }
 
-    public void Stop()
+    public Task Stop()
     {
-        _isPaused = true;
+        IsPaused = true;
         AudioStreamPlayer.Stop();
         _isLoaded = false;
         Texture = null;
+        return Task.CompletedTask;
     }
 
     public void OnProcess(double delta)
     {
-        if (_isPaused || !_isLoaded)
+        if (IsPaused || !_isLoaded)
         {
             return;
         }
@@ -202,6 +238,7 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
         }
 
         PositionSlider.SetValueNoSignal(AudioStreamPlayer.GetPlaybackPosition());
+        PlaybackProgress?.Invoke(currentTime);
     }
 
     public AudioStreamMP3 LoadMP3(string path)

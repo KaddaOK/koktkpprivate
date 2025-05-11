@@ -1,0 +1,6 @@
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://b5m5qwp4xbf06"]
+
+[ext_resource type="FontFile" uid="uid://bpxi1mn56hkr8" path="res://fonts/DroidSansMono/DroidSansMono.ttf" id="1_54qi1"]
+
+[resource]
+RichTextLabel/fonts/mono_font = ExtResource("1_54qi1")

@@ -28,12 +28,10 @@
         },
         "presentation": {
           "echo": true,
-          "reveal": "silent",
           "focus": false,
           "panel": "dedicated",
           "showReuseMessage": false,
           "clear": true,
-          "close": true, 
           "revealProblems": "onProblem"
         },
       }

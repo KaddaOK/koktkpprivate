@@ -1,0 +1,81 @@
+[gd_scene load_steps=3 format=3 uid="uid://b4os8s1ynvcs6"]
+
+[ext_resource type="Script" uid="uid://27vodss820ch" path="res://Controls/ScanPathEntryPanel.cs" id="1_3d64p"]
+[ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_gxgbn"]
+
+[node name="ScanPathEntryPanel" type="PanelContainer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 133.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+script = ExtResource("1_3d64p")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme = ExtResource("1_gxgbn")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="InfoLabels" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PathLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "/path/label/"
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/InfoLabels"]
+layout_mode = 2
+columns = 2
+
+[node name="Filename format" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Format:
+"
+
+[node name="FormatSpecifierLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "{identifier} - {artist} - {title}"
+
+[node name="Last scanned" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Last scanned:
+"
+
+[node name="LastScannedLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Never"
+
+[node name="Files found" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Files found:
+"
+
+[node name="FilesFoundCountLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 files
+"
+
+[node name="ActionButtons" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="EditButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Edit..."
+
+[node name="RescanButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Rescan..."

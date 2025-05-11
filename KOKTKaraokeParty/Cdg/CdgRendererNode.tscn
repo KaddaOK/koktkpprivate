@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://b880ctf8xls06"]
 
-[ext_resource type="Script" path="res://Cdg/CdgRendererNode.cs" id="1_cr0gm"]
+[ext_resource type="Script" uid="uid://j4h24tbss085" path="res://Cdg/CdgRendererNode.cs" id="1_cr0gm"]
 
 [node name="CdgRendererNode" type="TextureRect"]
 anchors_preset = 15

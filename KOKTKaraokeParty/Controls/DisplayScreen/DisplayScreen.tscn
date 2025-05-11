@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://u06hi7mpxw6s"]
 
-[ext_resource type="Shader" path="res://Graphics/grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="1_p30xu"]
-[ext_resource type="Script" path="res://Controls/DisplayScreen/DisplayScreen.cs" id="1_u87du"]
+[ext_resource type="Shader" uid="uid://drc046ah3ravk" path="res://Graphics/grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="1_p30xu"]
+[ext_resource type="Script" uid="uid://knd5vouorf1e" path="res://Controls/DisplayScreen/DisplayScreen.cs" id="1_u87du"]
 [ext_resource type="PackedScene" uid="uid://crqvvwc2k4kg1" path="res://Controls/DisplayScreen/NextUpDisplay.tscn" id="2_07c3t"]
 [ext_resource type="PackedScene" uid="uid://bt53uvcacuoej" path="res://Controls/DisplayScreen/emptyqueue.tscn" id="3_k0l2h"]
 [ext_resource type="PackedScene" uid="uid://b880ctf8xls06" path="res://Cdg/CdgRendererNode.tscn" id="5_j78pi"]
@@ -77,6 +77,7 @@ size_flags_vertical = 8
 
 [node name="Label" type="Label" parent="Control/BgMusicPlayingListing"]
 layout_mode = 2
+theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 14
 text = "Background Music:"
 vertical_alignment = 2
@@ -84,12 +85,14 @@ vertical_alignment = 2
 [node name="BgMusicNowPlayingLabel" type="Label" parent="Control/BgMusicPlayingListing"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 14
 text = "None"
 
 [node name="BgMusicPausedIndicator" type="Label" parent="Control/BgMusicPlayingListing"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 14
 text = "(Paused)"
 
@@ -97,3 +100,18 @@ text = "(Paused)"
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
+
+[node name="TemporarilyDismissLabel" type="Label" parent="Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -163.0
+offset_bottom = 23.0
+grow_horizontal = 0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 9
+text = "Press ESC to temporarily dismiss this screen "
+horizontal_alignment = 2

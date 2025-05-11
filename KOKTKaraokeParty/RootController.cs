@@ -1,4 +1,5 @@
 using Chickensoft.AutoInject;
+using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 using NAudio.Flac;
@@ -36,16 +37,27 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private Settings Settings { get; set; }
     Settings IProvide<Settings>.Value() => Settings;
 
-    public void SetupForTesting(IPuppeteerPlayer puppeteerPlayer, Settings settings)
+    private ILocalFileValidator LocalFileValidator { get; set; }
+    private IFileWrapper FileWrapper { get; set;}
+
+    public void SetupForTesting(
+        IPuppeteerPlayer puppeteerPlayer, 
+        Settings settings,
+        ILocalFileValidator localFileValidator,
+        IFileWrapper fileWrapper)
     {
         PuppeteerPlayer = puppeteerPlayer;
         Settings = settings;
+        LocalFileValidator = localFileValidator;
+        FileWrapper = fileWrapper;
     }
 
     public void Initialize()
     {
+        FileWrapper = new FileWrapper();
         PuppeteerPlayer = new PuppeteerPlayer();
-        Settings = Settings.LoadFromDiskIfExists();
+        Settings = Settings.LoadFromDiskIfExists(FileWrapper);
+        LocalFileValidator = new LocalFileValidator();
     }
 
     #endregion
@@ -58,8 +70,23 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node("%Search")] // TODO: this name is annoying to me
     private ISearchTab SearchTab { get; set; } = default!;
 
+    [Node] private ITabContainer MainTabs { get; set; } = default!;
+
     [Node] private IDisplayScreen DisplayScreen { get; set; } = default!;
     [Node] private AudioStreamPlayer BackgroundMusicPlayer { get; set; } = default!;
+    [Node] private IAcceptDialog MessageDialog { get; set; } = default!;
+
+    [Node] private ILabel ProgressSliderLabel { get; set; } = default!;
+    [Node] private ILabel CurrentTimeLabel { get; set; } = default!;
+    [Node] private ILabel DurationLabel { get; set; } = default!;
+    [Node] private IHSlider MainWindowProgressSlider { get; set; } = default!;
+
+    // TODO: improve this section of junk
+    [Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
+    [Node] private IConfirmationDialog PrepareSessionDialog { get; set; } = default!;
+    [Node] private IButton RunChecksButton { get; set; } = default!;
+    [Node] private ILabel RunChecksResultLabel { get; set; } = default!;
+    [Node] private IButton GeneratePluginCacheButton { get; set; } = default!;
 
     #endregion
 
@@ -77,18 +104,123 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupStartTab();
         GetTree().AutoAcceptQuit = false;
 
-        DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
-        {
-            GD.Print($"Local playback finished: {wasPlaying}");
-            if (wasPlaying == NowPlaying?.PerformanceLink)
-            {
-                RemoveQueueTreeRow(NowPlaying);
-                NowPlaying = null;
-            }
-        };
+        var root = GetTree().Root;
+        root.FilesDropped += FilesDropped;
 
         this.Provide();
-        SetProcess(true);
+        //SetProcess(true);
+
+        PuppeteerPlayer.PlaybackDurationChanged += UpdatePlaybackDuration;
+        PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
+
+        // TODO: all of this is a mess
+        BrowserProvider.BrowserAvailabilityStatusChecked += (status) => RunChecksResultLabel.Text += $"Browser: {status.StatusResult} {status.Identity} {status.Message}\n";
+        BrowserProvider.YouTubeStatusChecked += (status) => RunChecksResultLabel.Text += $"YouTube: {status.StatusResult} {status.Identity} {status.Message}\n";
+        BrowserProvider.KarafunStatusChecked += (status) => RunChecksResultLabel.Text += $"Karafun: {status.StatusResult} {status.Identity} {status.Message}\n";
+        RunChecksButton.Pressed += async () => await PrepareSession();
+        PrepareSessionDialog.Confirmed += () => SetProcess(true);
+        GeneratePluginCacheButton.Pressed += async () => await GeneratePluginsCache();
+    }
+
+    // TODO: move these to be more sensible
+    private async Task PrepareSession()
+    {
+        await BrowserProvider.CheckStatus();
+        RunChecksResultLabel.Text += "Initializing VLC...\n";
+        await ToSignal(GetTree(), "process_frame");
+        await DisplayScreen.InitializeVlc();
+        RunChecksResultLabel.Text += "Done.\n";
+    }
+    private async Task GeneratePluginsCache()
+    {   
+        RunChecksResultLabel.Text += "Regenerating VLC plugins cache...\n";
+        await ToSignal(GetTree(), "process_frame");
+        await DisplayScreen.GeneratePluginsCache();
+        RunChecksResultLabel.Text += "Done.\n";
+    }
+
+
+    public void FilesDropped(string[] files)
+    {
+        var acceptedExtensions = new[] { ".zip", ".cdg", ".mp3", ".mp4" };
+        var droppedFile = files.FirstOrDefault(f => acceptedExtensions.Contains(Path.GetExtension(f).ToLower()));
+        if (droppedFile != null)
+        {
+            var (isValid, message) = LocalFileValidator.IsValid(droppedFile);
+            if (!isValid)
+            {
+                ShowMessageDialog("Cannot import file", message);
+                return;
+            }
+            // TODO: log a warning somewhere if isValid but message isn't empty
+
+            // switch to the search tab if that's not where we are
+            if (!SearchTab.Visible)
+            {
+                MainTabs.CurrentTab = 1; // TODO: don't hardcode this index
+            }
+
+            var externalQueueItem = GetBestGuessExternalQueueItem(droppedFile);
+
+            SearchTab.ExternalFileShowAddDialog(externalQueueItem);
+        }
+    }
+
+    // TODO: where should this live?  I had it in LocalFileValidator, but it 
+    // can't be tested by XUnit because QueueItem is a GodotObject which causes 
+    // anything but GoDotTest tests to throw AccessViolationException "Attempted 
+    // to read or write protected memory. This is often an indication that other 
+    // memory is corrupt" 🙄 It would be used by a live search as well
+    public QueueItem GetBestGuessExternalQueueItem(string externalFilePath)
+    {
+        var returnItem = new QueueItem 
+            {
+                PerformanceLink = externalFilePath,
+                CreatorName = "(drag-and-drop)",
+                ItemType = Path.GetExtension(externalFilePath).ToLower() switch
+                {
+                    ".zip" => ItemType.LocalMp3GZip,
+                    ".cdg" => ItemType.LocalMp3G,
+                    ".mp3" => ItemType.LocalMp3G,
+                    ".mp4" => ItemType.LocalMp4,
+                    _ => throw new NotImplementedException()
+                }
+            };
+
+        // TODO: this is an ignorant rush job, meh
+        var components = Path.GetFileNameWithoutExtension(externalFilePath).Split(" - ");
+        switch (components.Length)
+        {
+            case 1:
+                returnItem.SongName = components[0];
+                break;
+            case 2:
+                returnItem.ArtistName = components[0];
+                returnItem.SongName = components[1];
+                break;
+            case 3:
+                returnItem.Identifier = components[0];
+                returnItem.ArtistName = components[1];
+                returnItem.SongName = components[2];
+                break;
+            case 4:
+                returnItem.CreatorName = components[0];
+                returnItem.Identifier = components[1];
+                returnItem.ArtistName = components[2];
+                returnItem.SongName = components[3];
+                break;
+            default:
+                throw new NotImplementedException();
+        }
+
+        return returnItem;
+    }
+
+    public void ShowMessageDialog(string title, string message)
+    {
+        MessageDialog.DialogText = message;
+        MessageDialog.Title = title;
+        MessageDialog.Show();
     }
 
     private void BindSearchScreenControls()
@@ -139,7 +271,8 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         DisplayScreen.ShowNextUp(item.SingerName, item.SongName, item.ArtistName, Settings.CountdownLengthSeconds);
-
+        SetProgressSlider($"Next up is {item.SingerName} in {Settings.CountdownLengthSeconds} seconds...", Settings.CountdownLengthSeconds, 0);
+        
         // Countdown logic
         int launchSecondsRemaining = Settings.CountdownLengthSeconds;
         while (launchSecondsRemaining > 0)
@@ -152,6 +285,9 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             if (!IsPaused)
             {
                 DisplayScreen.UpdateLaunchCountdownSecondsRemaining(launchSecondsRemaining);
+                SetProgressSlider($"Next up is {item.SingerName} in {launchSecondsRemaining} seconds...", 
+                                    Settings.CountdownLengthSeconds, 
+                                    Settings.CountdownLengthSeconds - launchSecondsRemaining);
                 launchSecondsRemaining--;
             }
             await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
@@ -162,6 +298,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
 
         GD.Print($"Playing {item.SongName} by {item.ArtistName} ({item.CreatorName}) from {item.PerformanceLink}");
+        SetProgressSlider($"{item.ArtistName} - {item.SongName}");
         switch (item.ItemType)
         {
             case ItemType.KarafunWeb:
@@ -184,6 +321,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                 break;
             case ItemType.LocalMp3G:
             case ItemType.LocalMp3GZip:
+            case ItemType.LocalMp4:
                 DisplayScreen.PlayLocal(item);
                 break;
             default:
@@ -197,19 +335,92 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
     }
 
+    private void SetProgressSlider(string stateText = null, int maxSeconds = 0, int valueSeconds = 0, bool enableEditing = false)
+    {
+        ProgressSliderLabel.Text = stateText;
+        MainWindowProgressSlider.SetValueNoSignal(valueSeconds);
+        MainWindowProgressSlider.MaxValue = maxSeconds;
+        MainWindowProgressSlider.Editable = enableEditing;
+        CurrentTimeLabel.Text = TimeSpan.FromSeconds(valueSeconds).ToString(@"mm\:ss");
+        DurationLabel.Text = TimeSpan.FromSeconds(maxSeconds).ToString(@"mm\:ss");
+    }
+
     #region display screen stuff
 
     public void BindDisplayScreenControls()
     {
         DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
+
+        DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
+        {
+            GD.Print($"Local playback finished: {wasPlaying}");
+            if (wasPlaying == NowPlaying?.PerformanceLink)
+            {
+                RemoveQueueTreeRow(NowPlaying);
+                if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+                {
+                    // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
+                    DisplayScreen.ClearDismissed();
+                    DisplayScreen.Visible = false;
+                }
+                NowPlaying = null;
+            }
+        };
+
+        DisplayScreen.LocalPlaybackDurationChanged += UpdatePlaybackDuration;
+
+        DisplayScreen.LocalPlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
+
+        MainWindowProgressSlider.ValueChanged += (value) => {
+            if (NowPlaying.ItemType == ItemType.Youtube)
+            {
+                PuppeteerPlayer.SeekYouTube((long)value);
+            }
+            else if (NowPlaying.ItemType == ItemType.KarafunWeb)
+            {
+                PuppeteerPlayer.SeekKarafun((long)value);
+            }
+            else
+            {
+                DisplayScreen.SeekLocal((long)value);
+            }
+        };
+    }
+
+    public void UpdatePlaybackDuration(long durationMs)
+    {
+        if (durationMs <= 0)
+        {
+            return;
+        }
+
+        GD.Print($"Playback duration changed: {durationMs}");
+        DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
+        MainWindowProgressSlider.MaxValue = durationMs;
+        MainWindowProgressSlider.Editable = true;
+    }
+
+    public void UpdatePlaybackProgress(long progressMs)
+    {
+        if (progressMs <= 0)
+        {
+            return;
+        }
+
+        //if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+        //{
+            CurrentTimeLabel.Text = TimeSpan.FromMilliseconds(progressMs).ToString(@"mm\:ss");
+            MainWindowProgressSlider.SetValueNoSignal(progressMs);
+        //}
     }
 
     public void ShowEmptyQueueScreenAndBgMusic()
     {
         DisplayScreen.ShowEmptyQueueScreen();
+        SetProgressSlider("(The queue is empty)");
         if (Settings.BgMusicEnabled)
         {
-            StartOrResumeBackgroundMusic();
+            FadeInBackgroundMusic();
         }
     }
 
@@ -228,7 +439,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         if (Settings.BgMusicEnabled != enable)
         {
             Settings.BgMusicEnabled = enable;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         }
         if (Settings.BgMusicEnabled && !IsWaitingToReturnFromBrowserControl && !IsPlayingLocalFile)
         {
@@ -248,6 +459,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         }
         else
         {
+            if (BackgroundMusicPlayer.Playing && !BackgroundMusicPlayer.StreamPaused)
+            {
+                GD.Print("BG Music is already playing, not fading in.");
+                return;
+            }
             BackgroundMusicPlayer.VolumeDb = PercentToDb(0);
             var finalVolumeInDb = PercentToDb(Settings.BgMusicVolumePercent);
             GD.Print($"Fading in background music to {Settings.BgMusicVolumePercent}% ({finalVolumeInDb} dB)");
@@ -285,6 +501,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
             if (BackgroundMusicPlayer.StreamPaused)
             {
+                GD.Print($"Unpausing background music.");
                 BackgroundMusicPlayer.StreamPaused = false;
             }
         }
@@ -306,7 +523,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private void SetBgMusicVolumePercent(double volumePercent)
     {
         Settings.BgMusicVolumePercent = volumePercent;
-        Settings.SaveToDisk();
+        Settings.SaveToDisk(FileWrapper);
         BackgroundMusicPlayer.VolumeDb = PercentToDb(volumePercent);
         GD.Print($"BG Music volume set to {volumePercent}% ({BackgroundMusicPlayer.VolumeDb} dB)");
     }
@@ -507,10 +724,21 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         GD.Print($"MainQueueSkipButton pressed, IsPaused: {IsPaused}");
         if (!IsPaused)
         {
+            // if the playback is remote, cancelling the play task will cause the 
+            //async to return and result in a skip anyway. TODO: change this to be clearer/more elegant
             PlayingCancellationSource.Cancel();
-            DisplayScreen.CancelIfPlaying();
-            RemoveQueueTreeRow(NowPlaying);
-            NowPlaying = null; // this will cause _Process to dequeue the next item
+
+            // a local playback, though, doesn't have a thread waiting on it, it's 
+            // signalled, so we need to do the things to clean up from it.
+            if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+            {
+                DisplayScreen.CancelIfPlaying();
+                RemoveQueueTreeRow(NowPlaying);
+                // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
+                DisplayScreen.ClearDismissed();
+                DisplayScreen.Visible = false;
+                NowPlaying = null; // this will cause _Process to dequeue the next item
+            }
         }
         else
         {
@@ -565,10 +793,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         await PuppeteerPlayer.PauseKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutube();
+                        await PuppeteerPlayer.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
+                    case ItemType.LocalMp4:
                         // this is taken care of by the display screen
                         break;
                     default:
@@ -594,10 +823,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                         await PuppeteerPlayer.ResumeKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutube();
+                        await PuppeteerPlayer.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
+                    case ItemType.LocalMp4:
                         // this is taken care of by the display screen
                         break;
                     default:
@@ -659,7 +889,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             var queueJson = JsonConvert.SerializeObject(queueList, Formatting.Indented);
             //GD.Print($"Queue JSON: {queueJson}");
             // Write the JSON to the file
-            File.WriteAllText(savedQueueFileName, queueJson);
+            FileWrapper.WriteAllText(savedQueueFileName, queueJson);
         }
         catch (Exception ex)
         {
@@ -672,11 +902,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         try
         {
             // Check if the queue file exists
-            if (File.Exists(savedQueueFileName))
+            if (FileWrapper.Exists(savedQueueFileName))
             {
                 GD.Print("Loading queue from disk...");
                 // Read the JSON content from the file
-                var queueJson = File.ReadAllText(savedQueueFileName);
+                var queueJson = FileWrapper.ReadAllText(savedQueueFileName);
 
                 // Deserialize the JSON back into the Queue object
                 var queueList = JsonConvert.DeserializeObject<QueueItem[]>(queueJson);
@@ -732,16 +962,16 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     private void SetupHistoryLogFile()
     {
-        var appStoragePath = Utils.GetAppStoragePath();
+        var appStoragePath = Path.Combine(Utils.GetAppStoragePath(), "history");
         Directory.CreateDirectory(appStoragePath);
         sessionPlayHistoryFileName = Path.Combine(appStoragePath, $"history_{DateTime.Now:yyyy-MM-dd_HHmm}.log");
-        using (File.Create(sessionPlayHistoryFileName)) { }
+        using (FileWrapper.Create(sessionPlayHistoryFileName)) { }
     }
 
     private void AppendToPlayHistory(QueueItem queueItem)
     {
         var nowPlaying = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{queueItem.SingerName}|{queueItem.SongName}|{queueItem.ArtistName}|{queueItem.CreatorName}|{queueItem.PerformanceLink}";
-        File.AppendAllText(sessionPlayHistoryFileName, nowPlaying + "\n");
+        FileWrapper.AppendAllText(sessionPlayHistoryFileName, nowPlaying + "\n");
     }
     #endregion
 
@@ -751,12 +981,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupTab.CountdownLengthChanged += (value) =>
         {
             Settings.CountdownLengthSeconds = (int)value;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         };
         SetupTab.DisplayScreenMonitorChanged += (value) =>
         {
             Settings.DisplayScreenMonitor = (int)value;
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
             GD.Print($"Monitor ID set to {Settings.DisplayScreenMonitor}");
             DisplayScreen.SetMonitorId(Settings.DisplayScreenMonitor);
             DisplayScreen.ShowDisplayScreen();
@@ -768,7 +998,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         SetupTab.BgMusicItemRemoved += (pathToRemove) =>
         {
             Settings.BgMusicFiles.Remove(pathToRemove);
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
             // TODO: if the removed item was the one playing, skip it
         };
         SetupTab.BgMusicItemsAdded += (pathsToAdd) =>
@@ -780,7 +1010,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                     Settings.BgMusicFiles.Add(file);
                 }
             }
-            Settings.SaveToDisk();
+            Settings.SaveToDisk(FileWrapper);
         };
         SetupTab.BgMusicToggle += ToggleBackgroundMusic;
         SetupTab.BgMusicVolumeChanged += SetBgMusicVolumePercent;

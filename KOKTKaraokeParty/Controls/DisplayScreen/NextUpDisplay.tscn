@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://crqvvwc2k4kg1"]
 
 [ext_resource type="Theme" uid="uid://dewr0sictrh6v" path="res://Controls/DisplayScreen/nextUpLargeText.tres" id="1_jpfe0"]
-[ext_resource type="Script" path="res://Controls/DisplayScreen/NextUpDisplay.cs" id="1_ty5qw"]
+[ext_resource type="Script" uid="uid://dbtp7mtsxlweu" path="res://Controls/DisplayScreen/NextUpDisplay.cs" id="1_ty5qw"]
 [ext_resource type="Theme" uid="uid://crllxnsu5yiaw" path="res://Controls/DisplayScreen/nextUpSmallText.tres" id="2_ehqpi"]
 
 [node name="NextUpDisplay" type="VBoxContainer"]
