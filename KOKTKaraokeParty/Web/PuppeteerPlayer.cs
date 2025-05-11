@@ -122,8 +122,10 @@ public class PuppeteerPlayer : IPuppeteerPlayer
                     #app .queue { display: none !important; }
 
                     /* Hides for YouTube that don't affect Karafun */
-                    #secondary { opacity: 0; }
-                    #below { opacity: 0; }
+                    #secondary { display: none; }
+                    #below { display: none; }
+                    #ytd-player { width: 100%; height: 100% }
+                    .html5-video-container { width: 100%; height: 100% }
                     #center { opacity: 0; }
                     .ytp-endscreen-content { opacity: 0; }
                     `;
