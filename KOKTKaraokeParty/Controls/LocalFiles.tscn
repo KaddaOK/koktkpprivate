@@ -1,10 +1,10 @@
 [gd_scene load_steps=6 format=3 uid="uid://d3x1a61anrsna"]
 
-[ext_resource type="Script" path="res://Controls/LocalFiles.cs" id="1_t4b7r"]
+[ext_resource type="Script" uid="uid://cylug0un1fluk" path="res://Controls/LocalFiles.cs" id="1_t4b7r"]
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="2_0f81l"]
 [ext_resource type="PackedScene" uid="uid://bhu00mmmtwhcx" path="res://Controls/EditScanPathDialog.tscn" id="3_y375c"]
 [ext_resource type="PackedScene" uid="uid://da15k4fbi7nnc" path="res://Controls/ScanningPathDialog.tscn" id="4_mwolv"]
-[ext_resource type="Script" path="res://Controls/ScanningPathDialog.cs" id="5_bdli1"]
+[ext_resource type="Script" uid="uid://b5hyqry0ltnxk" path="res://Controls/ScanningPathDialog.cs" id="5_bdli1"]
 
 [node name="Local Files" type="MarginContainer"]
 anchors_preset = 15

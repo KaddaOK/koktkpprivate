@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://dvyxhpdbi8cjs"]
 
-[ext_resource type="Script" path="res://Controls/SearchTab.cs" id="1_iaba6"]
+[ext_resource type="Script" uid="uid://csvm1vgeasrpd" path="res://Controls/SearchTab.cs" id="1_iaba6"]
 [ext_resource type="PackedScene" uid="uid://pme5quf0aogv" path="res://Controls/LoadableLabel.tscn" id="2_pm6ve"]
-[ext_resource type="Script" path="res://Controls/LoadableLabel.cs" id="3_h8wwf"]
+[ext_resource type="Script" uid="uid://cl52n23rfkr1x" path="res://Controls/LoadableLabel.cs" id="3_h8wwf"]
 
 [node name="SearchTab" type="MarginContainer"]
 custom_minimum_size = Vector2(500, 300)

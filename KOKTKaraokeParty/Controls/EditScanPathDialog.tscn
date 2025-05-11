@@ -1,6 +1,6 @@
 [gd_scene load_steps=12 format=3 uid="uid://bhu00mmmtwhcx"]
 
-[ext_resource type="Script" path="res://Controls/EditScanPathDialog.cs" id="1_7dp2e"]
+[ext_resource type="Script" uid="uid://drrmqvhuby6e1" path="res://Controls/EditScanPathDialog.cs" id="1_7dp2e"]
 [ext_resource type="Theme" uid="uid://b5m5qwp4xbf06" path="res://richtext.tres" id="2_bafwn"]
 [ext_resource type="PackedScene" uid="uid://b6jf7t6d0cjvj" path="res://Controls/LoadingSpinner.tscn" id="2_eio7e"]
 

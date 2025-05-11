@@ -1,14 +1,14 @@
 [gd_scene load_steps=11 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
-[ext_resource type="Script" path="res://RootController.cs" id="1_fuv7c"]
-[ext_resource type="Script" path="res://Controls/DraggableTree.cs" id="3_dnylh"]
+[ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
+[ext_resource type="Script" uid="uid://kvpoo8od61eb" path="res://Controls/DraggableTree.cs" id="3_dnylh"]
 [ext_resource type="PackedScene" uid="uid://u06hi7mpxw6s" path="res://Controls/DisplayScreen/DisplayScreen.tscn" id="3_f0j17"]
 [ext_resource type="PackedScene" uid="uid://dvyxhpdbi8cjs" path="res://Controls/SearchTab.tscn" id="3_vhkgr"]
 [ext_resource type="PackedScene" uid="uid://bj51n7hh48ikh" path="res://Controls/SetupTab.tscn" id="4_4si77"]
-[ext_resource type="Script" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
+[ext_resource type="Script" uid="uid://tbuij48j50ca" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 [ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
-[ext_resource type="Script" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
+[ext_resource type="Script" uid="uid://doqv2f6ufhvg8" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)

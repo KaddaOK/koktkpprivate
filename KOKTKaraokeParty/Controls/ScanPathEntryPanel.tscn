@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b4os8s1ynvcs6"]
 
-[ext_resource type="Script" path="res://Controls/ScanPathEntryPanel.cs" id="1_3d64p"]
+[ext_resource type="Script" uid="uid://27vodss820ch" path="res://Controls/ScanPathEntryPanel.cs" id="1_3d64p"]
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_gxgbn"]
 
 [node name="ScanPathEntryPanel" type="PanelContainer"]

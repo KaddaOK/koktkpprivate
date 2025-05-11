@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://u06hi7mpxw6s"]
 
-[ext_resource type="Shader" path="res://Graphics/grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="1_p30xu"]
-[ext_resource type="Script" path="res://Controls/DisplayScreen/DisplayScreen.cs" id="1_u87du"]
+[ext_resource type="Shader" uid="uid://drc046ah3ravk" path="res://Graphics/grimbeef_rayL019_combustible_voronoi_with_parameters.gdshader" id="1_p30xu"]
+[ext_resource type="Script" uid="uid://knd5vouorf1e" path="res://Controls/DisplayScreen/DisplayScreen.cs" id="1_u87du"]
 [ext_resource type="PackedScene" uid="uid://crqvvwc2k4kg1" path="res://Controls/DisplayScreen/NextUpDisplay.tscn" id="2_07c3t"]
 [ext_resource type="PackedScene" uid="uid://bt53uvcacuoej" path="res://Controls/DisplayScreen/emptyqueue.tscn" id="3_k0l2h"]
 [ext_resource type="PackedScene" uid="uid://b880ctf8xls06" path="res://Cdg/CdgRendererNode.tscn" id="5_j78pi"]
