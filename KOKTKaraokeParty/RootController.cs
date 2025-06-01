@@ -83,14 +83,16 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     // TODO: improve this section of junk
     [Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
-    [Node] private IConfirmationDialog PrepareSessionDialog { get; set; } = default!;
+    [Node] private IWindow PrepareSessionDialog { get; set; } = default!;
     [Node] private IButton RunChecksButton { get; set; } = default!;
     [Node] private ILabel RunChecksResultLabel { get; set; } = default!;
     [Node] private IButton GeneratePluginCacheButton { get; set; } = default!;
-
+    [Node] private ITree SessionPreparationTree { get; set; } = default!;
+    [Node] private IButton PrepareSessionOKButton { get; set; } = default!;
     #endregion
 
-	public void OnReady()
+    private PrepareSessionModel _sessionPrep;
+    public void OnReady()
     {
         SetupHistoryLogFile();
         SetupQueueTree();
@@ -114,31 +116,340 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
 
         // TODO: all of this is a mess
+        /*
         BrowserProvider.BrowserAvailabilityStatusChecked += (status) => RunChecksResultLabel.Text += $"Browser: {status.StatusResult} {status.Identity} {status.Message}\n";
         BrowserProvider.YouTubeStatusChecked += (status) => RunChecksResultLabel.Text += $"YouTube: {status.StatusResult} {status.Identity} {status.Message}\n";
         BrowserProvider.KarafunStatusChecked += (status) => RunChecksResultLabel.Text += $"Karafun: {status.StatusResult} {status.Identity} {status.Message}\n";
         RunChecksButton.Pressed += async () => await PrepareSession();
-        PrepareSessionDialog.Confirmed += () => SetProcess(true);
-        GeneratePluginCacheButton.Pressed += async () => await GeneratePluginsCache();
+        */
+        /*PrepareSessionDialog.CloseRequested += () => 
+        {
+            // TODO: don't do anything unless the checks are complete
+            // TODO: kill the whole app if none of the checks passed
+            PrepareSessionDialog.Hide();
+        };*/
+        PrepareSessionOKButton.Pressed += () =>
+        {
+            // TODO: show a warning if some services are disabled
+            PrepareSessionDialog.Hide();
+            SetProcess(true);
+        };
+        // PrepareSessionDialog.Confirmed += () => SetProcess(true);
+        //GeneratePluginCacheButton.Pressed += async () => await GeneratePluginsCache();
+
+        _sessionPrep = new PrepareSessionModel();
+        SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        BrowserProvider.BrowserAvailabilityStatusChecked += (status) =>
+        {
+            _sessionPrep.BrowserStatus = status.StatusResult;
+            _sessionPrep.BrowserIdentity = status.Identity;
+            _sessionPrep.BrowserMessage = status.Message;
+            SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        };
+        BrowserProvider.YouTubeStatusChecked += (status) =>
+        {
+            _sessionPrep.YouTubeStatus = status.StatusResult;
+            _sessionPrep.YouTubeIdentity = status.Identity;
+            _sessionPrep.YouTubeMessage = status.Message;
+            SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        };
+        BrowserProvider.KarafunStatusChecked += (status) =>
+        {
+            _sessionPrep.KarafunStatus = status.StatusResult;
+            _sessionPrep.KarafunIdentity = status.Identity;
+            _sessionPrep.KarafunMessage = status.Message;
+            SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        };
+
+        BrowserProvider.CheckStatus();
+        PrepareVlcSession();
+    }
+
+    #region TODO move to be more sensible
+    
+    public enum VLCStatus
+    {
+        NotStarted,
+        Initializing,
+        Ready,
+        FatalError
+    }
+    public class PrepareSessionModel
+    {
+        public BrowserAvailabilityStatus BrowserStatus { get; set; }
+        public string BrowserIdentity { get; set; }
+        public string BrowserMessage { get; set; }
+        public YouTubeStatus YouTubeStatus { get; set; }
+        public string YouTubeIdentity { get; set; }
+        public string YouTubeMessage { get; set; }
+
+        public KarafunStatus KarafunStatus { get; set; }
+        public string KarafunIdentity { get; set; }
+        public string KarafunMessage { get; set; }
+
+        public VLCStatus VLCStatus { get; set; }
+        public string VLCMessage { get; set; }
+    }
+
+    private (string icon, string description) GetBrowserStatusLine(BrowserAvailabilityStatus status)
+    {
+        return status switch
+        {
+            BrowserAvailabilityStatus.NotStarted => ("⬛", "Not started"),
+            BrowserAvailabilityStatus.Checking => ("⏳", "Checking..."),
+            BrowserAvailabilityStatus.Downloading => ("⏳", "Downloading..."),
+            BrowserAvailabilityStatus.Ready => ("✔", "Ready"),
+            BrowserAvailabilityStatus.Busy => ("❌", "Busy"),
+            BrowserAvailabilityStatus.FatalError => ("❌", "Error"),
+            _ => ("⚠", "Unknown")
+        };
+    }
+
+    private (string icon, string description) GetYouTubeStatusLine(YouTubeStatus status)
+    {
+        return status switch
+        {
+            YouTubeStatus.NotStarted => ("⬛", "Not started"),
+            YouTubeStatus.Checking => ("⏳", "Checking..."),
+            YouTubeStatus.NotLoggedIn => ("❌", "Not logged in"),
+            YouTubeStatus.Premium => ("✔", "Logged into Premium Account"),
+            YouTubeStatus.NotPremium => ("⚠", "Account is not Premium"),
+            YouTubeStatus.Unknown => ("⚠", "Unknown"),
+            YouTubeStatus.FatalError => ("❌", "Error"),
+            _ => ("⚠", "Unknown")
+        };
+    }
+
+    private (string icon, string description) GetKarafunStatusLine(KarafunStatus status)
+    {
+        return status switch
+        {
+            KarafunStatus.NotStarted => ("⬛", "Not started"),
+            KarafunStatus.Checking => ("⏳", "Checking..."),
+            KarafunStatus.NotLoggedIn => ("❌", "Not logged in"),
+            KarafunStatus.Active => ("✔", "Logged into Active Subscription"),
+            KarafunStatus.Inactive => ("❌", "Subscription is Inactive"),
+            KarafunStatus.Unknown => ("⚠", "Unknown"),
+            KarafunStatus.FatalError => ("❌", "Error"),
+            _ => ("⚠", "Unknown")
+        };
+    }
+
+    private string GetStreamedContentIcon(PrepareSessionModel model)
+    {
+        if (model.BrowserStatus == BrowserAvailabilityStatus.NotStarted && 
+            model.YouTubeStatus == YouTubeStatus.NotStarted &&
+            model.KarafunStatus == KarafunStatus.NotStarted)
+        {
+            return "⬛";
+        }
+
+        if (model.BrowserStatus == BrowserAvailabilityStatus.NotStarted ||
+            model.BrowserStatus == BrowserAvailabilityStatus.Checking ||
+            model.BrowserStatus == BrowserAvailabilityStatus.Downloading ||
+            model.YouTubeStatus == YouTubeStatus.NotStarted ||
+            model.YouTubeStatus == YouTubeStatus.Checking ||
+            model.KarafunStatus == KarafunStatus.NotStarted ||
+            model.KarafunStatus == KarafunStatus.Checking)
+        {
+            return "⏳";
+        }
+
+        if (model.BrowserStatus == BrowserAvailabilityStatus.Ready &&
+            model.YouTubeStatus == YouTubeStatus.Premium &&
+            model.KarafunStatus == KarafunStatus.Active)
+        {
+            return "✔";
+        }
+        if (model.BrowserStatus == BrowserAvailabilityStatus.FatalError || 
+            model.YouTubeStatus == YouTubeStatus.FatalError || 
+            model.KarafunStatus == KarafunStatus.FatalError)
+        {
+            return "❌";
+        }
+        return "⚠";
+    }
+    public void SetTreeFromSessionModel(ITree tree, PrepareSessionModel model)
+    {
+        var infoItemsFontSize = 12;
+        tree.Columns = 2;
+        tree.SetColumnCustomMinimumWidth(0, 50);
+        tree.SetColumnExpand(0, false);
+        tree.SetColumnTitlesVisible(false);
+        tree.HideRoot = true;
+        tree.HideFolding = true;
+        tree.Clear();
+        var treeRoot = tree.CreateItem();
+
+        var streamedContentItem = treeRoot.CreateChild();
+        streamedContentItem.SetText(0, GetStreamedContentIcon(model));
+        streamedContentItem.SetText(1, "Prepare to Stream Content");
+
+        var browserItem = streamedContentItem.CreateChild();
+        var browserStatusStrings = GetBrowserStatusLine(model.BrowserStatus);
+        browserItem.SetText(0, browserStatusStrings.icon);
+        browserItem.SetText(1, $"Browser: {browserStatusStrings.description}");
+        /*var browserStatusItem = browserItem.CreateChild();
+        browserStatusItem.SetText(0, browserStatusStrings.icon);
+        browserStatusItem.SetText(1, browserStatusStrings.description);*/
+        if (!string.IsNullOrEmpty(model.BrowserIdentity) && model.BrowserStatus != BrowserAvailabilityStatus.Busy)
+        {
+            var browserIdentityItem = browserItem.CreateChild();
+            browserIdentityItem.SetText(1, model.BrowserIdentity);
+            browserIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+            browserIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+        if (!string.IsNullOrEmpty(model.BrowserMessage))
+        {
+            var browserMessageItem = browserItem.CreateChild();
+            browserMessageItem.SetText(1, model.BrowserMessage);
+            browserMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+            browserMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+
+        var youtubeItem = streamedContentItem.CreateChild();
+        var youtubeStatusStrings = GetYouTubeStatusLine(model.YouTubeStatus);
+        youtubeItem.SetText(0, youtubeStatusStrings.icon);
+        youtubeItem.SetText(1, $"YouTube: {youtubeStatusStrings.description}");
+        /*var youtubeStatusItem = youtubeItem.CreateChild();
+        youtubeStatusItem.SetText(0, youtubeStatusStrings.icon);
+        youtubeStatusItem.SetText(1, youtubeStatusStrings.description);*/
+        if (!string.IsNullOrEmpty(model.YouTubeIdentity))
+        {
+            var youtubeIdentityItem = youtubeItem.CreateChild();
+            youtubeIdentityItem.SetText(1, model.YouTubeIdentity);
+            youtubeIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+            youtubeIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+        if (!string.IsNullOrEmpty(model.YouTubeMessage))
+        {
+            var youtubeMessageItem = youtubeItem.CreateChild();
+            youtubeMessageItem.SetText(1, $"{model.YouTubeMessage}");
+            youtubeMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+            youtubeMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+
+        var karafunItem = streamedContentItem.CreateChild();
+        var karafunStatusStrings = GetKarafunStatusLine(model.KarafunStatus);
+        karafunItem.SetText(0, karafunStatusStrings.icon);
+        karafunItem.SetText(1, $"Karafun: {karafunStatusStrings.description}");
+        /*var karafunStatusItem = karafunItem.CreateChild();
+        karafunStatusItem.SetText(0, karafunStatusStrings.icon);
+        karafunStatusItem.SetText(1, karafunStatusStrings.description);*/
+        if (!string.IsNullOrEmpty(model.KarafunIdentity))
+        {
+            var karafunIdentityItem = karafunItem.CreateChild();
+            karafunIdentityItem.SetText(1, model.KarafunIdentity);
+            karafunIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+            karafunIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+        if (!string.IsNullOrEmpty(model.KarafunMessage))
+        {
+            var karafunMessageItem = karafunItem.CreateChild();
+            karafunMessageItem.SetText(1, $"{model.KarafunMessage}");
+            karafunMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+            karafunMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+
+        var localItem = treeRoot.CreateChild();
+        var localContentIcon = model.VLCStatus switch
+        {
+            VLCStatus.NotStarted => "⬛",
+            VLCStatus.Initializing => "⏳",
+            VLCStatus.Ready => "✔",
+            VLCStatus.FatalError => "❌",
+            _ => "⚠"
+        };
+        localItem.SetText(0, localContentIcon);
+        localItem.SetText(1, $"Prepare for Local File Content");
+        var vlcItem = localItem.CreateChild();
+        var vlcStatusText = model.VLCStatus switch
+        {
+            VLCStatus.Initializing => "Loading VLC libraries...",
+            VLCStatus.Ready => "Ready to play back video",
+            VLCStatus.FatalError => "Error",
+            _ => "Unknown"
+        };
+        vlcItem.SetText(0, localContentIcon);
+        vlcItem.SetText(1, vlcStatusText);
+        if (!string.IsNullOrEmpty(model.VLCMessage))
+        {
+            var vlcMessageItem = vlcItem.CreateChild();
+            vlcMessageItem.SetText(1, $"{model.VLCMessage}");
+            vlcMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+            vlcMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+        }
+
+        // TODO: hang on to these flags and use them to set what search panes are available
+        var noLocalPlayback = model.VLCStatus != VLCStatus.Ready;
+        var noYoutubePlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
+            model.YouTubeStatus == YouTubeStatus.FatalError;
+        var noKarafunPlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
+            model.KarafunStatus != KarafunStatus.Active;
+
+        // TODO: technically we could still play MP3+G without VLC...
+        var nothingIsDoable = noLocalPlayback && noYoutubePlayback && noKarafunPlayback;
+
+        // set whether OK button is enabled or not (this is a difficult task that requires more thought about usage scenarios)
+        var checksAreStillInProgress = model.BrowserStatus == BrowserAvailabilityStatus.NotStarted ||
+            model.BrowserStatus == BrowserAvailabilityStatus.Checking ||
+            model.BrowserStatus == BrowserAvailabilityStatus.Downloading ||
+            model.YouTubeStatus == YouTubeStatus.NotStarted ||
+            model.YouTubeStatus == YouTubeStatus.Checking ||
+            model.KarafunStatus == KarafunStatus.NotStarted ||
+            model.KarafunStatus == KarafunStatus.Checking ||
+            model.VLCStatus == VLCStatus.NotStarted ||
+            model.VLCStatus == VLCStatus.Initializing;
+        if (checksAreStillInProgress)
+        {
+            PrepareSessionOKButton.Disabled = true;
+            PrepareSessionOKButton.TooltipText = "Please wait until all checks are complete.";
+            PrepareSessionOKButton.Text = "Preparing...";
+        }
+        else if (nothingIsDoable)
+        {
+            PrepareSessionOKButton.Disabled = true;
+            PrepareSessionOKButton.TooltipText = "No usage options passed checks.";
+            PrepareSessionOKButton.Text = "Failed";
+        }
+        else
+        {
+            PrepareSessionOKButton.Disabled = false;
+            PrepareSessionOKButton.Text = "Start";
+        }
+        // TODO: option to show logins!
     }
 
     // TODO: move these to be more sensible
-    private async Task PrepareSession()
+    private async Task PrepareVlcSession()
     {
-        await BrowserProvider.CheckStatus();
-        RunChecksResultLabel.Text += "Initializing VLC...\n";
+        _sessionPrep.VLCStatus = VLCStatus.Initializing;
+        SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
         await ToSignal(GetTree(), "process_frame");
-        await DisplayScreen.InitializeVlc();
-        RunChecksResultLabel.Text += "Done.\n";
+        try
+        {
+            await DisplayScreen.InitializeVlc();
+            _sessionPrep.VLCStatus = VLCStatus.Ready;
+            //_sessionPrep.VLCMessage = "VLC libraries loaded successfully.";
+        }
+        catch (Exception ex)
+        {
+            _sessionPrep.VLCStatus = VLCStatus.FatalError;
+            _sessionPrep.VLCMessage = $"Error loading VLC libraries: {ex.Message}";
+        }
+        SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
     }
+    
+    /*
     private async Task GeneratePluginsCache()
-    {   
+    {
         RunChecksResultLabel.Text += "Regenerating VLC plugins cache...\n";
         await ToSignal(GetTree(), "process_frame");
         await DisplayScreen.GeneratePluginsCache();
         RunChecksResultLabel.Text += "Done.\n";
     }
-
+    */
+    #endregion
 
     public void FilesDropped(string[] files)
     {

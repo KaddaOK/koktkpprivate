@@ -17,6 +17,7 @@ public interface IKarafunAutomator
 
 public enum KarafunStatus
 {
+    NotStarted,
     Checking,
     NotLoggedIn,
     Active,
@@ -263,7 +264,7 @@ public async Task Seek(IPage page, long positionMs)
             var titleText = await GetInnerTextContent(page, pageTitleWhenNotLoggedInSelector);
             if (titleText == "Log in to KaraFun")
             {
-                return new StatusCheckResult<KarafunStatus>(KarafunStatus.NotLoggedIn, accountName, null);
+                return new StatusCheckResult<KarafunStatus>(KarafunStatus.NotLoggedIn, accountName, "Karafun cannot function without an active subscription.");
             }
             else
             {

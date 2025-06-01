@@ -19,6 +19,7 @@ public interface IYoutubeAutomator
 
 public enum YouTubeStatus
 {
+    NotStarted,
     Checking,
     NotLoggedIn,
     Premium,
@@ -296,12 +297,12 @@ public class YoutubeAutomator : WebAutomatorBase<YouTubeStatus>, IYoutubeAutomat
             {
                 return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Unknown, accountName, "Detected both premium and non-premium indicators");
             }
-            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Premium, accountName, null);
+            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Premium, accountName, "You will enjoy an ad-free experience.");
         }
         
         if (getPremiumButton != null)
         {
-            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.NotPremium, accountName, null);
+            return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.NotPremium, accountName, "YouTube Ads may disrupt queue and playback. Consider subscribing to YouTube Premium.");
         }
         
         return new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Unknown, accountName, "User seemed to be logged in but neither premium nor non-premium indications were detected");

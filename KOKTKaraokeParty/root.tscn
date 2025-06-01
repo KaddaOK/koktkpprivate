@@ -174,12 +174,13 @@ unique_name_in_owner = true
 title = "Message"
 initial_position = 2
 
-[node name="PrepareSessionDialog" type="ConfirmationDialog" parent="Main GUI"]
+[node name="PrepareSessionDialog" type="Window" parent="Main GUI"]
 unique_name_in_owner = true
 title = "Prepare Session"
 initial_position = 2
 size = Vector2i(800, 600)
-visible = true
+transient = true
+exclusive = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog"]
 offset_left = 8.0
@@ -189,19 +190,45 @@ offset_bottom = 551.0
 
 [node name="GeneratePluginCacheButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Generate VLC Plugin Cache (first-run)"
 
 [node name="RunChecksButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Run Checks"
 
 [node name="RunChecksResultLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="SessionPreparationTree" type="Tree" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_folding = true
+hide_root = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="LaunchForLoginsButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+text = "Change Logins..."
+
+[node name="PrepareSessionOKButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+disabled = true
+text = "Start the Party!"
 
 [node name="DisplayScreen" parent="." instance=ExtResource("3_f0j17")]
 unique_name_in_owner = true

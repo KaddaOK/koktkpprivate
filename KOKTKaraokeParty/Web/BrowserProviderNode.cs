@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Chickensoft.AutoInject;
@@ -16,6 +17,7 @@ public interface IBrowserProviderNode : INode
 
 public enum BrowserAvailabilityStatus
 {
+    NotStarted,
     Checking,
     Downloading,
     Ready,
@@ -146,26 +148,37 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             browserToUse = _headlessBrowser;
         }
 
-        // TODO: check these concurrently... it's just that if you do, then your 
-        // invokes "can't call this function in this node" so you'd have to wrap 
-        // them with CallDeferred but if you do THAT then they have to be FUCKING
-        // GODOT VARIANTS AND I HATE THAT STUPID SHIT SO VERY MUCH GOD DAMN
+        var concurrentChecks = new List<Task>();
         if (checkYouTube)
         {
-            var youTubeCheckPage = await browserToUse.NewPageAsync();
-            YouTubeStatusChecked?.Invoke(new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Checking, null, null));
-            var youTubeStatusResult = await _youtubeAutomator.CheckStatus(youTubeCheckPage);
-            YouTubeStatusChecked?.Invoke(youTubeStatusResult);
-            await youTubeCheckPage.CloseAsync();
+            concurrentChecks.Add(Task.Run(async () => {
+                var youTubeCheckPage = await browserToUse.NewPageAsync();
+                Callable.From(() =>
+                    YouTubeStatusChecked?.Invoke(new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Checking, null, null))
+                    ).CallDeferred();
+                var youTubeStatusResult = await _youtubeAutomator.CheckStatus(youTubeCheckPage);
+                Callable.From(() =>
+                    YouTubeStatusChecked?.Invoke(youTubeStatusResult)
+                    ).CallDeferred();
+                await youTubeCheckPage.CloseAsync();
+            }));
         }
         if (checkKarafun)
         {
+            concurrentChecks.Add(Task.Run(async () => {
             var karafunCheckPage = await browserToUse.NewPageAsync();
-            KarafunStatusChecked?.Invoke(new StatusCheckResult<KarafunStatus>(KarafunStatus.Checking, null, null));
+            Callable.From(() =>
+                KarafunStatusChecked?.Invoke(new StatusCheckResult<KarafunStatus>(KarafunStatus.Checking, null, null))
+                ).CallDeferred();
             var karafunStatusResult = await _karafunAutomator.CheckStatus(karafunCheckPage);
-            KarafunStatusChecked?.Invoke(karafunStatusResult);
+            Callable.From(() =>
+                KarafunStatusChecked?.Invoke(karafunStatusResult)
+                ).CallDeferred();
             await karafunCheckPage.CloseAsync();
+            }));
         }
+
+        await Task.WhenAll(concurrentChecks);
 
         if (iOwnThisBrowser)
         {
