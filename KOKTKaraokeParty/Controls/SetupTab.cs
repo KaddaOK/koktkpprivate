@@ -29,9 +29,10 @@ public partial class SetupTab : MarginContainer, ISetupTab
     public override void _Notification(int what) => this.Notify(what);
 
     #region Dependencies
-    [Dependency] public IPuppeteerPlayer PuppeteerPlayer => this.DependOn<IPuppeteerPlayer>();
+    //[Dependency] public IPuppeteerPlayer PuppeteerPlayer => this.DependOn<IPuppeteerPlayer>();
+    [Dependency] public IBrowserProviderNode BrowserProvider => this.DependOn<IBrowserProviderNode>();
     #endregion
-    
+
     #region Nodes
     [Node] private Button LaunchUnautomatedButton { get; set; } = default!;
     [Node] private Button LaunchAutomatedButton { get; set; } = default!;
@@ -60,8 +61,8 @@ public partial class SetupTab : MarginContainer, ISetupTab
 
     public void OnReady()
     {
-        LaunchUnautomatedButton.Pressed += () => PuppeteerPlayer.LaunchUnautomatedBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
-        LaunchAutomatedButton.Pressed += () => PuppeteerPlayer.LaunchAutomatedBrowser();
+        LaunchUnautomatedButton.Pressed += () => BrowserProvider.LaunchUncontrolledBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
+        LaunchAutomatedButton.Pressed += () => BrowserProvider.LaunchControlledBrowser();
         ApplyMonitorButton.Pressed += () => EmitSignal(SignalName.DisplayScreenMonitorChanged, (int)MonitorSpinbox.Value);
         HideDisplayScreenButton.Pressed += () => EmitSignal(SignalName.DisplayScreenDismissed);
         WaitSpinbox.ValueChanged += (value) => EmitSignal(SignalName.CountdownLengthChanged, (int)value);

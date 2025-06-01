@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=15 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
@@ -14,6 +14,18 @@
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_huihk"]
+bg_color = Color(0.438071, 0.266046, 0.366008, 0.756863)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_huihk"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tw3kd"]
+
+[sub_resource type="Theme" id="Theme_tw3kd"]
+Label/styles/normal = SubResource("StyleBoxFlat_huihk")
+Window/styles/embedded_border = SubResource("StyleBoxEmpty_huihk")
+Window/styles/embedded_unfocused_border = SubResource("StyleBoxEmpty_tw3kd")
 
 [node name="RootController" type="Node"]
 script = ExtResource("1_fuv7c")
@@ -181,6 +193,7 @@ initial_position = 2
 size = Vector2i(800, 600)
 transient = true
 exclusive = true
+unresizable = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog"]
 offset_left = 8.0
@@ -217,6 +230,12 @@ hide_root = true
 [node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 layout_mode = 2
 
+[node name="PrepareQuitButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+text = "Quit"
+
 [node name="LaunchForLoginsButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -229,6 +248,29 @@ layout_mode = 2
 size_flags_horizontal = 6
 disabled = true
 text = "Start the Party!"
+
+[node name="WaitingForBrowserDialog" type="Window" parent="Main GUI/PrepareSessionDialog"]
+unique_name_in_owner = true
+initial_position = 2
+size = Vector2i(400, 100)
+visible = false
+transient = true
+exclusive = true
+unresizable = true
+borderless = true
+theme = SubResource("Theme_tw3kd")
+
+[node name="Label" type="Label" parent="Main GUI/PrepareSessionDialog/WaitingForBrowserDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+text = "Close the browser when finished logging in..."
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="DisplayScreen" parent="." instance=ExtResource("3_f0j17")]
 unique_name_in_owner = true

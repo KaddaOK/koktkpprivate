@@ -5,6 +5,7 @@ using Godot;
 using NAudio.Flac;
 using NAudio.Wave;
 using Newtonsoft.Json;
+using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +17,7 @@ namespace KOKTKaraokeParty;
 
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node, 
-IProvide<IPuppeteerPlayer>, IProvide<Settings>
+IProvide<IBrowserProviderNode>, IProvide<Settings>
 {
     #region Local State
 
@@ -31,8 +32,9 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
 
     #region Initialized Dependencies
 
-    private IPuppeteerPlayer PuppeteerPlayer { get; set; }
-    IPuppeteerPlayer IProvide<IPuppeteerPlayer>.Value() => PuppeteerPlayer;
+    //private IPuppeteerPlayer PuppeteerPlayer { get; set; }
+    //IPuppeteerPlayer IProvide<IPuppeteerPlayer>.Value() => PuppeteerPlayer;
+    IBrowserProviderNode IProvide<IBrowserProviderNode>.Value() => BrowserProvider;
 
     private Settings Settings { get; set; }
     Settings IProvide<Settings>.Value() => Settings;
@@ -41,12 +43,12 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     private IFileWrapper FileWrapper { get; set;}
 
     public void SetupForTesting(
-        IPuppeteerPlayer puppeteerPlayer, 
+        //IPuppeteerPlayer puppeteerPlayer, 
         Settings settings,
         ILocalFileValidator localFileValidator,
         IFileWrapper fileWrapper)
     {
-        PuppeteerPlayer = puppeteerPlayer;
+        //PuppeteerPlayer = puppeteerPlayer;
         Settings = settings;
         LocalFileValidator = localFileValidator;
         FileWrapper = fileWrapper;
@@ -55,7 +57,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     public void Initialize()
     {
         FileWrapper = new FileWrapper();
-        PuppeteerPlayer = new PuppeteerPlayer();
+        //PuppeteerPlayer = new PuppeteerPlayer();
         Settings = Settings.LoadFromDiskIfExists(FileWrapper);
         LocalFileValidator = new LocalFileValidator();
     }
@@ -89,6 +91,9 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     [Node] private IButton GeneratePluginCacheButton { get; set; } = default!;
     [Node] private ITree SessionPreparationTree { get; set; } = default!;
     [Node] private IButton PrepareSessionOKButton { get; set; } = default!;
+    [Node] private IButton LaunchForLoginsButton { get; set; } = default!;
+    [Node] private IWindow WaitingForBrowserDialog { get; set; } = default!;
+    [Node] private IButton PrepareQuitButton { get; set; } = default!;
     #endregion
 
     private PrepareSessionModel _sessionPrep;
@@ -112,8 +117,8 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         this.Provide();
         //SetProcess(true);
 
-        PuppeteerPlayer.PlaybackDurationChanged += UpdatePlaybackDuration;
-        PuppeteerPlayer.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
+        BrowserProvider.PlaybackDurationChanged += UpdatePlaybackDuration;
+        BrowserProvider.PlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
 
         // TODO: all of this is a mess
         /*
@@ -134,6 +139,31 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             PrepareSessionDialog.Hide();
             SetProcess(true);
         };
+        LaunchForLoginsButton.Pressed += async () =>
+        {
+            var process = await BrowserProvider.LaunchUncontrolledBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
+            WaitingForBrowserDialog.Show();
+            GD.Print($"Uncontrolled Browser Process ID: {process.Id}");
+            process.Exited += (sender, args) =>
+            {
+                GD.Print("Browser process exited, resuming session preparation.");
+                _sessionPrep.KarafunStatus = KarafunStatus.NotStarted;
+                _sessionPrep.KarafunIdentity = null;
+                _sessionPrep.KarafunMessage = null;
+                _sessionPrep.YouTubeStatus = YouTubeStatus.NotStarted;
+                _sessionPrep.YouTubeIdentity = null;
+                _sessionPrep.YouTubeMessage = null;
+                Callable.From(() =>
+                {
+                    SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+                    WaitingForBrowserDialog.Hide();
+                }).CallDeferred();
+                BrowserProvider.CheckStatus();
+            };
+        };
+        
+        PrepareQuitButton.Pressed += () => Quit();
+
         // PrepareSessionDialog.Confirmed += () => SetProcess(true);
         //GeneratePluginCacheButton.Pressed += async () => await GeneratePluginsCache();
 
@@ -271,153 +301,159 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     }
     public void SetTreeFromSessionModel(ITree tree, PrepareSessionModel model)
     {
-        var infoItemsFontSize = 12;
-        tree.Columns = 2;
-        tree.SetColumnCustomMinimumWidth(0, 50);
-        tree.SetColumnExpand(0, false);
-        tree.SetColumnTitlesVisible(false);
-        tree.HideRoot = true;
-        tree.HideFolding = true;
-        tree.Clear();
-        var treeRoot = tree.CreateItem();
+        Callable.From(() =>
+        {
+            var infoItemsFontSize = 12;
+            tree.Columns = 2;
+            tree.SetColumnCustomMinimumWidth(0, 50);
+            tree.SetColumnExpand(0, false);
+            tree.SetColumnTitlesVisible(false);
+            tree.HideRoot = true;
+            tree.HideFolding = true;
+            tree.Clear();
+            var treeRoot = tree.CreateItem();
 
-        var streamedContentItem = treeRoot.CreateChild();
-        streamedContentItem.SetText(0, GetStreamedContentIcon(model));
-        streamedContentItem.SetText(1, "Prepare to Stream Content");
+            var streamedContentItem = treeRoot.CreateChild();
+            streamedContentItem.SetText(0, GetStreamedContentIcon(model));
+            streamedContentItem.SetText(1, "Prepare to Stream Content");
 
-        var browserItem = streamedContentItem.CreateChild();
-        var browserStatusStrings = GetBrowserStatusLine(model.BrowserStatus);
-        browserItem.SetText(0, browserStatusStrings.icon);
-        browserItem.SetText(1, $"Browser: {browserStatusStrings.description}");
-        /*var browserStatusItem = browserItem.CreateChild();
-        browserStatusItem.SetText(0, browserStatusStrings.icon);
-        browserStatusItem.SetText(1, browserStatusStrings.description);*/
-        if (!string.IsNullOrEmpty(model.BrowserIdentity) && model.BrowserStatus != BrowserAvailabilityStatus.Busy)
-        {
-            var browserIdentityItem = browserItem.CreateChild();
-            browserIdentityItem.SetText(1, model.BrowserIdentity);
-            browserIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
-            browserIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
-        if (!string.IsNullOrEmpty(model.BrowserMessage))
-        {
-            var browserMessageItem = browserItem.CreateChild();
-            browserMessageItem.SetText(1, model.BrowserMessage);
-            browserMessageItem.SetCustomFontSize(0, infoItemsFontSize);
-            browserMessageItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
+            var browserItem = streamedContentItem.CreateChild();
+            var browserStatusStrings = GetBrowserStatusLine(model.BrowserStatus);
+            browserItem.SetText(0, browserStatusStrings.icon);
+            browserItem.SetText(1, $"Browser: {browserStatusStrings.description}");
+            /*var browserStatusItem = browserItem.CreateChild();
+            browserStatusItem.SetText(0, browserStatusStrings.icon);
+            browserStatusItem.SetText(1, browserStatusStrings.description);*/
+            if (!string.IsNullOrEmpty(model.BrowserIdentity) && model.BrowserStatus != BrowserAvailabilityStatus.Busy)
+            {
+                var browserIdentityItem = browserItem.CreateChild();
+                browserIdentityItem.SetText(1, model.BrowserIdentity);
+                browserIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+                browserIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
+            if (!string.IsNullOrEmpty(model.BrowserMessage))
+            {
+                var browserMessageItem = browserItem.CreateChild();
+                browserMessageItem.SetText(1, model.BrowserMessage);
+                browserMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+                browserMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
 
-        var youtubeItem = streamedContentItem.CreateChild();
-        var youtubeStatusStrings = GetYouTubeStatusLine(model.YouTubeStatus);
-        youtubeItem.SetText(0, youtubeStatusStrings.icon);
-        youtubeItem.SetText(1, $"YouTube: {youtubeStatusStrings.description}");
-        /*var youtubeStatusItem = youtubeItem.CreateChild();
-        youtubeStatusItem.SetText(0, youtubeStatusStrings.icon);
-        youtubeStatusItem.SetText(1, youtubeStatusStrings.description);*/
-        if (!string.IsNullOrEmpty(model.YouTubeIdentity))
-        {
-            var youtubeIdentityItem = youtubeItem.CreateChild();
-            youtubeIdentityItem.SetText(1, model.YouTubeIdentity);
-            youtubeIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
-            youtubeIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
-        if (!string.IsNullOrEmpty(model.YouTubeMessage))
-        {
-            var youtubeMessageItem = youtubeItem.CreateChild();
-            youtubeMessageItem.SetText(1, $"{model.YouTubeMessage}");
-            youtubeMessageItem.SetCustomFontSize(0, infoItemsFontSize);
-            youtubeMessageItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
+            var youtubeItem = streamedContentItem.CreateChild();
+            var youtubeStatusStrings = GetYouTubeStatusLine(model.YouTubeStatus);
+            youtubeItem.SetText(0, youtubeStatusStrings.icon);
+            youtubeItem.SetText(1, $"YouTube: {youtubeStatusStrings.description}");
+            /*var youtubeStatusItem = youtubeItem.CreateChild();
+            youtubeStatusItem.SetText(0, youtubeStatusStrings.icon);
+            youtubeStatusItem.SetText(1, youtubeStatusStrings.description);*/
+            if (!string.IsNullOrEmpty(model.YouTubeIdentity))
+            {
+                var youtubeIdentityItem = youtubeItem.CreateChild();
+                youtubeIdentityItem.SetText(1, model.YouTubeIdentity);
+                youtubeIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+                youtubeIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
+            if (!string.IsNullOrEmpty(model.YouTubeMessage))
+            {
+                var youtubeMessageItem = youtubeItem.CreateChild();
+                youtubeMessageItem.SetText(1, $"{model.YouTubeMessage}");
+                youtubeMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+                youtubeMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
 
-        var karafunItem = streamedContentItem.CreateChild();
-        var karafunStatusStrings = GetKarafunStatusLine(model.KarafunStatus);
-        karafunItem.SetText(0, karafunStatusStrings.icon);
-        karafunItem.SetText(1, $"Karafun: {karafunStatusStrings.description}");
-        /*var karafunStatusItem = karafunItem.CreateChild();
-        karafunStatusItem.SetText(0, karafunStatusStrings.icon);
-        karafunStatusItem.SetText(1, karafunStatusStrings.description);*/
-        if (!string.IsNullOrEmpty(model.KarafunIdentity))
-        {
-            var karafunIdentityItem = karafunItem.CreateChild();
-            karafunIdentityItem.SetText(1, model.KarafunIdentity);
-            karafunIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
-            karafunIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
-        if (!string.IsNullOrEmpty(model.KarafunMessage))
-        {
-            var karafunMessageItem = karafunItem.CreateChild();
-            karafunMessageItem.SetText(1, $"{model.KarafunMessage}");
-            karafunMessageItem.SetCustomFontSize(0, infoItemsFontSize);
-            karafunMessageItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
+            var karafunItem = streamedContentItem.CreateChild();
+            var karafunStatusStrings = GetKarafunStatusLine(model.KarafunStatus);
+            karafunItem.SetText(0, karafunStatusStrings.icon);
+            karafunItem.SetText(1, $"Karafun: {karafunStatusStrings.description}");
+            /*var karafunStatusItem = karafunItem.CreateChild();
+            karafunStatusItem.SetText(0, karafunStatusStrings.icon);
+            karafunStatusItem.SetText(1, karafunStatusStrings.description);*/
+            if (!string.IsNullOrEmpty(model.KarafunIdentity))
+            {
+                var karafunIdentityItem = karafunItem.CreateChild();
+                karafunIdentityItem.SetText(1, model.KarafunIdentity);
+                karafunIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+                karafunIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
+            if (!string.IsNullOrEmpty(model.KarafunMessage))
+            {
+                var karafunMessageItem = karafunItem.CreateChild();
+                karafunMessageItem.SetText(1, $"{model.KarafunMessage}");
+                karafunMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+                karafunMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
 
-        var localItem = treeRoot.CreateChild();
-        var localContentIcon = model.VLCStatus switch
-        {
-            VLCStatus.NotStarted => "⬛",
-            VLCStatus.Initializing => "⏳",
-            VLCStatus.Ready => "✔",
-            VLCStatus.FatalError => "❌",
-            _ => "⚠"
-        };
-        localItem.SetText(0, localContentIcon);
-        localItem.SetText(1, $"Prepare for Local File Content");
-        var vlcItem = localItem.CreateChild();
-        var vlcStatusText = model.VLCStatus switch
-        {
-            VLCStatus.Initializing => "Loading VLC libraries...",
-            VLCStatus.Ready => "Ready to play back video",
-            VLCStatus.FatalError => "Error",
-            _ => "Unknown"
-        };
-        vlcItem.SetText(0, localContentIcon);
-        vlcItem.SetText(1, vlcStatusText);
-        if (!string.IsNullOrEmpty(model.VLCMessage))
-        {
-            var vlcMessageItem = vlcItem.CreateChild();
-            vlcMessageItem.SetText(1, $"{model.VLCMessage}");
-            vlcMessageItem.SetCustomFontSize(0, infoItemsFontSize);
-            vlcMessageItem.SetCustomFontSize(1, infoItemsFontSize);
-        }
+            var localItem = treeRoot.CreateChild();
+            var localContentIcon = model.VLCStatus switch
+            {
+                VLCStatus.NotStarted => "⬛",
+                VLCStatus.Initializing => "⏳",
+                VLCStatus.Ready => "✔",
+                VLCStatus.FatalError => "❌",
+                _ => "⚠"
+            };
+            localItem.SetText(0, localContentIcon);
+            localItem.SetText(1, $"Prepare for Local File Content");
+            var vlcItem = localItem.CreateChild();
+            var vlcStatusText = model.VLCStatus switch
+            {
+                VLCStatus.Initializing => "Loading VLC libraries...",
+                VLCStatus.Ready => "Ready to play back video",
+                VLCStatus.FatalError => "Error",
+                _ => "Unknown"
+            };
+            vlcItem.SetText(0, localContentIcon);
+            vlcItem.SetText(1, vlcStatusText);
+            if (!string.IsNullOrEmpty(model.VLCMessage))
+            {
+                var vlcMessageItem = vlcItem.CreateChild();
+                vlcMessageItem.SetText(1, $"{model.VLCMessage}");
+                vlcMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+                vlcMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
 
-        // TODO: hang on to these flags and use them to set what search panes are available
-        var noLocalPlayback = model.VLCStatus != VLCStatus.Ready;
-        var noYoutubePlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
-            model.YouTubeStatus == YouTubeStatus.FatalError;
-        var noKarafunPlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
-            model.KarafunStatus != KarafunStatus.Active;
+            // TODO: hang on to these flags and use them to set what search panes are available
+            var noLocalPlayback = model.VLCStatus != VLCStatus.Ready;
+            var noYoutubePlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
+                model.YouTubeStatus == YouTubeStatus.FatalError;
+            var noKarafunPlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
+                model.KarafunStatus != KarafunStatus.Active;
 
-        // TODO: technically we could still play MP3+G without VLC...
-        var nothingIsDoable = noLocalPlayback && noYoutubePlayback && noKarafunPlayback;
+            // TODO: technically we could still play MP3+G without VLC...
+            var nothingIsDoable = noLocalPlayback && noYoutubePlayback && noKarafunPlayback;
 
-        // set whether OK button is enabled or not (this is a difficult task that requires more thought about usage scenarios)
-        var checksAreStillInProgress = model.BrowserStatus == BrowserAvailabilityStatus.NotStarted ||
-            model.BrowserStatus == BrowserAvailabilityStatus.Checking ||
-            model.BrowserStatus == BrowserAvailabilityStatus.Downloading ||
-            model.YouTubeStatus == YouTubeStatus.NotStarted ||
-            model.YouTubeStatus == YouTubeStatus.Checking ||
-            model.KarafunStatus == KarafunStatus.NotStarted ||
-            model.KarafunStatus == KarafunStatus.Checking ||
-            model.VLCStatus == VLCStatus.NotStarted ||
-            model.VLCStatus == VLCStatus.Initializing;
-        if (checksAreStillInProgress)
-        {
-            PrepareSessionOKButton.Disabled = true;
-            PrepareSessionOKButton.TooltipText = "Please wait until all checks are complete.";
-            PrepareSessionOKButton.Text = "Preparing...";
-        }
-        else if (nothingIsDoable)
-        {
-            PrepareSessionOKButton.Disabled = true;
-            PrepareSessionOKButton.TooltipText = "No usage options passed checks.";
-            PrepareSessionOKButton.Text = "Failed";
-        }
-        else
-        {
-            PrepareSessionOKButton.Disabled = false;
-            PrepareSessionOKButton.Text = "Start";
-        }
-        // TODO: option to show logins!
+            // set whether OK button is enabled or not (this is a difficult task that requires more thought about usage scenarios)
+            var checksAreStillInProgress = model.BrowserStatus == BrowserAvailabilityStatus.NotStarted ||
+                model.BrowserStatus == BrowserAvailabilityStatus.Checking ||
+                model.BrowserStatus == BrowserAvailabilityStatus.Downloading ||
+                model.YouTubeStatus == YouTubeStatus.NotStarted ||
+                model.YouTubeStatus == YouTubeStatus.Checking ||
+                model.KarafunStatus == KarafunStatus.NotStarted ||
+                model.KarafunStatus == KarafunStatus.Checking ||
+                model.VLCStatus == VLCStatus.NotStarted ||
+                model.VLCStatus == VLCStatus.Initializing;
+
+            LaunchForLoginsButton.Disabled = checksAreStillInProgress;
+
+            if (checksAreStillInProgress)
+            {
+                PrepareSessionOKButton.Disabled = true;
+                PrepareSessionOKButton.TooltipText = "Please wait until all checks are complete.";
+                PrepareSessionOKButton.Text = "Preparing...";
+            }
+            else if (nothingIsDoable)
+            {
+                PrepareSessionOKButton.Disabled = true;
+                PrepareSessionOKButton.TooltipText = "No usage options passed checks.";
+                PrepareSessionOKButton.Text = "Failed";
+            }
+            else
+            {
+                PrepareSessionOKButton.Disabled = false;
+                PrepareSessionOKButton.Text = "Start the Party!";
+            }
+            // TODO: option to show logins!
+        }).CallDeferred();
     }
 
     // TODO: move these to be more sensible
@@ -562,7 +598,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
     {
         var cleanupTasks = new List<Task>
         {
-            PuppeteerPlayer.CloseAutomatedBrowser()
+            BrowserProvider.CloseControlledBrowser()
         };
         if (BackgroundMusicPlayer.Playing)
         {
@@ -615,7 +651,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             case ItemType.KarafunWeb:
                 IsWaitingToReturnFromBrowserControl = true;
                 DisplayScreen.HideDisplayScreen();
-                await PuppeteerPlayer.PlayKarafunUrl(item.PerformanceLink, cancellationToken);
+                await BrowserProvider.PlayKarafunUrl(item.PerformanceLink, cancellationToken);
                 IsWaitingToReturnFromBrowserControl = false;
                 GD.Print("Karafun playback finished.");
                 RemoveQueueTreeRow(NowPlaying);
@@ -624,7 +660,7 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
             case ItemType.Youtube:
                 IsWaitingToReturnFromBrowserControl = true;
                 DisplayScreen.HideDisplayScreen();
-                await PuppeteerPlayer.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
+                await BrowserProvider.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
                 IsWaitingToReturnFromBrowserControl = false;
                 GD.Print("Youtube playback finished.");
                 RemoveQueueTreeRow(NowPlaying);
@@ -685,11 +721,11 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
         MainWindowProgressSlider.ValueChanged += (value) => {
             if (NowPlaying.ItemType == ItemType.Youtube)
             {
-                PuppeteerPlayer.SeekYouTube((long)value);
+                BrowserProvider.SeekYouTube((long)value);
             }
             else if (NowPlaying.ItemType == ItemType.KarafunWeb)
             {
-                PuppeteerPlayer.SeekKarafun((long)value);
+                BrowserProvider.SeekKarafun((long)value);
             }
             else
             {
@@ -1101,10 +1137,10 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                 switch (NowPlaying.ItemType)
                 {
                     case ItemType.KarafunWeb:
-                        await PuppeteerPlayer.PauseKarafun();
+                        await BrowserProvider.PauseKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutubePlayback();
+                        await BrowserProvider.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:
@@ -1131,10 +1167,10 @@ IProvide<IPuppeteerPlayer>, IProvide<Settings>
                 switch (NowPlaying.ItemType)
                 {
                     case ItemType.KarafunWeb:
-                        await PuppeteerPlayer.ResumeKarafun();
+                        await BrowserProvider.ResumeKarafun();
                         break;
                     case ItemType.Youtube:
-                        await PuppeteerPlayer.ToggleYoutubePlayback();
+                        await BrowserProvider.ToggleYoutubePlayback();
                         break;
                     case ItemType.LocalMp3G:
                     case ItemType.LocalMp3GZip:

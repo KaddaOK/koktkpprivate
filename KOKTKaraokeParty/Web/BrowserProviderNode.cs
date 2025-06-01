@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
@@ -13,6 +17,20 @@ public interface IBrowserProviderNode : INode
     event BrowserAvailabilityStatusEventHandler BrowserAvailabilityStatusChecked;
     event YouTubeStatusEventHandler YouTubeStatusChecked;
     event KarafunStatusEventHandler KarafunStatusChecked;
+
+    Task LaunchControlledBrowser();
+    Task<Process> LaunchUncontrolledBrowser(params string[] sites);
+    Task CloseControlledBrowser();
+    Task PlayYoutubeUrl(string url, CancellationToken cancellationToken);
+    Task PlayKarafunUrl(string url, CancellationToken cancellationToken);
+    Task PauseKarafun();
+    Task ResumeKarafun();
+    Task SeekKarafun(long positionMs);
+    Task ToggleYoutubePlayback();
+    Task SeekYouTube(long positionMs);
+
+    event PlaybackProgressEventHandler PlaybackProgress;
+    event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 
 public enum BrowserAvailabilityStatus
@@ -36,11 +54,17 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
 
     private IBrowser _headlessBrowser;
     private IBrowser _headedBrowser;
+    //private int _uncontrolledBrowserPid = -1;
+    private Process _uncontrolledBrowserProcess;
+    private IPage _page; // TODO: rename
     private IBrowserFetcher _browserFetcher;
 
     public event BrowserAvailabilityStatusEventHandler BrowserAvailabilityStatusChecked;
     public event YouTubeStatusEventHandler YouTubeStatusChecked;
     public event KarafunStatusEventHandler KarafunStatusChecked;
+
+    public event PlaybackProgressEventHandler PlaybackProgress;
+    public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 
     #region Initialized Dependencies
 
@@ -76,8 +100,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             GD.Print("Checking browser status...");
             BrowserAvailabilityStatusChecked?.Invoke(
                     new StatusCheckResult<BrowserAvailabilityStatus>(
-                        BrowserAvailabilityStatus.Checking, 
-                        null, 
+                        BrowserAvailabilityStatus.Checking,
+                        null,
                         null));
             var chromiumRevision = await CheckForBrowser(_browserFetcher);
             if (chromiumRevision == null)
@@ -85,8 +109,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
                 GD.Print("Downloading browser...");
                 BrowserAvailabilityStatusChecked?.Invoke(
                     new StatusCheckResult<BrowserAvailabilityStatus>(
-                        BrowserAvailabilityStatus.Downloading, 
-                        null, 
+                        BrowserAvailabilityStatus.Downloading,
+                        null,
                         null));
                 var revisionInfo = await _browserFetcher.DownloadAsync();
                 chromiumRevision = revisionInfo?.BuildId;
@@ -95,8 +119,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             GD.Print($"Browser ready at {path}");
             BrowserAvailabilityStatusChecked?.Invoke(
                 new StatusCheckResult<BrowserAvailabilityStatus>(
-                    BrowserAvailabilityStatus.Ready, 
-                    $"Chromium {chromiumRevision}", 
+                    BrowserAvailabilityStatus.Ready,
+                    $"Chromium {chromiumRevision}",
                     path));
         }
         catch (System.Exception ex)
@@ -126,7 +150,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             GD.PrintErr("There is a visible browser already in use!");
             BrowserAvailabilityStatusChecked?.Invoke(
                 new StatusCheckResult<BrowserAvailabilityStatus>(
-                    BrowserAvailabilityStatus.Busy, 
+                    BrowserAvailabilityStatus.Busy,
                     _headedBrowser.Process?.Id.ToString(),
                     "There is a visible browser already in use."));
         }
@@ -136,7 +160,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             GD.PrintErr("A headless browser already exists, which is odd.");
             BrowserAvailabilityStatusChecked?.Invoke(
                 new StatusCheckResult<BrowserAvailabilityStatus>(
-                    BrowserAvailabilityStatus.Busy, 
+                    BrowserAvailabilityStatus.Busy,
                     _headedBrowser.Process?.Id.ToString(),
                     "A headless browser already exists, which is odd."));
         }
@@ -151,7 +175,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         var concurrentChecks = new List<Task>();
         if (checkYouTube)
         {
-            concurrentChecks.Add(Task.Run(async () => {
+            concurrentChecks.Add(Task.Run(async () =>
+            {
                 var youTubeCheckPage = await browserToUse.NewPageAsync();
                 Callable.From(() =>
                     YouTubeStatusChecked?.Invoke(new StatusCheckResult<YouTubeStatus>(YouTubeStatus.Checking, null, null))
@@ -165,16 +190,17 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         }
         if (checkKarafun)
         {
-            concurrentChecks.Add(Task.Run(async () => {
-            var karafunCheckPage = await browserToUse.NewPageAsync();
-            Callable.From(() =>
-                KarafunStatusChecked?.Invoke(new StatusCheckResult<KarafunStatus>(KarafunStatus.Checking, null, null))
-                ).CallDeferred();
-            var karafunStatusResult = await _karafunAutomator.CheckStatus(karafunCheckPage);
-            Callable.From(() =>
-                KarafunStatusChecked?.Invoke(karafunStatusResult)
-                ).CallDeferred();
-            await karafunCheckPage.CloseAsync();
+            concurrentChecks.Add(Task.Run(async () =>
+            {
+                var karafunCheckPage = await browserToUse.NewPageAsync();
+                Callable.From(() =>
+                    KarafunStatusChecked?.Invoke(new StatusCheckResult<KarafunStatus>(KarafunStatus.Checking, null, null))
+                    ).CallDeferred();
+                var karafunStatusResult = await _karafunAutomator.CheckStatus(karafunCheckPage);
+                Callable.From(() =>
+                    KarafunStatusChecked?.Invoke(karafunStatusResult)
+                    ).CallDeferred();
+                await karafunCheckPage.CloseAsync();
             }));
         }
 
@@ -215,6 +241,111 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         }
     }
 
+    public async Task<Process> LaunchUncontrolledBrowser(params string[] sites)
+    {
+        var executablePath = await Utils.EnsureBrowser();
+        GD.Print($"Browser executable: {executablePath}");
+        var userDataDir = GetBrowserUserProfileDir();
+        GD.Print($"User data directory: {userDataDir}");
+        var paramsArray = new[] { $"--user-data-dir=\"{userDataDir}\"" }.Concat(sites).ToArray();
+        GD.Print($"Launching browser with parameters: {string.Join("|", paramsArray)}");
+        //_uncontrolledBrowserPid = OS.CreateProcess(executablePath, paramsArray);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = executablePath,
+            Arguments = string.Join(" ", paramsArray),
+            UseShellExecute = false,   // Important for redirecting IO and for cross-platform use
+            CreateNoWindow = true,     // Optional
+        };
+
+        _uncontrolledBrowserProcess = new Process
+        {
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+
+        _uncontrolledBrowserProcess.Exited += (sender, e) =>
+        {
+            GD.Print("Browser process exited.");
+            // TODO: emit an event here?
+        };
+
+        _uncontrolledBrowserProcess.Start();
+        return _uncontrolledBrowserProcess;
+    }
+
+    public async Task LaunchControlledBrowser()
+    {
+        var executablePath = await Utils.EnsureBrowser();
+        var userDataDir = GetBrowserUserProfileDir();
+        GD.Print($"User data directory: {userDataDir}");
+        Directory.CreateDirectory(userDataDir); // Ensure the directory exists
+
+        // Launch the browser
+        if (_headedBrowser == null)
+        {
+            _headedBrowser = await CreateBrowser(executablePath, false);
+        }
+        // get the initial page(s), and then
+        var initialPages = await _headedBrowser.PagesAsync();
+        // create a new page, and then
+        _page = await _headedBrowser.NewPageAsync();
+        // add custom CSS to make it less intrusive to wait for the fullscreen button
+        await _page.SetBypassCSPAsync(true);
+        await _page.EvaluateExpressionOnNewDocumentAsync(@"
+            const windowTimeout = () => {
+                const head = document.getElementsByTagName('head');
+                if (head && head.length > 0) {
+                    console.log('creating style element');
+                    const style = document.createElement('style');
+                    style.type = 'text/css';
+                    style.innerHTML = 
+                    `
+                    /* Helps for Karafun; YouTube doesn't care */
+                    body { background-color: black !important; }
+
+                    /* Hides for Karafun that don't affect YouTube */
+                    #app .left { display: none !important; }
+                    #app .queue { display: none !important; }
+
+                    /* Hides for YouTube that don't affect Karafun */
+                    #secondary { display: none; }
+                    #below { display: none; }
+                    #ytd-player { width: 100%; height: 100% }
+                    .html5-video-container { width: 100%; height: 100% }
+                    #center { opacity: 0; }
+                    .ytp-endscreen-content { opacity: 0; }
+                    `;
+                    head[0].appendChild(style);
+                } else {
+                    console.log('no head element found; trying again in 10 ms');
+                    window.setTimeout(windowTimeout, 10);
+                }
+            };
+            window.setTimeout(windowTimeout, 0);
+        ");
+
+        // close the initial page(s) because, well, otherwise weird shenanigans happen
+        foreach (var initialPage in initialPages)
+        {
+            await initialPage.CloseAsync();
+        }
+    }
+
+    public async Task CloseControlledBrowser()
+    {
+        if (_headlessBrowser != null)
+        {
+            await _headlessBrowser.CloseAsync();
+            _headlessBrowser = null;
+        }
+        if (_headedBrowser != null)
+        {
+            await _headedBrowser.CloseAsync();
+            _headedBrowser = null;
+        }
+    }
+
     public string GetBrowserUserProfileDir()
     {
         return ProjectSettings.GlobalizePath("user://browser_user_profile");
@@ -222,10 +353,42 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
 
     private async Task<string> CheckForBrowser(IBrowserFetcher fetcher)
     {
-        return await Task.Run(() => { 
+        return await Task.Run(() =>
+        {
             var installedBrowsers = fetcher.GetInstalledBrowsers();
             var chromiumRevision = installedBrowsers.FirstOrDefault(a => a.Browser == SupportedBrowser.Chromium)?.BuildId;
             return chromiumRevision;
         });
     }
+    
+        public async Task PlayYoutubeUrl(string url, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new ArgumentNullException(nameof(url));
+        }
+        await LaunchControlledBrowser();
+        await _youtubeAutomator.PlayYoutubeUrl(_page, url, cancellationToken);
+    }
+
+    public async Task SeekYouTube(long positionMs) => await _youtubeAutomator.Seek(_page, positionMs);
+
+    public async Task ToggleYoutubePlayback() => await _youtubeAutomator.ToggleYoutubePlayback(_page);
+
+    public async Task PauseKarafun() => await _karafunAutomator.PauseKarafun(_page);
+    public async Task ResumeKarafun() => await _karafunAutomator.ResumeKarafun(_page);
+
+    public async Task PlayKarafunUrl(string url, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new ArgumentNullException(nameof(url));
+        }
+
+        await LaunchControlledBrowser();
+
+        await _karafunAutomator.PlayKarafunUrl(_page, url, cancellationToken);
+    }
+
+    public async Task SeekKarafun(long positionMs) => await _karafunAutomator.Seek(_page, positionMs);
 }
