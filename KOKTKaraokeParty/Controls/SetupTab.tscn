@@ -1,6 +1,11 @@
 [gd_scene format=3 uid="uid://bj51n7hh48ikh"]
 
 [node name="Setup" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 metadata/_tab_index = 0
 
 [node name="StartTabVBox" type="VBoxContainer" parent="."]
@@ -53,10 +58,14 @@ autowrap_mode = 2
 
 [node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
+alignment = 2
 
 [node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Set monitor to show the \"next up\" / \"empty queue\" display screen: "
+horizontal_alignment = 2
+autowrap_mode = 2
 
 [node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 unique_name_in_owner = true
@@ -80,6 +89,7 @@ layout_mode = 2
 
 [node name="WaitSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
+alignment = 2
 
 [node name="Wait between songs" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
 layout_mode = 2

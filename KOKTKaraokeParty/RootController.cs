@@ -99,6 +99,8 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
     private PrepareSessionModel _sessionPrep;
     public void OnReady()
     {
+        DisplayServer.WindowSetMinSize(new Vector2I(1000, 700));
+
         SetupHistoryLogFile();
         SetupQueueTree();
         SetupMainQueueControls();

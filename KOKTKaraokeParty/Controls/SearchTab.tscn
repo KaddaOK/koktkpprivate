@@ -6,6 +6,11 @@
 
 [node name="SearchTab" type="MarginContainer"]
 custom_minimum_size = Vector2(500, 300)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_iaba6")
@@ -19,6 +24,7 @@ theme_override_constants/separation = 15
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Type something and press enter or the 'Search' button to find a song.  Double-click on a result to add it to the queue."
+autowrap_mode = 2
 
 [node name="SearchControlsHBox" type="HBoxContainer" parent="SearchTabVBox"]
 layout_mode = 2
@@ -97,6 +103,7 @@ FontSize = 14
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Will play on karafun.com/web. (Requires an active Karafun subscription.)"
+autowrap_mode = 2
 
 [node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer"]
 layout_mode = 2
@@ -133,6 +140,7 @@ FontSize = 14
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Will play on youtube.com. (YouTube Premium is recommended for ad-free consumption.)"
+autowrap_mode = 2
 
 [node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/VBoxContainer2"]
 layout_mode = 2
