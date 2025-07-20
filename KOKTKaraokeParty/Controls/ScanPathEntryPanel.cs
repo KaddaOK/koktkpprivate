@@ -8,7 +8,8 @@ public interface IScanPathEntryPanel
 {
     public void SetButtonsEnabled(bool enabled);
     event ScanPathEntryPanel.EditScanPathEntryEventHandler EditScanPathEntry;
-    event ScanPathEntryPanel.RescanEventHandler Rescan;
+    event ScanPathEntryPanel.RescanEntryEventHandler RescanEntry;
+    event ScanPathEntryPanel.RemoveEntryEventHandler RemoveEntry;
 }
 
 [Meta(typeof(IAutoNode))]
@@ -24,8 +25,9 @@ public partial class ScanPathEntryPanel : PanelContainer, IScanPathEntryPanel
     [Node] private ILabel FormatSpecifierLabel { get; set; } = default!;
     [Node] private ILabel LastScannedLabel { get; set; } = default!;
     [Node] private ILabel FilesFoundCountLabel { get; set; } = default!;
-    [Node] private IButton EditButton { get; set; } = default!;
-    [Node] private IButton RescanButton { get; set; } = default!;
+    [Node] private IButton EditEntryButton { get; set; } = default!;
+    [Node] private IButton RescanEntryButton { get; set; } = default!;
+    [Node] private IButton RemoveEntryButton { get; set; } = default!;
     #endregion
 
     #region Signals
@@ -34,14 +36,18 @@ public partial class ScanPathEntryPanel : PanelContainer, IScanPathEntryPanel
     public delegate void EditScanPathEntryEventHandler(int scanPathEntryId);
 
     [Signal]
-    public delegate void RescanEventHandler(int scanPathEntryId);
+    public delegate void RescanEntryEventHandler(int scanPathEntryId);
+
+    [Signal]
+    public delegate void RemoveEntryEventHandler(int scanPathEntryId);
 
     #endregion
 
     public void OnReady()
     {
-        EditButton.Pressed += () => EmitSignal(SignalName.EditScanPathEntry, _scanPathEntry.Id);
-        RescanButton.Pressed += () => EmitSignal(SignalName.Rescan, _scanPathEntry.Id);
+        EditEntryButton.Pressed += () => EmitSignal(SignalName.EditScanPathEntry, _scanPathEntry.Id);
+        RescanEntryButton.Pressed += () => EmitSignal(SignalName.RescanEntry, _scanPathEntry.Id);
+        RemoveEntryButton.Pressed += () => EmitSignal(SignalName.RemoveEntry, _scanPathEntry.Id);
         UpdatePathEntryDisplay();
     }
 
@@ -66,7 +72,8 @@ public partial class ScanPathEntryPanel : PanelContainer, IScanPathEntryPanel
 
     public void SetButtonsEnabled(bool enabled)
     {
-        EditButton.Disabled = !enabled;
-        RescanButton.Disabled = !enabled;
+        EditEntryButton.Disabled = !enabled;
+        RescanEntryButton.Disabled = !enabled;
+        RemoveEntryButton.Disabled = !enabled;
     }
 }

@@ -56,7 +56,7 @@ public partial class LocalFiles : MarginContainer, ILocalFiles
         {
             _scanPathEntries.ForEach(entry =>
             {
-                entry.screenControl.QueueFree();
+                entry.screenControl.Free();
             });
         }
         _scanPathEntries = new List<(LocalScanPathEntry dbEntry, ScanPathEntryPanel screenControl)>();
@@ -67,23 +67,86 @@ public partial class LocalFiles : MarginContainer, ILocalFiles
             var scanPathEntryPanel = _scanPathEntryPanelScene.Instantiate<ScanPathEntryPanel>();
             scanPathEntryPanel.SetScanPathEntry(entry.dbEntry, entry.FileCount);
             scanPathEntryPanel.EditScanPathEntry += EditScanPathEntry;
-            scanPathEntryPanel.Rescan += Rescan;
+            scanPathEntryPanel.RescanEntry += RescanEntry;
+            scanPathEntryPanel.RemoveEntry += RemoveEntry;
             LocalFilePathsContainer.AddChild(scanPathEntryPanel);
             _scanPathEntries.Add((entry.dbEntry, scanPathEntryPanel));
         });
         PathsEmptyContainer.Visible = _scanPathEntries?.Count == 0;
     }
 
-    private void Rescan(int scanPathEntryId)
+    private void RescanEntry(int scanPathEntryId)
     {
         ScanningPathDialog.SetScanPathEntry(scanPathEntryId);
         ScanningPathDialog.Show();
     }
 
+    private void RemoveEntry(int scanPathEntryId)
+    {
+        var scanPathEntry = _scanPathEntries.FirstOrDefault(x => x.dbEntry.Id == scanPathEntryId);
+        if (scanPathEntry == default)
+        {
+            GD.Print($"Scan path entry {scanPathEntryId} not found for deletion.");
+            return;
+        }
+        var countForEntry = DbContext.LocalSongFiles.Count(file => file.ParentPathId == scanPathEntryId);
+        var dialog = new ConfirmationDialog();
+        dialog.DialogText = $"Are you sure you want to remove this scan path entry and its {countForEntry} files from the locally scanned catalog?";
+        dialog.OkButtonText = "Remove";
+        dialog.CancelButtonText = "Cancel";
+        dialog.MinSize = new Vector2I(400, 100);
+        AddChild(dialog);
+
+        dialog.Confirmed += () => {
+            var filesForEntry = DbContext.LocalSongFiles.Where(file => file.ParentPathId == scanPathEntryId).ToList();
+            if (filesForEntry.Count > 0)
+            {
+                GD.Print($"Deleting {filesForEntry.Count} files for scan path entry {scanPathEntryId}");
+            }
+            else
+            {
+                GD.Print($"No files to delete for scan path entry {scanPathEntryId}");
+            }
+            DbContext.LocalSongFiles.RemoveRange(filesForEntry);
+            GD.Print($"Deleting scan path entry {scanPathEntryId}");
+            DbContext.LocalScanPaths.Remove(scanPathEntry.dbEntry);
+            DbContext.SaveChanges();
+            RefreshFromSqlite();
+            dialog.QueueFree();
+        };
+
+        dialog.Canceled += () => {
+            GD.Print($"Deletion canceled for scan path entry {scanPathEntryId}");
+            dialog.QueueFree();
+        };
+
+        dialog.PopupCentered();
+    }
+
     private void EditScanPathDialog_ScanPathSaved(int scanPathEntryId)
     {
         RefreshFromSqlite();
-        // TODO: prompt for scan?
+
+        var dialog = new ConfirmationDialog();
+        dialog.DialogText = $"Would you like to scan the new path now?";
+        dialog.OkButtonText = "Scan";
+        dialog.CancelButtonText = "Cancel";
+        dialog.MinSize = new Vector2I(400, 100);
+        AddChild(dialog);
+
+        dialog.Confirmed += () => {
+            GD.Print($"Immediate scan accepted for new path entry {scanPathEntryId}");
+            RescanEntry(scanPathEntryId);
+            dialog.QueueFree();
+        };
+
+        dialog.Canceled += () => {
+            GD.Print($"Immediate scan declined for new path entry {scanPathEntryId}");
+            dialog.QueueFree();
+        };
+
+        dialog.PopupCentered();
+
     }
 
     public void AddNewPathButtonPressed()
