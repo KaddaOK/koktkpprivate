@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Godot;
 using HtmlAgilityPack;
 
 public class KarafunSearchScrape
@@ -13,7 +14,7 @@ public class KarafunSearchScrape
     public static async IAsyncEnumerable<KarafunSearchScrapeResponse> Search(string query, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         string url = "https://karafun.com/search/?query=" + HttpUtility.UrlEncode(query);
-        await foreach (var searchResponse in GetSearchResults(url, cancellationToken))
+        await foreach (var searchResponse in GetSearchResults(url, query, cancellationToken))
         {
             yield return searchResponse;
         }
@@ -25,13 +26,29 @@ public class KarafunSearchScrape
         return GetDirectLinkForSong(htmlDoc, songInfoLink);
     }
 
-    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetSearchResults(string searchUrl, [EnumeratorCancellation]CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<KarafunSearchScrapeResponse> GetSearchResults(string searchUrl, string originalQuery, [EnumeratorCancellation]CancellationToken cancellationToken)
     {
         var htmlDoc = await Utils.LoadHtmlResponse(searchUrl);
 
         var searchResultItemDivs = htmlDoc.DocumentNode.SelectNodes(ResultItemXPath);
-        if (searchResultItemDivs == null)
+        
+        if (searchResultItemDivs == null || searchResultItemDivs.Count == 0)
         {
+            // bug-hunting: log supposedly empty htmlDoc contents to user:// with the name "karafun_search_{sanitized query}_{searchResultItemDivs?.Count ?? 0}.html"
+            try
+            {
+                var sanitizedQuery = SanitizeForFileName(originalQuery);
+                var resultCount = searchResultItemDivs?.Count ?? 0;
+                var fileName = $"karafun_search_{sanitizedQuery}_{resultCount}.html";
+                var filePath = System.IO.Path.Combine(Utils.GetAppStoragePath(), fileName);
+
+                await System.IO.File.WriteAllTextAsync(filePath, htmlDoc.DocumentNode.OuterHtml);
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"Failed to log empty Karafun search HTML: {ex.Message}");
+            }
+        
             yield break;
         }
 
@@ -114,7 +131,11 @@ public class KarafunSearchScrape
             }
             else
             {
-                var artistElement = itemDiv.SelectSingleNode(".//div[contains(@class, 'song__title-container')]//*[contains(@class, 'song__artist')]");
+                // Look for artist elements in both old and new formats
+                var artistElement = itemDiv.SelectSingleNode(".//div[contains(@class, 'song__title-container')]//*[contains(@class, 'song__artist')]") ??
+                                   itemDiv.SelectSingleNode(".//*[contains(@class, 'song__artist')]") ??
+                                   itemDiv.SelectSingleNode(".//span[contains(@class, 'text-label-subtitle')]");
+                                   
                 if (artistElement != null && artistElement.Name == "p")
                 {
                     resultItem.ResultType = KarafunSearchScrapeResultItemType.Artist;
@@ -125,12 +146,17 @@ public class KarafunSearchScrape
                 }
             }
 
-            // Extract details from detailsdiv
-            var detailsDiv = itemDiv.SelectSingleNode(".//div[contains(@class, 'song__title-container')]");
+            // Extract details - try old format first, then new format
+            var detailsDiv = itemDiv.SelectSingleNode(".//div[contains(@class, 'song__title-container')]") ??
+                            itemDiv.SelectSingleNode(".//div[contains(@class, 'w-full') and contains(@class, 'overflow-hidden')]");
+            
             if (detailsDiv != null)
             {
-                // Extract ArtistName and ArtistLink
-                var artistElement = detailsDiv.SelectSingleNode(".//*[contains(@class, 'song__artist')]");
+                // Extract ArtistName and ArtistLink - try multiple selectors
+                var artistElement = detailsDiv.SelectSingleNode(".//*[contains(@class, 'song__artist')]") ??
+                                   detailsDiv.SelectSingleNode(".//span[contains(@class, 'text-label-subtitle')]") ??
+                                   detailsDiv.SelectSingleNode(".//a[contains(@class, 'text-label-subtitle')]");
+                                   
                 if (artistElement != null)
                 {
                     if (artistElement.Name == "p")
@@ -142,21 +168,36 @@ public class KarafunSearchScrape
                         resultItem.ArtistName = artistElement.InnerText.Trim();
                         resultItem.ArtistLink = Utils.EnsureAbsoluteUrl(artistElement.GetAttributeValue("href", string.Empty), originalAbsoluteUrl);
                     }
+                    else if (artistElement.Name == "span")
+                    {
+                        resultItem.ArtistName = artistElement.InnerText.Trim();
+                    }
                 }
 
-                // Extract SongName and SongLink
-                var titleElement = detailsDiv.SelectSingleNode(".//*[contains(@class, 'song__title')]");
-                if (titleElement != null && titleElement.Name == "a")
+                // Extract SongName and SongLink - try multiple selectors
+                var titleElement = detailsDiv.SelectSingleNode(".//*[contains(@class, 'song__title')]") ??
+                                  detailsDiv.SelectSingleNode(".//a[contains(@class, 'text-label-title')]") ??
+                                  detailsDiv.SelectSingleNode(".//p[contains(@class, 'text-label-title')]");
+                                  
+                if (titleElement != null)
                 {
-                    if (resultItem.ResultType == KarafunSearchScrapeResultItemType.Artist)
+                    if (titleElement.Name == "a")
                     {
-                        resultItem.ArtistName = titleElement.InnerText.Trim();
-                        resultItem.ArtistLink = Utils.EnsureAbsoluteUrl(titleElement.GetAttributeValue("href", string.Empty), originalAbsoluteUrl);
+                        if (resultItem.ResultType == KarafunSearchScrapeResultItemType.Artist)
+                        {
+                            resultItem.ArtistName = titleElement.InnerText.Trim();
+                            resultItem.ArtistLink = Utils.EnsureAbsoluteUrl(titleElement.GetAttributeValue("href", string.Empty), originalAbsoluteUrl);
+                        }
+                        else
+                        {
+                            resultItem.SongName = titleElement.InnerText.Trim();
+                            resultItem.SongInfoLink = Utils.EnsureAbsoluteUrl(titleElement.GetAttributeValue("href", string.Empty), originalAbsoluteUrl);
+                        }
                     }
-                    else
+                    else if (titleElement.Name == "p")
                     {
+                        // For suggestion items and titles without links
                         resultItem.SongName = titleElement.InnerText.Trim();
-                        resultItem.SongInfoLink = Utils.EnsureAbsoluteUrl(titleElement.GetAttributeValue("href", string.Empty), originalAbsoluteUrl);
                     }
                 }
             }
@@ -167,7 +208,37 @@ public class KarafunSearchScrape
         return results;
     }
 
-    private static string ResultItemXPath = "//div[contains(@class, 'song') and contains(@class, 'song-line')]";
+    private static string ResultItemXPath = "//div[contains(@class, 'song') and .//a[contains(@class, 'song-line--covers')]]";
+
+    private static string SanitizeForFileName(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return "empty";
+
+        // Remove or replace invalid filename characters
+        var invalidChars = System.IO.Path.GetInvalidFileNameChars();
+        var sanitized = input;
+        
+        foreach (var c in invalidChars)
+        {
+            sanitized = sanitized.Replace(c, '_');
+        }
+        
+        // Also replace some additional characters that might cause issues
+        sanitized = sanitized.Replace(' ', '_')
+                           .Replace('%', '_')
+                           .Replace('&', '_')
+                           .Replace('?', '_')
+                           .Replace('#', '_');
+        
+        // Limit length to avoid filesystem issues
+        if (sanitized.Length > 50)
+        {
+            sanitized = sanitized.Substring(0, 50);
+        }
+        
+        return sanitized;
+    }
 
 
     private static string GetDirectLinkForSong(HtmlDocument htmlDoc, string baseUrl)

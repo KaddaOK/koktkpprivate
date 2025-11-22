@@ -295,7 +295,7 @@ public partial class YtDlpProviderNode : Node, IYtDlpProviderNode
 			StartInfo = new ProcessStartInfo
 			{
 				FileName = ytDlpPath,
-				Arguments = $"\"{url}\" -o \"{outputPath}\" --force-overwrites",
+				Arguments = $"\"{url}\" -o \"{outputPath}\" --force-overwrites --no-progress",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,

@@ -942,7 +942,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
         DisplayScreen.LocalPlaybackFinished += (wasPlaying) =>
         {
             GD.Print($"Local playback finished: {wasPlaying}");
-            if (wasPlaying == NowPlaying?.PerformanceLink)
+            if (wasPlaying == NowPlaying?.PerformanceLink || wasPlaying == NowPlaying?.TemporaryDownloadPath)
             {
                 // Clean up temporary download files if this was a downloaded YouTube video
                 if (!string.IsNullOrEmpty(NowPlaying.TemporaryDownloadPath) && File.Exists(NowPlaying.TemporaryDownloadPath))
@@ -957,15 +957,14 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
                         GD.PrintErr($"Failed to clean up temporary file {NowPlaying.TemporaryDownloadPath}: {ex.Message}");
                     }
                 }
-
-                RemoveQueueTreeRow(NowPlaying);
-                //if ((NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4))
-                //{
+                Callable.From(() =>
+                {
+                    RemoveQueueTreeRow(NowPlaying);
                     // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
                     DisplayScreen.ClearDismissed();
-                    DisplayScreen.Visible = false;
-                //}
-                NowPlaying = null;
+                    DisplayScreen.HideDisplayScreen();
+                    NowPlaying = null;
+                }).CallDeferred();
             }
         };
 
