@@ -122,6 +122,10 @@ public partial class DisplayScreen : Window, IDisplayScreen
             ShowDisplayScreen();
             CdgRendererNode.Start(item.PerformanceLink, CancellationToken.None);
         }
+        else if (item.ItemType == ItemType.Youtube)
+        {
+            VlcMp4Player.Start(item.TemporaryDownloadPath, CancellationToken.None);
+        }
         else if (item.ItemType == ItemType.LocalMp4)
         {
             VlcMp4Player.Start(item.PerformanceLink, CancellationToken.None);

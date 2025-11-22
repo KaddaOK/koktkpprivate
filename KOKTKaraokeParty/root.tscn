@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=16 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://tbuij48j50ca" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 [ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
 [ext_resource type="Script" uid="uid://doqv2f6ufhvg8" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
+[ext_resource type="Script" uid="uid://c33s6qbvch6a6" path="res://Web/YtDlpProviderNode.cs" id="10_tw3kd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
@@ -280,3 +281,7 @@ visible = false
 [node name="BrowserProvider" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("9_fqu17")
+
+[node name="YtDlpProvider" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("10_tw3kd")

@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace KOKTKaraokeParty;
 
@@ -23,7 +24,11 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
     private bool IsPaused { get; set; }
     private bool IsWaitingToReturnFromBrowserControl { get; set; }
-    private bool IsPlayingLocalFile => NowPlaying?.ItemType == ItemType.LocalMp3G || NowPlaying?.ItemType == ItemType.LocalMp3GZip;
+    // TODO: what is this hack even for
+    private bool IsPlayingLocalFile => NowPlaying?.ItemType == ItemType.LocalMp3G 
+    || NowPlaying?.ItemType == ItemType.LocalMp3GZip
+    || NowPlaying?.ItemType == ItemType.LocalMp4
+    || (NowPlaying?.ItemType == ItemType.Youtube && !string.IsNullOrEmpty(NowPlaying.TemporaryDownloadPath));
     private Queue<QueueItem> Queue { get; set; }
     private QueueItem NowPlaying { get; set; }
     private string BackgroundMusicNowPlayingFilePath { get; set;}
@@ -79,6 +84,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
     // TODO: improve this section of junk
     [Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
+    [Node] private IYtDlpProviderNode YtDlpProvider { get; set; } = default!;
     [Node] private IWindow PrepareSessionDialog { get; set; } = default!;
     [Node] private IButton RunChecksButton { get; set; } = default!;
     [Node] private ILabel RunChecksResultLabel { get; set; } = default!;
@@ -186,8 +192,17 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             _sessionPrep.KarafunMessage = status.Message;
             SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
         };
+        
+        YtDlpProvider.YtDlpStatusChecked += (status) =>
+        {
+            _sessionPrep.YtDlpStatus = status.StatusResult;
+            _sessionPrep.YtDlpIdentity = status.Identity;
+            _sessionPrep.YtDlpMessage = status.Message;
+            SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        };
 
         BrowserProvider.CheckStatus();
+        PrepareYtDlpSession();
         PrepareVlcSession();
     }
 
@@ -215,6 +230,10 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
         public VLCStatus VLCStatus { get; set; }
         public string VLCMessage { get; set; }
+        
+        public YtDlpStatus YtDlpStatus { get; set; }
+        public string YtDlpIdentity { get; set; }
+        public string YtDlpMessage { get; set; }
     }
 
     private (string icon, string description) GetBrowserStatusLine(BrowserAvailabilityStatus status)
@@ -257,6 +276,19 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             KarafunStatus.Inactive => ("❌", "Subscription is Inactive"),
             KarafunStatus.Unknown => ("⚠", "Unknown"),
             KarafunStatus.FatalError => ("❌", "Error"),
+            _ => ("⚠", "Unknown")
+        };
+    }
+
+    private (string icon, string description) GetYtDlpStatusLine(YtDlpStatus status)
+    {
+        return status switch
+        {
+            YtDlpStatus.NotStarted => ("⬛", "Not started"),
+            YtDlpStatus.Checking => ("⏳", "Checking..."),
+            YtDlpStatus.Downloading => ("⏳", "Downloading..."),
+            YtDlpStatus.Ready => ("✔", "Ready"),
+            YtDlpStatus.FatalError => ("❌", "Error"),
             _ => ("⚠", "Unknown")
         };
     }
@@ -313,13 +345,29 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             streamedContentItem.SetText(0, GetStreamedContentIcon(model));
             streamedContentItem.SetText(1, "Prepare to Stream Content");
 
+            var ytDlpItem = streamedContentItem.CreateChild();
+            var ytDlpStatusStrings = GetYtDlpStatusLine(model.YtDlpStatus);
+            ytDlpItem.SetText(0, ytDlpStatusStrings.icon);
+            ytDlpItem.SetText(1, $"yt-dlp: {ytDlpStatusStrings.description}");
+            if (!string.IsNullOrEmpty(model.YtDlpIdentity))
+            {
+                var ytDlpIdentityItem = ytDlpItem.CreateChild();
+                ytDlpIdentityItem.SetText(1, model.YtDlpIdentity);
+                ytDlpIdentityItem.SetCustomFontSize(0, infoItemsFontSize);
+                ytDlpIdentityItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
+            if (!string.IsNullOrEmpty(model.YtDlpMessage))
+            {
+                var ytDlpMessageItem = ytDlpItem.CreateChild();
+                ytDlpMessageItem.SetText(1, $"{model.YtDlpMessage}");
+                ytDlpMessageItem.SetCustomFontSize(0, infoItemsFontSize);
+                ytDlpMessageItem.SetCustomFontSize(1, infoItemsFontSize);
+            }
+
             var browserItem = streamedContentItem.CreateChild();
             var browserStatusStrings = GetBrowserStatusLine(model.BrowserStatus);
             browserItem.SetText(0, browserStatusStrings.icon);
             browserItem.SetText(1, $"Browser: {browserStatusStrings.description}");
-            /*var browserStatusItem = browserItem.CreateChild();
-            browserStatusItem.SetText(0, browserStatusStrings.icon);
-            browserStatusItem.SetText(1, browserStatusStrings.description);*/
             if (!string.IsNullOrEmpty(model.BrowserIdentity) && model.BrowserStatus != BrowserAvailabilityStatus.Busy)
             {
                 var browserIdentityItem = browserItem.CreateChild();
@@ -339,9 +387,6 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             var youtubeStatusStrings = GetYouTubeStatusLine(model.YouTubeStatus);
             youtubeItem.SetText(0, youtubeStatusStrings.icon);
             youtubeItem.SetText(1, $"YouTube: {youtubeStatusStrings.description}");
-            /*var youtubeStatusItem = youtubeItem.CreateChild();
-            youtubeStatusItem.SetText(0, youtubeStatusStrings.icon);
-            youtubeStatusItem.SetText(1, youtubeStatusStrings.description);*/
             if (!string.IsNullOrEmpty(model.YouTubeIdentity))
             {
                 var youtubeIdentityItem = youtubeItem.CreateChild();
@@ -361,9 +406,6 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             var karafunStatusStrings = GetKarafunStatusLine(model.KarafunStatus);
             karafunItem.SetText(0, karafunStatusStrings.icon);
             karafunItem.SetText(1, $"Karafun: {karafunStatusStrings.description}");
-            /*var karafunStatusItem = karafunItem.CreateChild();
-            karafunStatusItem.SetText(0, karafunStatusStrings.icon);
-            karafunStatusItem.SetText(1, karafunStatusStrings.description);*/
             if (!string.IsNullOrEmpty(model.KarafunIdentity))
             {
                 var karafunIdentityItem = karafunItem.CreateChild();
@@ -427,7 +469,10 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
                 model.KarafunStatus == KarafunStatus.NotStarted ||
                 model.KarafunStatus == KarafunStatus.Checking ||
                 model.VLCStatus == VLCStatus.NotStarted ||
-                model.VLCStatus == VLCStatus.Initializing;
+                model.VLCStatus == VLCStatus.Initializing ||
+                model.YtDlpStatus == YtDlpStatus.NotStarted ||
+                model.YtDlpStatus == YtDlpStatus.Checking ||
+                model.YtDlpStatus == YtDlpStatus.Downloading;
 
             LaunchForLoginsButton.Disabled = checksAreStillInProgress;
 
@@ -470,6 +515,25 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             _sessionPrep.VLCMessage = $"Error loading VLC libraries: {ex.Message}";
         }
         SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+    }
+    
+    // TODO: move these to be more sensible
+    private async Task PrepareYtDlpSession()
+    {
+        _sessionPrep.YtDlpStatus = YtDlpStatus.Checking;
+        SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        await ToSignal(GetTree(), "process_frame");
+        try
+        {
+            await YtDlpProvider.CheckStatus();
+            // Status is updated via the event handler, so we don't need to set it here
+        }
+        catch (Exception ex)
+        {
+            _sessionPrep.YtDlpStatus = YtDlpStatus.FatalError;
+            _sessionPrep.YtDlpMessage = $"Error checking yt-dlp status: {ex.Message}";
+            SetTreeFromSessionModel(SessionPreparationTree, _sessionPrep);
+        }
     }
     
     /*
@@ -576,6 +640,92 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
         Queue.Enqueue(item);
         AddQueueTreeRow(item);
         SaveQueueToDisk();
+
+        // If it's a YouTube item, start downloading it in the background
+        if (item.ItemType == ItemType.Youtube)
+        {
+            item.IsDownloading = true;
+            _ = Task.Run(async () => await StartYoutubeDownload(item));
+        }
+    }
+
+    private async Task StartYoutubeDownload(QueueItem item)
+    {
+        try
+        {
+            // Mark item as downloading
+            item.IsDownloading = true;
+            
+            // Create a temporary subfolder for downloads
+            var tempDir = Path.Combine(Utils.GetAppStoragePath(), "temp_downloads");
+            Directory.CreateDirectory(tempDir);
+
+            // Generate a unique filename based on the YouTube URL and current time
+            var videoId = ExtractYoutubeVideoId(item.PerformanceLink);
+    
+            var safeFileName = $"{videoId}.%(ext)s";
+            var outputTemplate = Path.Combine(tempDir, safeFileName);
+
+            GD.Print($"Starting background download for YouTube video: {item.PerformanceLink}");
+
+            // Download the video using yt-dlp
+            var result = await YtDlpProvider.DownloadFromUrl(item.PerformanceLink, outputTemplate);
+
+            // Find the actual downloaded file (yt-dlp will replace %(ext)s with the actual extension)
+            var downloadedFiles = Directory.GetFiles(tempDir, $"{videoId}.*");
+            if (downloadedFiles.Length > 0)
+            {
+                item.TemporaryDownloadPath = downloadedFiles[0];
+                GD.Print($"Successfully downloaded YouTube video to: {item.TemporaryDownloadPath}");
+            }
+            else
+            {
+                GD.PrintErr($"Could not find downloaded file for: {item.PerformanceLink}");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to download YouTube video {item.PerformanceLink}: {ex.Message}");
+            // Don't set TemporaryDownloadPath - this will cause fallback to browser playback
+        }
+        finally
+        {
+            item.IsDownloading = false;
+        }
+    }
+
+    private string ExtractYoutubeVideoId(string youtubeUrl)
+    {
+        // Extract video ID from YouTube URL for safe filename
+        try
+        {
+            var uri = new Uri(youtubeUrl);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var videoId = query["v"];
+            
+            if (!string.IsNullOrEmpty(videoId))
+            {
+                return SanitizeFileName(videoId);
+            }
+            
+            // Fallback: use a hash of the URL
+            return Math.Abs(youtubeUrl.GetHashCode()).ToString();
+        }
+        catch
+        {
+            // Fallback: use a hash of the URL
+            return Math.Abs(youtubeUrl.GetHashCode()).ToString();
+        }
+    }
+
+    private string SanitizeFileName(string fileName)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        foreach (var c in invalidChars)
+        {
+            fileName = fileName.Replace(c, '_');
+        }
+        return fileName;
     }
 
     public override void _Notification(int what)
@@ -601,8 +751,51 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             BackgroundMusicPlayer.Stop();
             cleanupTasks.Add(Task.Delay(100));
         }
+        
+        // Clean up temporary download files
+        // TODO: make this a setting or question?
+        //CleanupTemporaryFiles();
+        
         await Task.WhenAll(cleanupTasks);
         GetTree().Quit();
+    }
+
+    private void CleanupTemporaryFiles()
+    {
+        try
+        {
+            var tempDir = Path.Combine(Utils.GetAppStoragePath(), "temp_downloads");
+            if (Directory.Exists(tempDir))
+            {
+                var tempFiles = Directory.GetFiles(tempDir);
+                foreach (var file in tempFiles)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        GD.Print($"Cleaned up temporary file: {file}");
+                    }
+                    catch (Exception ex)
+                    {
+                        GD.PrintErr($"Failed to delete temporary file {file}: {ex.Message}");
+                    }
+                }
+                
+                try
+                {
+                    Directory.Delete(tempDir);
+                    GD.Print($"Cleaned up temporary directory: {tempDir}");
+                }
+                catch (Exception ex)
+                {
+                    GD.PrintErr($"Failed to delete temporary directory {tempDir}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to cleanup temporary files: {ex.Message}");
+        }
     }
 
     public async void PlayItem(QueueItem item, CancellationToken cancellationToken)
@@ -654,13 +847,65 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
                 NowPlaying = null;
                 break;
             case ItemType.Youtube:
-                IsWaitingToReturnFromBrowserControl = true;
-                DisplayScreen.HideDisplayScreen();
-                await BrowserProvider.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
-                IsWaitingToReturnFromBrowserControl = false;
-                GD.Print("Youtube playback finished.");
-                RemoveQueueTreeRow(NowPlaying);
-                NowPlaying = null;
+                // Check if we have a downloaded file, and if so, play it locally
+                if (!string.IsNullOrEmpty(item.TemporaryDownloadPath) && File.Exists(item.TemporaryDownloadPath))
+                {
+                    GD.Print($"Playing downloaded YouTube video locally: {item.TemporaryDownloadPath}");
+                    var localQueueItem = new QueueItem
+                    {
+                        PerformanceLink = item.TemporaryDownloadPath,
+                        SingerName = item.SingerName,
+                        SongName = item.SongName,
+                        ArtistName = item.ArtistName,
+                        CreatorName = item.CreatorName,
+                        ItemType = ItemType.LocalMp4
+                    };
+                    DisplayScreen.PlayLocal(localQueueItem);
+                }
+                else
+                {
+                    // Wait for download to complete if it's still in progress
+                    if (item.IsDownloading)
+                    {
+                        GD.Print("Waiting for YouTube download to complete...");
+                        SetProgressSlider($"Waiting for download to complete...");
+                        
+                        // Wait indefinitely while download is in progress
+                        while (item.IsDownloading && !cancellationToken.IsCancellationRequested)
+                        {
+                            await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
+                        }
+                        
+                        // Check if download completed successfully
+                        if (!string.IsNullOrEmpty(item.TemporaryDownloadPath) && File.Exists(item.TemporaryDownloadPath))
+                        {
+                            GD.Print($"Download completed! Playing locally: {item.TemporaryDownloadPath}");
+                            SetProgressSlider($"{item.ArtistName} - {item.SongName}");
+                            var localQueueItem = new QueueItem
+                            {
+                                PerformanceLink = item.TemporaryDownloadPath,
+                                SingerName = item.SingerName,
+                                SongName = item.SongName,
+                                ArtistName = item.ArtistName,
+                                CreatorName = item.CreatorName,
+                                ItemType = ItemType.LocalMp4
+                            };
+                            DisplayScreen.PlayLocal(localQueueItem);
+                            break;
+                        }
+                    }
+                    
+                    // Fallback to browser playback if download failed or was cancelled
+                    GD.Print("Download not available, falling back to browser playback");
+                    SetProgressSlider($"{item.ArtistName} - {item.SongName}");
+                    IsWaitingToReturnFromBrowserControl = true;
+                    DisplayScreen.HideDisplayScreen();
+                    await BrowserProvider.PlayYoutubeUrl(item.PerformanceLink, cancellationToken);
+                    IsWaitingToReturnFromBrowserControl = false;
+                    GD.Print("Youtube playback finished.");
+                    RemoveQueueTreeRow(NowPlaying);
+                    NowPlaying = null;
+                }
                 break;
             case ItemType.LocalMp3G:
             case ItemType.LocalMp3GZip:
@@ -699,13 +944,27 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
             GD.Print($"Local playback finished: {wasPlaying}");
             if (wasPlaying == NowPlaying?.PerformanceLink)
             {
-                RemoveQueueTreeRow(NowPlaying);
-                if (NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+                // Clean up temporary download files if this was a downloaded YouTube video
+                if (!string.IsNullOrEmpty(NowPlaying.TemporaryDownloadPath) && File.Exists(NowPlaying.TemporaryDownloadPath))
                 {
+                    try
+                    {
+                        File.Delete(NowPlaying.TemporaryDownloadPath);
+                        GD.Print($"Cleaned up temporary download file: {NowPlaying.TemporaryDownloadPath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        GD.PrintErr($"Failed to clean up temporary file {NowPlaying.TemporaryDownloadPath}: {ex.Message}");
+                    }
+                }
+
+                RemoveQueueTreeRow(NowPlaying);
+                //if ((NowPlaying.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4))
+                //{
                     // have to reset the display screen state for the benefit of OnProcess. TODO: change this hack
                     DisplayScreen.ClearDismissed();
                     DisplayScreen.Visible = false;
-                }
+                //}
                 NowPlaying = null;
             }
         };
@@ -715,7 +974,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
         DisplayScreen.LocalPlaybackProgress += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
 
         MainWindowProgressSlider.ValueChanged += (value) => {
-            if (NowPlaying.ItemType == ItemType.Youtube)
+            if (NowPlaying.ItemType == ItemType.Youtube && string.IsNullOrEmpty(NowPlaying.TemporaryDownloadPath))
             {
                 BrowserProvider.SeekYouTube((long)value);
             }
@@ -1073,7 +1332,8 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
             // a local playback, though, doesn't have a thread waiting on it, it's 
             // signalled, so we need to do the things to clean up from it.
-            if (NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+            if ((NowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4)
+                || (NowPlaying?.ItemType == ItemType.Youtube && !string.IsNullOrEmpty(NowPlaying.TemporaryDownloadPath)))
             {
                 DisplayScreen.CancelIfPlaying();
                 RemoveQueueTreeRow(NowPlaying);
@@ -1255,6 +1515,37 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
                 var queueList = JsonConvert.DeserializeObject<QueueItem[]>(queueJson);
                 GD.Print($"Loaded {queueList?.Length} items from disk.");
                 Queue = new Queue<QueueItem>(queueList);
+                
+                // Check YouTube items and restart downloads if needed
+                foreach (var item in Queue)
+                {
+                    if (item.ItemType == ItemType.Youtube)
+                    {
+                        bool needsDownload = false;
+                        
+                        // Check if download path is missing or file doesn't exist
+                        if (string.IsNullOrEmpty(item.TemporaryDownloadPath) || 
+                            !File.Exists(item.TemporaryDownloadPath))
+                        {
+                            needsDownload = true;
+                            GD.Print($"YouTube item missing download file, will restart: {item.PerformanceLink}");
+                        }
+                        // Check if IsDownloading is still true (download was interrupted)
+                        else if (item.IsDownloading)
+                        {
+                            needsDownload = true;
+                            GD.Print($"YouTube item was downloading when saved, will restart: {item.PerformanceLink}");
+                        }
+                        
+                        if (needsDownload)
+                        {
+                            // Clear the old path and restart download
+                            item.TemporaryDownloadPath = null;
+                            item.IsDownloading = false; // Will be set to true in StartYoutubeDownload
+                            _ = Task.Run(async () => await StartYoutubeDownload(item));
+                        }
+                    }
+                }
             }
             else
             {
@@ -1278,6 +1569,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
     {
         if (!IsPaused && NowPlaying == null)
         {
+            // we're not paused and nothing is playing. Is there something in the queue?
             if (Queue.Count > 0)
             {
                 GD.Print($"Queue has {Queue.Count} items, playing next.");

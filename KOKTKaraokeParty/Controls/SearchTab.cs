@@ -555,6 +555,25 @@ public partial class SearchTab : MarginContainer, ISearchTab
         }
     }
 
+    private string CleanYoutubeLink(string url)
+    {
+        // Check if the URL is valid (it must be `?v=`)
+		if (string.IsNullOrWhiteSpace(url) || !url.Contains("?v="))
+		{
+			GD.PrintErr($"Not a youtube '?v=' URL: {url}");
+			return url; // TODO: this would not be helpful. We should just return null or throw
+		}        
+
+		// and we should cut off any additional query params because they can be playlists and other disruptive things
+		int ampIndex = url.IndexOf("&");
+		if (ampIndex != -1)
+		{
+			GD.PushWarning($"Removed additional queryparams from youtube URL '{url}'");
+			url = url.Substring(0, ampIndex);
+		}
+		return url;
+    }
+
     private void OnKNItemDoubleClicked()
     {
         TreeItem selectedItem = KNResultsTree.GetSelected();
@@ -563,9 +582,8 @@ public partial class SearchTab : MarginContainer, ISearchTab
             string songName = selectedItem.GetText(0);
             string artistName = selectedItem.GetText(1);
             string creatorName = selectedItem.GetText(2);
-            string youtubeLink = selectedItem.GetMetadata(0).ToString();
+            string youtubeLink = CleanYoutubeLink(selectedItem.GetMetadata(0).ToString());
             GD.Print($"Double-clicked: {songName} by {artistName} ({creatorName}), {youtubeLink}");
-
             itemBeingAdded = new QueueItem
             {
                 SongName = songName,
