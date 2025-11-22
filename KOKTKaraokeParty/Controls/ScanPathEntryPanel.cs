@@ -64,6 +64,7 @@ public partial class ScanPathEntryPanel : PanelContainer, IScanPathEntryPanel
         {
             PathLabel.Text = _scanPathEntry?.Path;
             FormatSpecifierLabel.Text = _scanPathEntry?.FormatSpecifier;
+            GD.Print($"UpdatePathEntryDisplay - Last Scanned: {_scanPathEntry?.LastFullScanCompleted?.ToString()}");
             LastScannedLabel.Text = _scanPathEntry?.LastFullScanCompleted?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never";
             FilesFoundCountLabel.Text = _filesFoundCount?.ToString() ?? "0";
         }

@@ -31,9 +31,6 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
     #endregion
 
     #region Initialized Dependencies
-
-    //private IPuppeteerPlayer PuppeteerPlayer { get; set; }
-    //IPuppeteerPlayer IProvide<IPuppeteerPlayer>.Value() => PuppeteerPlayer;
     IBrowserProviderNode IProvide<IBrowserProviderNode>.Value() => BrowserProvider;
 
     private Settings Settings { get; set; }
@@ -43,12 +40,10 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
     private IFileWrapper FileWrapper { get; set;}
 
     public void SetupForTesting(
-        //IPuppeteerPlayer puppeteerPlayer, 
         Settings settings,
         ILocalFileValidator localFileValidator,
         IFileWrapper fileWrapper)
     {
-        //PuppeteerPlayer = puppeteerPlayer;
         Settings = settings;
         LocalFileValidator = localFileValidator;
         FileWrapper = fileWrapper;
@@ -57,7 +52,6 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
     public void Initialize()
     {
         FileWrapper = new FileWrapper();
-        //PuppeteerPlayer = new PuppeteerPlayer();
         Settings = Settings.LoadFromDiskIfExists(FileWrapper);
         LocalFileValidator = new LocalFileValidator();
     }

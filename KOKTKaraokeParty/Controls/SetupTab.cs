@@ -29,7 +29,6 @@ public partial class SetupTab : MarginContainer, ISetupTab
     public override void _Notification(int what) => this.Notify(what);
 
     #region Dependencies
-    //[Dependency] public IPuppeteerPlayer PuppeteerPlayer => this.DependOn<IPuppeteerPlayer>();
     [Dependency] public IBrowserProviderNode BrowserProvider => this.DependOn<IBrowserProviderNode>();
     #endregion
 

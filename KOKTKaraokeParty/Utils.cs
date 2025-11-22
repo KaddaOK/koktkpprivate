@@ -14,52 +14,6 @@ public class Utils
     {
         return ProjectSettings.GlobalizePath("user://");
     }
-    
-#region TODO this is all stupid
-    private static IBrowserFetcher GetBrowserFetcher()
-    {
-        var downloadPath = ProjectSettings.GlobalizePath("user://browser");
-        return Puppeteer.CreateBrowserFetcher(new BrowserFetcherOptions
-        {
-            Browser = SupportedBrowser.Chromium,
-            Path = downloadPath
-        });
-    }
-
-    public static async Task<string> CheckForBrowser()
-    {
-        return await CheckForBrowser(GetBrowserFetcher());
-    }
-
-    public static async Task<string> CheckForBrowser(IBrowserFetcher fetcher)
-    {
-        return await Task.Run(() => { 
-            var fetcher = GetBrowserFetcher();
-            var installedBrowsers = fetcher.GetInstalledBrowsers();
-            var chromiumRevision = installedBrowsers.FirstOrDefault(a => a.Browser == SupportedBrowser.Chromium)?.BuildId;
-            return chromiumRevision;
-        });
-    }
-
-    public static async Task<string> EnsureBrowser()
-    {
-        GD.Print("Ensuring browser...");
-        var fetcher = GetBrowserFetcher();
-        var chromiumRevision = await CheckForBrowser(fetcher);
-
-        if (chromiumRevision == null)
-        {
-            GD.Print("Downloading Chromium...");
-            var revisionInfo = await fetcher.DownloadAsync();
-            chromiumRevision = revisionInfo.BuildId;
-        }
-
-        var path = fetcher.GetExecutablePath(chromiumRevision);
-        GD.Print($"Browser is ready ({chromiumRevision} at {path}).");
-        return path;
-    }
-
-#endregion
 
     public static string EnsureAbsoluteUrl(string maybeRelativeUrl, string previousAbsoluteUrl)
     {

@@ -50,6 +50,8 @@ public delegate void KarafunStatusEventHandler(StatusCheckResult<KarafunStatus> 
 [Meta(typeof(IAutoNode))]
 public partial class BrowserProviderNode : Node, IBrowserProviderNode
 {
+    private static SupportedBrowser _browserType = SupportedBrowser.Chromium; // TODO: make configurable
+
     public override void _Notification(int what) => this.Notify(what);
 
     private IBrowser _headlessBrowser;
@@ -84,7 +86,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         _karafunAutomator = new KarafunAutomator();
         _browserFetcher = Puppeteer.CreateBrowserFetcher(new BrowserFetcherOptions
         {
-            Browser = SupportedBrowser.Chromium,
+            Browser = _browserType,
             Path = ProjectSettings.GlobalizePath("user://browser")
         });
     }
@@ -103,8 +105,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
                         BrowserAvailabilityStatus.Checking,
                         null,
                         null));
-            var chromiumRevision = await CheckForBrowser(_browserFetcher);
-            if (chromiumRevision == null)
+            var browserRevision = await CheckForBrowser(_browserFetcher);
+            if (browserRevision == null)
             {
                 GD.Print("Downloading browser...");
                 BrowserAvailabilityStatusChecked?.Invoke(
@@ -113,14 +115,14 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
                         null,
                         null));
                 var revisionInfo = await _browserFetcher.DownloadAsync();
-                chromiumRevision = revisionInfo?.BuildId;
+                browserRevision = revisionInfo?.BuildId;
             }
-            path = _browserFetcher.GetExecutablePath(chromiumRevision);
+            path = _browserFetcher.GetExecutablePath(browserRevision);
             GD.Print($"Browser ready at {path}");
             BrowserAvailabilityStatusChecked?.Invoke(
                 new StatusCheckResult<BrowserAvailabilityStatus>(
                     BrowserAvailabilityStatus.Ready,
-                    $"Chromium {chromiumRevision}",
+                    $"{_browserType} {browserRevision}",
                     path));
         }
         catch (System.Exception ex)
@@ -221,13 +223,15 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             {
                 Headless = isHeadless, // Show the browser
                 DefaultViewport = null, // Fullscreen viewport
-                Browser = SupportedBrowser.Chromium,
+                Browser = _browserType,
                 ExecutablePath = executablePath,
-                Args = new[] {
+                Args = _browserType == SupportedBrowser.Firefox ? null 
+                : new[] {
                     //"--start-fullscreen", // browser fullscreen on launch actually makes karafun stretch wrong :(
                     "--no-default-browser-check", // Skip the default browser check
                 },
-                IgnoredDefaultArgs = new[] {
+                IgnoredDefaultArgs = _browserType == SupportedBrowser.Firefox ? null 
+                : new[] {
                     "--enable-automation", // Disable the "Chrome is being controlled by automated test software" notification
                     "--enable-blink-features=IdleDetection" // May or may not get some message about that
                 },
@@ -243,7 +247,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
 
     public async Task<Process> LaunchUncontrolledBrowser(params string[] sites)
     {
-        var executablePath = await Utils.EnsureBrowser();
+        var executablePath = await EnsureBrowser();
         GD.Print($"Browser executable: {executablePath}");
         var userDataDir = GetBrowserUserProfileDir();
         GD.Print($"User data directory: {userDataDir}");
@@ -276,7 +280,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
 
     public async Task LaunchControlledBrowser()
     {
-        var executablePath = await Utils.EnsureBrowser();
+        var executablePath = await EnsureBrowser();
         var userDataDir = GetBrowserUserProfileDir();
         GD.Print($"User data directory: {userDataDir}");
         Directory.CreateDirectory(userDataDir); // Ensure the directory exists
@@ -356,12 +360,45 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         return await Task.Run(() =>
         {
             var installedBrowsers = fetcher.GetInstalledBrowsers();
-            var chromiumRevision = installedBrowsers.FirstOrDefault(a => a.Browser == SupportedBrowser.Chromium)?.BuildId;
-            return chromiumRevision;
+            var browserRevision = installedBrowsers.FirstOrDefault(a => a.Browser == _browserType)?.BuildId;
+            return browserRevision;
         });
     }
+
+
+    #region TODO this is all stupid
+    // TODO: is any of this used?  Seems like a lot of it is also on BrowserProviderNode...
+    private static IBrowserFetcher GetBrowserFetcher()
+    {
+        var downloadPath = ProjectSettings.GlobalizePath("user://browser");
+        return Puppeteer.CreateBrowserFetcher(new BrowserFetcherOptions
+        {
+            Browser = _browserType,
+            Path = downloadPath
+        });
+    }
+
+    public async Task<string> EnsureBrowser() // only used from BrowserProviderNode
+    {
+        GD.Print("Ensuring browser...");
+        var fetcher = GetBrowserFetcher();
+        var browserRevision = await CheckForBrowser(fetcher);
+
+        if (browserRevision == null)
+        {
+            GD.Print("Downloading browser...");
+            var revisionInfo = await fetcher.DownloadAsync();
+            browserRevision = revisionInfo.BuildId;
+        }
+
+        var path = fetcher.GetExecutablePath(browserRevision);
+        GD.Print($"Browser is ready ({_browserType} {browserRevision} at {path}).");
+        return path;
+    }
+
+#endregion
     
-        public async Task PlayYoutubeUrl(string url, CancellationToken cancellationToken)
+    public async Task PlayYoutubeUrl(string url, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
