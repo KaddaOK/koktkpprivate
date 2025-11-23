@@ -229,6 +229,31 @@ size_flags_vertical = 3
 hide_folding = true
 hide_root = true
 
+[node name="MarginContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 14
+
+[node name="DisplayScreenMonitorHBox" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="MonitorLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Set monitor to display karaoke lyrics, next up and empty queue screens: "
+horizontal_alignment = 2
+
+[node name="MonitorSpinBox" type="SpinBox" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="MonitorWarningLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "⚠"
+
 [node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
 layout_mode = 2
 

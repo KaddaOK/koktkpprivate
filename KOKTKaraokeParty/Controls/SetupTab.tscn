@@ -63,7 +63,7 @@ alignment = 2
 [node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Set monitor to show the \"next up\" / \"empty queue\" display screen: "
+text = "Set monitor to display karaoke lyrics, next up and empty queue screens: "
 horizontal_alignment = 2
 autowrap_mode = 2
 
