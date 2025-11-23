@@ -58,10 +58,13 @@ jobs:
         uses: chickensoft-games/setup-godot@v2
         with:
           version: ${{ env.GODOT_VERSION }}
+          use-dotnet: true
           include-templates: true
 
       - name: Import project
-        run: godot --headless --import
+        run: |
+          $godotPath = Get-ChildItem "$env:USERPROFILE\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
+          & "$godotPath" --headless --verbose --import --quit
         working-directory: ./KOKTKaraokeParty
 
       - name: Restore .NET dependencies
@@ -72,11 +75,12 @@ jobs:
         run: dotnet build --configuration Release --no-restore
         working-directory: ./KOKTKaraokeParty
 
-      - name: Create builds directory
-        run: mkdir -p builds/${{ matrix.identifier }}
-
       - name: Export project
-        run: godot --headless --export-release "${{ matrix.export-preset }}" builds/${{ matrix.identifier }}/${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}
+        run: |
+          $godotPath = Get-ChildItem "$env:USERPROFILE\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
+          New-Item -ItemType Directory -Force -Path "builds\${{ matrix.identifier }}"
+          $exportPath = "builds\${{ matrix.identifier }}\${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}"
+          & "$godotPath" --headless --verbose --export-release "${{ matrix.export-preset }}" "$exportPath"
         working-directory: ./KOKTKaraokeParty
 
       - name: Create archive (Windows)
