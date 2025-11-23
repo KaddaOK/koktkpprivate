@@ -202,8 +202,13 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 		// Show single monitor warning if needed
 		if (screenCount <= 1)
 		{
-			// We'll implement the warning dialog in the next step
-			GD.PrintErr("Warning: Only one monitor detected. Multi-monitor setup recommended for karaoke.");
+			ShowMessageDialog("No Additional Displays Detected!", 
+				"\nOnly one display monitor has been detected on this system.\n\n" +
+				"This app is designed to be used in a \"kiosk\" style with multiple screens:\n\n" +
+				"• Search and queue in the main window on one screen (with a keyboard and mouse),\n" +
+				"• The other larger screen facing the performers to display the lyrics and next up.\n\n" +
+				"It will be difficult to use the app with only one screen.\n" + 
+                "(You will need to press ESC to dismiss the full-screen display window between songs.)\n");
 		}
 		
 		UpdateMonitorWarning();
@@ -379,9 +384,11 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
 	public void ShowMessageDialog(string title, string message)
 	{
-		MessageDialog.DialogText = message;
-		MessageDialog.Title = title;
-		MessageDialog.Show();
+        Callable.From(() => {
+            MessageDialog.DialogText = message;
+            MessageDialog.Title = title;
+            MessageDialog.Show();
+        }).CallDeferred();
 	}
 
 	public override void _Notification(int what)
