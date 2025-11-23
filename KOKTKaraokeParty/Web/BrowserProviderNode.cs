@@ -13,13 +13,17 @@ using PuppeteerSharp;
 
 public interface IBrowserProviderNode : INode
 {
+    void Initialize();
+    void SetSettings(Settings settings);
     Task CheckStatus(bool checkYouTube = true, bool checkKarafun = true);
     event BrowserAvailabilityStatusEventHandler BrowserAvailabilityStatusChecked;
     event YouTubeStatusEventHandler YouTubeStatusChecked;
     event KarafunStatusEventHandler KarafunStatusChecked;
 
-    Task LaunchControlledBrowser();
-    Task<Process> LaunchUncontrolledBrowser(params string[] sites);
+    Task LaunchControlledBrowser(Settings settings);
+    Task LaunchControlledBrowser(); // Backward compatibility
+    Task<Process> LaunchUncontrolledBrowser(Settings settings, params string[] sites);
+    Task<Process> LaunchUncontrolledBrowser(params string[] sites); // Backward compatibility
     Task CloseControlledBrowser();
     Task PlayYoutubeUrl(string url, CancellationToken cancellationToken);
     Task PlayKarafunUrl(string url, CancellationToken cancellationToken);
@@ -60,6 +64,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
     private Process _uncontrolledBrowserProcess;
     private IPage _page; // TODO: rename
     private IBrowserFetcher _browserFetcher;
+    private Settings _settings;
 
     public event BrowserAvailabilityStatusEventHandler BrowserAvailabilityStatusChecked;
     public event YouTubeStatusEventHandler YouTubeStatusChecked;
@@ -94,6 +99,11 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             Browser = _browserType,
             Path = ProjectSettings.GlobalizePath("user://browser")
         });
+    }
+
+    public void SetSettings(Settings settings)
+    {
+        _settings = settings;
     }
 
     #endregion
@@ -220,21 +230,35 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         }
     }
 
-    private async Task<IBrowser> CreateBrowser(string executablePath, bool isHeadless = false)
+    private async Task<IBrowser> CreateBrowser(string executablePath, bool isHeadless = false, int monitorId = 0)
     {
         try
         {
+            var argsList = new List<string>();
+            
+            if (!isHeadless)
+            {
+                // Add monitor positioning arguments for headed browser
+                argsList.AddRange(GetMonitorPositionArgs(monitorId));
+            }
+            
+            // Add browser-specific args
+            if (_browserType != SupportedBrowser.Firefox)
+            {
+                argsList.AddRange(new[] {
+                    //"--start-fullscreen", // browser fullscreen on launch actually makes karafun stretch wrong :(
+                    "--no-default-browser-check", // Skip the default browser check
+                    "--start-maximized" // Launch maximized
+                });
+            }
+            
             return await Puppeteer.LaunchAsync(new LaunchOptions
             {
                 Headless = isHeadless, // Show the browser
                 DefaultViewport = null, // Fullscreen viewport
                 Browser = _browserType,
                 ExecutablePath = executablePath,
-                Args = _browserType == SupportedBrowser.Firefox ? null 
-                : new[] {
-                    //"--start-fullscreen", // browser fullscreen on launch actually makes karafun stretch wrong :(
-                    "--no-default-browser-check", // Skip the default browser check
-                },
+                Args = argsList.ToArray(),
                 IgnoredDefaultArgs = _browserType == SupportedBrowser.Firefox ? null 
                 : new[] {
                     "--enable-automation", // Disable the "Chrome is being controlled by automated test software" notification
@@ -250,13 +274,21 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         }
     }
 
-    public async Task<Process> LaunchUncontrolledBrowser(params string[] sites)
+    public async Task<Process> LaunchUncontrolledBrowser(Settings settings, params string[] sites)
     {
         var executablePath = await EnsureBrowser();
         GD.Print($"Browser executable: {executablePath}");
         var userDataDir = GetBrowserUserProfileDir();
         GD.Print($"User data directory: {userDataDir}");
-        var paramsArray = new[] { $"--user-data-dir=\"{userDataDir}\"" }.Concat(sites).ToArray();
+        
+        // Get monitor position for the specified monitor
+        var monitorArgs = GetMonitorPositionArgs(settings.DisplayScreenMonitor);
+        
+        var paramsList = new List<string> { $"--user-data-dir=\"{userDataDir}\"" };
+        paramsList.AddRange(monitorArgs);
+        paramsList.AddRange(sites);
+        var paramsArray = paramsList.ToArray();
+        
         GD.Print($"Launching browser with parameters: {string.Join("|", paramsArray)}");
         //_uncontrolledBrowserPid = OS.CreateProcess(executablePath, paramsArray);
         var startInfo = new ProcessStartInfo
@@ -283,7 +315,13 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         return _uncontrolledBrowserProcess;
     }
 
-    public async Task LaunchControlledBrowser()
+    // Backward compatibility wrapper  
+    public async Task<Process> LaunchUncontrolledBrowser(params string[] sites)
+    {
+        return await LaunchUncontrolledBrowser(_settings, sites);
+    }
+
+    public async Task LaunchControlledBrowser(Settings settings)
     {
         var executablePath = await EnsureBrowser();
         var userDataDir = GetBrowserUserProfileDir();
@@ -293,7 +331,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         // Launch the browser
         if (_headedBrowser == null)
         {
-            _headedBrowser = await CreateBrowser(executablePath, false);
+            _headedBrowser = await CreateBrowser(executablePath, false, settings.DisplayScreenMonitor);
         }
         // get the initial page(s), and then
         var initialPages = await _headedBrowser.PagesAsync();
@@ -355,9 +393,38 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         }
     }
 
+    // Backward compatibility wrapper
+    public async Task LaunchControlledBrowser()
+    {
+        await LaunchControlledBrowser(_settings);
+    }
+
     public string GetBrowserUserProfileDir()
     {
         return ProjectSettings.GlobalizePath("user://browser_user_profile");
+    }
+
+    private string[] GetMonitorPositionArgs(int monitorId)
+    {
+        // Ensure monitor ID is within valid range
+        var screenCount = DisplayServer.GetScreenCount();
+        if (monitorId < 0 || monitorId >= screenCount)
+        {
+            monitorId = 0; // Default to primary monitor
+        }
+
+        // Get monitor bounds
+        var screenRect = DisplayServer.ScreenGetUsableRect(monitorId);
+        var x = (int)screenRect.Position.X;
+        var y = (int)screenRect.Position.Y;
+        var width = (int)screenRect.Size.X;
+        var height = (int)screenRect.Size.Y;
+
+        return new[] {
+            $"--window-position={x},{y}",
+            $"--window-size={width},{height}",
+            "--start-maximized"
+        };
     }
 
     private async Task<string> CheckForBrowser(IBrowserFetcher fetcher)
@@ -409,7 +476,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
         {
             throw new ArgumentNullException(nameof(url));
         }
-        await LaunchControlledBrowser();
+        await LaunchControlledBrowser(_settings);
         await _youtubeAutomator.PlayYoutubeUrl(_page, url, cancellationToken);
     }
 
@@ -427,7 +494,7 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
             throw new ArgumentNullException(nameof(url));
         }
 
-        await LaunchControlledBrowser();
+        await LaunchControlledBrowser(_settings);
 
         await _karafunAutomator.PlayKarafunUrl(_page, url, cancellationToken);
     }

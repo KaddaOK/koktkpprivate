@@ -132,6 +132,8 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
         AddChild(_sessionUI);
 
         // Initialize them with their dependencies
+        BrowserProvider.Initialize();
+        BrowserProvider.SetSettings(Settings);
         _sessionPreparation.Initialize(DisplayScreen, BrowserProvider, YtDlpProvider);
         _queueManagement.Initialize(FileWrapper, YtDlpProvider);
         _backgroundMusic.Initialize(Settings, FileWrapper, DisplayScreen);
@@ -183,7 +185,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
     private async void OnLaunchForLoginsPressed()
     {
-        var process = await BrowserProvider.LaunchUncontrolledBrowser("https://www.karafun.com/my/", "https://www.youtube.com/account");
+        var process = await BrowserProvider.LaunchUncontrolledBrowser(Settings, "https://www.karafun.com/my/", "https://www.youtube.com/account");
         WaitingForBrowserDialog.Show();
         GD.Print($"Uncontrolled Browser Process ID: {process.Id}");
         
