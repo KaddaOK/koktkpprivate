@@ -102,8 +102,13 @@ jobs:
       - name: Verify Godot installation
         run: |
           Write-Host "Checking Godot installation..."
-          godot --version
-          Write-Host "Godot executable location: $(Get-Command godot | Select-Object -ExpandProperty Source)"
+          Write-Host "Godot symlink location: $(Get-Command godot -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+          Write-Host "Testing symlink..."
+          godot --version 2>&1
+          Write-Host "Testing direct executable..."
+          $godotPath = Get-ChildItem "C:\Users\runneradmin\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
+          Write-Host "Direct Godot path: $godotPath"
+          & "$godotPath" --version
           Write-Host "Working directory: $(Get-Location)"
 
       - name: Import project (generates .godot folder)
@@ -112,10 +117,13 @@ jobs:
           Write-Host "Current directory: $(Get-Location)"
           Write-Host "Project files:"
           Get-ChildItem -Name
+          
+          $godotPath = Get-ChildItem "C:\Users\runneradmin\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
+          Write-Host "Using Godot at: $godotPath"
+          
           Write-Host "Running Godot import..."
-          & godot --headless --verbose --import --quit *>&1 | Out-File -FilePath import.log -Encoding UTF8
-          Write-Host "Import completed. Log contents:"
-          if (Test-Path "import.log") { Get-Content "import.log" }
+          & "$godotPath" --headless --verbose --import --quit
+          Write-Host "Import completed."
           Write-Host "Generated .godot folder contents:"
           if (Test-Path ".godot") { Get-ChildItem ".godot" -Recurse -Name | Select-Object -First 10 }
         working-directory: ./KOKTKaraokeParty
@@ -189,9 +197,12 @@ jobs:
       - name: Export project
         run: |
           Write-Host "Starting project export..."
+          
+          $godotPath = Get-ChildItem "C:\Users\runneradmin\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
+          Write-Host "Using Godot at: $godotPath"
+          
           Write-Host "Available export presets:"
-          & godot --headless --list *>&1 | Out-File -FilePath presets.log -Encoding UTF8
-          if (Test-Path "presets.log") { Get-Content "presets.log" }
+          & "$godotPath" --headless --list
           
           Write-Host "Creating builds directory..."
           New-Item -ItemType Directory -Force -Path "builds\${{ matrix.identifier }}"
@@ -203,11 +214,9 @@ jobs:
           $exportPath = "builds\${{ matrix.identifier }}\${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}"
           Write-Host "Export path: $exportPath"
           
-          & godot --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath" *>&1 | Out-File -FilePath export.log -Encoding UTF8
+          & "$godotPath" --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath"
           
-          Write-Host "Export completed. Log contents:"
-          if (Test-Path "export.log") { Get-Content "export.log" }
-          
+          Write-Host "Export completed."
           Write-Host "Build directory contents:"
           if (Test-Path "builds\${{ matrix.identifier }}") {
             Get-ChildItem "builds\${{ matrix.identifier }}" -Recurse
