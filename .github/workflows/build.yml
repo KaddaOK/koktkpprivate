@@ -125,7 +125,7 @@ jobs:
           $godotPath = Get-ChildItem "$env:USERPROFILE\godot" -Recurse -Filter "Godot_*.exe" | Where-Object { $_.Name -notlike "*console*" } | Select-Object -First 1 -ExpandProperty FullName
           New-Item -ItemType Directory -Force -Path "builds\${{ matrix.identifier }}"
           $exportPath = "builds\${{ matrix.identifier }}\${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}"
-          & "$godotPath" --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath"
+          & "$godotPath" --headless --verbose --build-solutions --export-debug "${{ matrix.export-preset }}" "$exportPath"
         working-directory: ./KOKTKaraokeParty
 
       - name: Upload build artifact
