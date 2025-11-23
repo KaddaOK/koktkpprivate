@@ -3,8 +3,7 @@
 [ext_resource type="Script" uid="uid://gjhuq08pvh45" path="res://Controls/MonitorIdentificationOverlay.cs" id="1_f11ea"]
 
 [node name="MonitorIdentificationOverlay" type="Window"]
-size = Vector2i(200, 200)
-unresizable = true
+size = Vector2i(300, 300)
 borderless = true
 always_on_top = true
 script = ExtResource("1_f11ea")
