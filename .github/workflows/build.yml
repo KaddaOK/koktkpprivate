@@ -113,7 +113,7 @@ jobs:
           Write-Host "Project files:"
           Get-ChildItem -Name
           Write-Host "Running Godot import..."
-          godot --headless --verbose --import --quit 2>&1 | Tee-Object -FilePath import.log
+          & godot --headless --verbose --import --quit *>&1 | Out-File -FilePath import.log -Encoding UTF8
           Write-Host "Import completed. Log contents:"
           if (Test-Path "import.log") { Get-Content "import.log" }
           Write-Host "Generated .godot folder contents:"
@@ -190,7 +190,7 @@ jobs:
         run: |
           Write-Host "Starting project export..."
           Write-Host "Available export presets:"
-          godot --headless --list 2>&1 | Tee-Object -FilePath presets.log
+          & godot --headless --list *>&1 | Out-File -FilePath presets.log -Encoding UTF8
           if (Test-Path "presets.log") { Get-Content "presets.log" }
           
           Write-Host "Creating builds directory..."
@@ -203,7 +203,7 @@ jobs:
           $exportPath = "builds\${{ matrix.identifier }}\${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}"
           Write-Host "Export path: $exportPath"
           
-          godot --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath" 2>&1 | Tee-Object -FilePath export.log
+          & godot --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath" *>&1 | Out-File -FilePath export.log -Encoding UTF8
           
           Write-Host "Export completed. Log contents:"
           if (Test-Path "export.log") { Get-Content "export.log" }
