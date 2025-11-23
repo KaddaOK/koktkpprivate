@@ -17,25 +17,15 @@ public partial class MonitorIdentificationOverlay : Window, IMonitorIdentificati
 {
     public override void _Notification(int what) => this.Notify(what);
 
-    [Node("%MonitorNumberLabel")] private ILabel MonitorNumberLabel { get; set; } = default!;
-    private Label _fallbackLabel;
+    [Node] private ILabel MonitorNumberLabel { get; set; } = default!;
 
     private int _currentMonitorId = -1;
 
     public override void _Ready()
     {
-        // Don't modify ANY window properties - let the scene file handle them
-        
+      
         // Make it non-interactive
         SetProcessInput(false);
-        
-        this.Provide();
-        
-        // Fallback label reference if AutoInject fails
-        if (MonitorNumberLabel == null)
-        {
-            _fallbackLabel = GetNode<Label>("%MonitorNumberLabel");
-        }
     }
 
     public void ShowForMonitor(int monitorId)
@@ -55,16 +45,12 @@ public partial class MonitorIdentificationOverlay : Window, IMonitorIdentificati
         {
             MonitorNumberLabel.Text = monitorId.ToString();
         }
-        else if (_fallbackLabel != null)
-        {
-            _fallbackLabel.Text = monitorId.ToString();
-        }
         
         // Show the window
         Show();
         
-        // Auto-hide after 5 seconds for better visibility
-        GetTree().CreateTimer(5.0f).Timeout += () => Hide();
+        // Auto-hide after 4 seconds
+        GetTree().CreateTimer(4.0f).Timeout += () => Hide();
     }
 
     public new void Hide()
