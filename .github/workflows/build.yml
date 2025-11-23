@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, github-actions-temp ]
   pull_request:
     branches: [ main, develop ]
 
@@ -100,10 +100,82 @@ jobs:
           include-templates: true
 
       - name: Verify Godot installation
-        run: godot --version
+        run: |
+          Write-Host "Checking Godot installation..."
+          godot --version
+          Write-Host "Godot executable location: $(Get-Command godot | Select-Object -ExpandProperty Source)"
+          Write-Host "Working directory: $(Get-Location)"
 
       - name: Import project (generates .godot folder)
-        run: godot --headless --import
+        run: |
+          Write-Host "Starting Godot project import..."
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Project files:"
+          Get-ChildItem -Name
+          Write-Host "Running Godot import..."
+          godot --headless --verbose --import --quit 2>&1 | Tee-Object -FilePath import.log
+          Write-Host "Import completed. Log contents:"
+          if (Test-Path "import.log") { Get-Content "import.log" }
+          Write-Host "Generated .godot folder contents:"
+          if (Test-Path ".godot") { Get-ChildItem ".godot" -Recurse -Name | Select-Object -First 10 }
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Create export preset if missing
+        run: |
+          Write-Host "Checking for export presets..."
+          if (-not (Test-Path "export_presets.cfg")) {
+            Write-Host "Creating minimal export preset for Windows..."
+            $presetContent = @"
+          [preset.0]
+
+          name="Windows Desktop"
+          platform="Windows Desktop"
+          runnable=true
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path=""
+          patch_list=PackedStringArray()
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+          script_export_mode=1
+          script_encryption_key=""
+
+          [preset.0.options]
+
+          custom_template/debug=""
+          custom_template/release=""
+          debug/export_console_wrapper=true
+          binary_format/embed_pck=false
+          texture_format/bptc=true
+          texture_format/s3tc=true
+          texture_format/etc=false
+          texture_format/etc2=false
+          binary_format/architecture="x86_64"
+          codesign/enable=false
+          application/modify_resources=true
+          application/icon=""
+          application/console_wrapper_icon=""
+          application/icon_interpolation=4
+          application/file_version=""
+          application/product_version=""
+          application/company_name=""
+          application/product_name=""
+          application/file_description=""
+          application/copyright=""
+          application/trademarks=""
+          application/export_angle=0
+          ssh_remote_deploy/enabled=false
+          "@
+            $presetContent | Out-File -FilePath "export_presets.cfg" -Encoding UTF8
+            Write-Host "Export preset created."
+          } else {
+            Write-Host "Export presets found:"
+            Get-Content "export_presets.cfg" | Select-Object -First 20
+          }
         working-directory: ./KOKTKaraokeParty
 
       - name: Restore .NET dependencies
@@ -114,18 +186,40 @@ jobs:
         run: dotnet build --configuration Release --no-restore
         working-directory: ./KOKTKaraokeParty
 
-      - name: Create builds directory
-        run: mkdir -p builds
-
       - name: Export project
         run: |
-          mkdir -p builds/${{ matrix.identifier }}
-          godot --headless --export-release "${{ matrix.export-preset }}" builds/${{ matrix.identifier }}/${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}
+          Write-Host "Starting project export..."
+          Write-Host "Available export presets:"
+          godot --headless --list 2>&1 | Tee-Object -FilePath presets.log
+          if (Test-Path "presets.log") { Get-Content "presets.log" }
+          
+          Write-Host "Creating builds directory..."
+          New-Item -ItemType Directory -Force -Path "builds\${{ matrix.identifier }}"
+          
+          Write-Host "Current directory contents:"
+          Get-ChildItem -Name
+          
+          Write-Host "Attempting export..."
+          $exportPath = "builds\${{ matrix.identifier }}\${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}"
+          Write-Host "Export path: $exportPath"
+          
+          godot --headless --verbose --export-debug "${{ matrix.export-preset }}" "$exportPath" 2>&1 | Tee-Object -FilePath export.log
+          
+          Write-Host "Export completed. Log contents:"
+          if (Test-Path "export.log") { Get-Content "export.log" }
+          
+          Write-Host "Build directory contents:"
+          if (Test-Path "builds\${{ matrix.identifier }}") {
+            Get-ChildItem "builds\${{ matrix.identifier }}" -Recurse
+          } else {
+            Write-Host "Build directory not found!"
+          }
         working-directory: ./KOKTKaraokeParty
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.identifier }}-build
-          path: builds/${{ matrix.identifier }}
+          path: KOKTKaraokeParty/builds/${{ matrix.identifier }}
           retention-days: 7
+          if-no-files-found: error
