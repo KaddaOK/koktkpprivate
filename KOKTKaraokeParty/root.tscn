@@ -249,9 +249,16 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 4
 
+[node name="IdentifyMonitorsButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Identify"
+
 [node name="MonitorWarningLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "⚠"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]

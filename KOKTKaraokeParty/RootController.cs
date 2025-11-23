@@ -3,6 +3,7 @@ using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
 using KOKTKaraokeParty.Services;
+using KOKTKaraokeParty.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -82,12 +83,16 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 	[Node] private IButton PrepareQuitButton { get; set; } = default!;
 	[Node] private ISpinBox MonitorSpinBox { get; set; } = default!;
 	[Node] private ILabel MonitorWarningLabel { get; set; } = default!;
+	[Node] private IButton IdentifyMonitorsButton { get; set; } = default!;
 
 	// Queue management UI
 	private DraggableTree QueueTree;
 	private TreeItem _queueRoot;
 	private Button MainQueuePlayPauseButton;
 	private Button MainQueueSkipButton;
+
+	// Monitor identification
+	private MonitorIdentificationManager _monitorManager;
 
 	#endregion
 
@@ -150,6 +155,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 		BindDisplayScreenControls();
 		BindSearchScreenControls();
 		SetupStartTab();
+		SetupMonitorIdentification();
 	}
 
 	private void BindEvents()
@@ -180,6 +186,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 		
 		// Monitor controls in PrepareSessionDialog
 		MonitorSpinBox.ValueChanged += OnPrepareDialogMonitorChanged;
+		IdentifyMonitorsButton.Pressed += OnIdentifyMonitorsPressed;
 	}
 
 	private void OnSessionStatusUpdated(PrepareSessionModel model)
@@ -693,6 +700,22 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 		SetupTab.SetDisplayScreenMonitorUIValue(Settings.DisplayScreenMonitor);
 		SetupTab.SetDisplayScreenMonitorMaxValue(DisplayServer.GetScreenCount() - 1);
 		SetupTab.SetCountdownLengthSecondsUIValue(Settings.CountdownLengthSeconds);
+	}
+
+	#endregion
+
+	#region Monitor Identification
+
+	private void SetupMonitorIdentification()
+	{
+		// Load the overlay scene - you'll need to create this scene first
+		var overlayScene = GD.Load<PackedScene>("res://Controls/MonitorIdentificationOverlay.tscn");
+		_monitorManager = new MonitorIdentificationManager(this, overlayScene);
+	}
+
+	private void OnIdentifyMonitorsPressed()
+	{
+		_monitorManager?.ShowAllMonitors();
 	}
 
 	#endregion
