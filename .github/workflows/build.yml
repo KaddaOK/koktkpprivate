@@ -1,0 +1,131 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  GODOT_VERSION: 4.4.1
+  EXPORT_NAME: KOKTKaraokeParty
+  DOTNET_VERSION: 8.0.x
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache .NET packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            **/TestResults/**/*.xml
+            **/TestResults/**/*.trx
+
+  build:
+    runs-on: ${{ matrix.runner }}
+    name: Build ${{ matrix.name }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - identifier: windows-desktop
+            name: Windows Desktop
+            runner: windows-latest
+            export-preset: "Windows Desktop"
+          # TODO: Enable these builds once deployment targets are tested
+          # - identifier: linux-x11
+          #   name: Linux/X11
+          #   runner: ubuntu-latest
+          #   export-preset: "Linux/X11"
+          # - identifier: macos
+          #   name: macOS
+          #   runner: macos-latest
+          #   export-preset: "macOS"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache .NET packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          include-templates: true
+
+      - name: Verify Godot installation
+        run: godot --version
+
+      - name: Import project (generates .godot folder)
+        run: godot --headless --import
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Build .NET project
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Create builds directory
+        run: mkdir -p builds
+
+      - name: Export project
+        run: |
+          mkdir -p builds/${{ matrix.identifier }}
+          godot --headless --export-release "${{ matrix.export-preset }}" builds/${{ matrix.identifier }}/${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.identifier }}-build
+          path: builds/${{ matrix.identifier }}
+          retention-days: 7
