@@ -29,8 +29,8 @@ public interface IBrowserProviderNode : INode
     Task ToggleYoutubePlayback();
     Task SeekYouTube(long positionMs);
 
-    event PlaybackProgressEventHandler PlaybackProgress;
-    event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
+    event BrowserProviderNode.PlaybackProgressEventHandler PlaybackProgress;
+    event BrowserProviderNode.PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 }
 
 public enum BrowserAvailabilityStatus
@@ -64,7 +64,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
     public event BrowserAvailabilityStatusEventHandler BrowserAvailabilityStatusChecked;
     public event YouTubeStatusEventHandler YouTubeStatusChecked;
     public event KarafunStatusEventHandler KarafunStatusChecked;
-
+    public delegate void PlaybackProgressEventHandler(long progressMs);
+    public delegate void PlaybackDurationChangedEventHandler(long durationMs);
     public event PlaybackProgressEventHandler PlaybackProgress;
     public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
 
@@ -83,7 +84,11 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
     public void Initialize()
     {
         _youtubeAutomator = new YoutubeAutomator();
+        _youtubeAutomator.PlaybackProgress += (progressMs) => PlaybackProgress?.Invoke(progressMs);
+        _youtubeAutomator.PlaybackDurationChanged += (durationMs) => PlaybackDurationChanged?.Invoke(durationMs);
         _karafunAutomator = new KarafunAutomator();
+        _karafunAutomator.PlaybackProgress += (progressMs) => PlaybackProgress?.Invoke(progressMs);
+        _karafunAutomator.PlaybackDurationChanged += (durationMs) => PlaybackDurationChanged?.Invoke(durationMs);
         _browserFetcher = Puppeteer.CreateBrowserFetcher(new BrowserFetcherOptions
         {
             Browser = _browserType,

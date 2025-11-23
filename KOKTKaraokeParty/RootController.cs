@@ -166,6 +166,8 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
         _playbackCoordination.PlaybackDurationChanged += UpdatePlaybackDuration;
         _playbackCoordination.PlaybackProgressChanged += (progressMs) => CallDeferred(nameof(UpdatePlaybackProgress), progressMs);
         _playbackCoordination.PlaybackFinished += OnPlaybackFinished;
+        _playbackCoordination.ProgressSliderUpdateRequested += (stateText, maxSeconds, valueSeconds, enableEditing) => 
+            Callable.From(() => SetProgressSlider(stateText, maxSeconds, valueSeconds, enableEditing)).CallDeferred();
         
         // Session preparation dialog events
         PrepareSessionOKButton.Pressed += OnPrepareSessionOKPressed;
@@ -521,20 +523,29 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
     public void UpdatePlaybackDuration(long durationMs)
     {
-        if (durationMs <= 0) return;
+        if (durationMs <= 0) 
+        {
+            return;
+        }
 
         GD.Print($"Playback duration changed: {durationMs}");
-        DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
-        MainWindowProgressSlider.MaxValue = durationMs;
-        MainWindowProgressSlider.Editable = true;
+        Callable.From(() => {
+            DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
+            MainWindowProgressSlider.MaxValue = durationMs;
+            MainWindowProgressSlider.Editable = true;
+        }).CallDeferred();
     }
 
     public void UpdatePlaybackProgress(long progressMs)
     {
-        if (progressMs <= 0) return;
-
-        CurrentTimeLabel.Text = TimeSpan.FromMilliseconds(progressMs).ToString(@"mm\:ss");
-        MainWindowProgressSlider.SetValueNoSignal(progressMs);
+        if (progressMs <= 0) 
+        {
+            return;
+        }
+        Callable.From(() => {
+            CurrentTimeLabel.Text = TimeSpan.FromMilliseconds(progressMs).ToString(@"mm\:ss");
+            MainWindowProgressSlider.SetValueNoSignal(progressMs);
+        }).CallDeferred();
     }
 
     private void SetProgressSlider(string stateText = null, int maxSeconds = 0, int valueSeconds = 0, bool enableEditing = false)

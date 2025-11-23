@@ -176,15 +176,17 @@ public partial class BackgroundMusicService : Node
     {
         if (index >= _settings.BgMusicFiles.Count) return;
 
-        _currentlyPlayingPath = _settings.BgMusicFiles[index];
-        _musicPlayer.Stream = LoadAudioFromPath(_currentlyPlayingPath);
-        _musicPlayer.Play();
-        
-        var displayName = Path.GetFileNameWithoutExtension(_currentlyPlayingPath);
-        Callable.From(() => _displayScreen.UpdateBgMusicNowPlaying(displayName)).CallDeferred();
-        NowPlayingChanged?.Invoke(displayName);
-        Callable.From(() => _displayScreen.UpdateBgMusicPaused(false)).CallDeferred();
-        PausedStateChanged?.Invoke(false);
+        Callable.From(() => {
+            _currentlyPlayingPath = _settings.BgMusicFiles[index];
+            _musicPlayer.Stream = LoadAudioFromPath(_currentlyPlayingPath);
+            _musicPlayer.Play();
+            
+            var displayName = Path.GetFileNameWithoutExtension(_currentlyPlayingPath);
+            _displayScreen.UpdateBgMusicNowPlaying(displayName);
+            NowPlayingChanged?.Invoke(displayName);
+            _displayScreen.UpdateBgMusicPaused(false);
+            PausedStateChanged?.Invoke(false);
+        }).CallDeferred();
     }
 
     private void UpdateVolume()

@@ -15,6 +15,7 @@ public partial class PlaybackCoordinationService : Node
     public event Action<long> PlaybackDurationChanged;
     public event Action<long> PlaybackProgressChanged;
     public event Action<QueueItem> PlaybackFinished;
+    public event Action<string, int, int, bool> ProgressSliderUpdateRequested;
 
     private Settings _settings;
     private IDisplayScreen _displayScreen;
@@ -65,6 +66,9 @@ public partial class PlaybackCoordinationService : Node
 
         GD.Print($"Playing {item.SongName} by {item.ArtistName} ({item.CreatorName}) from {item.PerformanceLink}");
 
+        // Update progress slider with current item
+        ProgressSliderUpdateRequested?.Invoke($"{item.ArtistName} - {item.SongName}", 0, 0, false);
+
         // Play the item based on its type
         await PlayBasedOnTypeAsync(item, cancellationToken);
     }
@@ -77,6 +81,7 @@ public partial class PlaybackCoordinationService : Node
         while (remainingSeconds > 0 && !cancellationToken.IsCancellationRequested)
         {
             Callable.From(() => _displayScreen.UpdateLaunchCountdownSecondsRemaining(remainingSeconds)).CallDeferred();
+            ProgressSliderUpdateRequested?.Invoke($"Next up is {item.SingerName} in {remainingSeconds} seconds...", _settings.CountdownLengthSeconds, _settings.CountdownLengthSeconds - remainingSeconds, false);
             remainingSeconds--;
             await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
         }
@@ -239,7 +244,7 @@ public partial class PlaybackCoordinationService : Node
             case ItemType.Youtube:
                 if (string.IsNullOrEmpty(currentItem.TemporaryDownloadPath))
                 {
-                    Callable.From(() => _browserProvider.SeekYouTube(positionMs)).CallDeferred();
+                    _ = Task.Run(async () => await _browserProvider.SeekYouTube(positionMs));
                 }
                 else
                 {
@@ -247,7 +252,7 @@ public partial class PlaybackCoordinationService : Node
                 }
                 break;
             case ItemType.KarafunWeb:
-                Callable.From(() => _browserProvider.SeekKarafun(positionMs)).CallDeferred();
+                _ = Task.Run(async () => await _browserProvider.SeekKarafun(positionMs));
                 break;
             case ItemType.LocalMp3G:
             case ItemType.LocalMp3GZip:
