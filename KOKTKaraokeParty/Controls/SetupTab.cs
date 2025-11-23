@@ -2,6 +2,7 @@ using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
+using KOKTKaraokeParty.Services;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,6 +31,7 @@ public partial class SetupTab : MarginContainer, ISetupTab
 
     #region Dependencies
     [Dependency] public IBrowserProviderNode BrowserProvider => this.DependOn<IBrowserProviderNode>();
+    [Dependency] public IMonitorIdentificationManager MonitorIdManager => this.DependOn<IMonitorIdentificationManager>();
     #endregion
 
     #region Nodes
@@ -43,6 +45,8 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Node] private CheckBox BgMusicEnabledCheckBox { get; set; } = default!;
     [Node] private SpinBox BgMusicVolumeSpinBox { get; set; } = default!;
     [Node] private Button BgMusicAddButton { get; set; } = default!;
+    [Node] private Button IdentifyMonitorsButton { get; set; } = default!;
+    [Node] private Label MonitorWarningLabel { get; set; } = default!;
     #endregion
 
     #region Signals
@@ -69,6 +73,8 @@ public partial class SetupTab : MarginContainer, ISetupTab
         BgMusicAddFileDialog.FilesSelected += OnBgMusicFilesSelected;
         BgMusicAddButton.Pressed += () => BgMusicAddFileDialog.Visible = true;
         BgMusicVolumeSpinBox.ValueChanged += (double value) => EmitSignal(SignalName.BgMusicVolumeChanged, value);
+        IdentifyMonitorsButton.Pressed += () => MonitorIdManager.ShowAllMonitors();
+        MonitorSpinbox.ValueChanged += (double value) => UpdateMonitorWarning((int)value);
     }
 
     private void BgMusicItemListGuiInput(InputEvent @event)
@@ -113,6 +119,7 @@ public partial class SetupTab : MarginContainer, ISetupTab
     public void SetDisplayScreenMonitorUIValue(int monitor)
     {
         MonitorSpinbox.Value = monitor;
+        UpdateMonitorWarning(monitor);
     }
 
     public void SetDisplayScreenMonitorMaxValue(int maxMonitor)
@@ -124,6 +131,32 @@ public partial class SetupTab : MarginContainer, ISetupTab
     {
         WaitSpinbox.Value = countdownLengthSeconds;
     }
+
+	private void UpdateMonitorWarning(int selectedMonitor)
+	{
+        Callable.From(() => {
+            // Check if the selected monitor is the same as the main window
+            var mainWindowScreen = DisplayServer.WindowGetCurrentScreen();
+            var totalScreens = DisplayServer.GetScreenCount();
+            // Show warning if same monitor or invalid monitor
+            var showWarning = (selectedMonitor == mainWindowScreen) || (selectedMonitor >= totalScreens);
+            
+            MonitorWarningLabel.Visible = showWarning;
+            if (showWarning)
+            {
+                if (selectedMonitor >= totalScreens)
+                {
+                    MonitorWarningLabel.Text = "❌";
+                    MonitorWarningLabel.TooltipText = "Invalid monitor selection";
+                }
+                else
+                {
+                    MonitorWarningLabel.Text = "⚠";
+                    MonitorWarningLabel.TooltipText = "Display screen is set to same monitor as main window";
+                }
+            }
+        }).CallDeferred();
+	}
 
     private void OnBgMusicFilesSelected(string[] files)
     {

@@ -15,7 +15,7 @@ namespace KOKTKaraokeParty;
 
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node, 
-IProvide<IBrowserProviderNode>, IProvide<Settings>
+IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 {
 	#region Service Dependencies
 
@@ -29,6 +29,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
 	#region Provided Dependencies
 	IBrowserProviderNode IProvide<IBrowserProviderNode>.Value() => BrowserProvider;
+    IMonitorIdentificationManager IProvide<IMonitorIdentificationManager>.Value() => MonitorIdManager;
 
 	private Settings Settings { get; set; }
 	Settings IProvide<Settings>.Value() => Settings;
@@ -84,15 +85,13 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 	[Node] private ISpinBox MonitorSpinBox { get; set; } = default!;
 	[Node] private ILabel MonitorWarningLabel { get; set; } = default!;
 	[Node] private IButton IdentifyMonitorsButton { get; set; } = default!;
+    [Node] private IMonitorIdentificationManager MonitorIdManager { get; set; } = default!;
 
 	// Queue management UI
 	private DraggableTree QueueTree;
 	private TreeItem _queueRoot;
 	private Button MainQueuePlayPauseButton;
 	private Button MainQueueSkipButton;
-
-	// Monitor identification
-	private MonitorIdentificationManager _monitorManager;
 
 	#endregion
 
@@ -708,14 +707,13 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>
 
 	private void SetupMonitorIdentification()
 	{
-		// Load the overlay scene - you'll need to create this scene first
 		var overlayScene = GD.Load<PackedScene>("res://Controls/MonitorIdentificationOverlay.tscn");
-		_monitorManager = new MonitorIdentificationManager(this, overlayScene);
+		MonitorIdManager.Initialize(this, overlayScene);
 	}
 
 	private void OnIdentifyMonitorsPressed()
 	{
-		_monitorManager?.ShowAllMonitors();
+		MonitorIdManager?.ShowAllMonitors();
 	}
 
 	#endregion
