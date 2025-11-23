@@ -13,15 +13,28 @@ layout_mode = 2
 theme_override_constants/separation = 30
 
 [node name="Label" type="Label" parent="StartTabVBox"]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Set up the app in this tab, and when you're satisfied, switch to the \"Search\" tab to start singing!"
 
 [node name="GridContainer" type="GridContainer" parent="StartTabVBox"]
+visible = false
 layout_mode = 2
 theme_override_constants/h_separation = 9
 theme_override_constants/v_separation = 13
 columns = 2
+
+[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Google blocks login from automated browsers, so if  you want to use YouTube Premium to avoid being interrupted by ads, click this button to sign in.  
+You might as well use it to log into Karafun web as well. 
+Once you've done those things once, they should be remembered in the automated browser for a long while.  
+Note: be sure to CLOSE it when you're finished logging into things, or the app will probably not be able to launch the automated one successfully!"
+horizontal_alignment = 2
+autowrap_mode = 2
 
 [node name="LaunchUnautomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
 unique_name_in_owner = true
@@ -31,61 +44,59 @@ size_flags_vertical = 0
 text = "Launch Browser 
 Unautomated"
 
-[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
-text = "<-- Google blocks login from automated browsers, so if  you want to use YouTube Premium to avoid being interrupted by ads, click here to sign in.  You might as well use it to log into Karafun web as well. 
-Once you've done those things once, they should be remembered in the automated browser for a long while.  
-Note: be sure to CLOSE it when you're finished logging into things, or the app will probably not be able to launch the automated one successfully!"
-autowrap_mode = 2
-
-[node name="LaunchAutomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 0
-text = "Launch Browser 
-Automated"
-
-[node name="LaunchAutomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
-text = "<-- This launches the browser the same way that starting a song in this app does, so if you need to, you can use it to place the browser on the correct monitor ahead of time. 
-(This is generally remembered between sessions too though, so you may only need it once or never at all.)"
-autowrap_mode = 2
-
 [node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
+size_flags_horizontal = 8
 alignment = 2
 
 [node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Set monitor to display karaoke lyrics, next up and empty queue screens: "
+size_flags_vertical = 0
+text = "Set which monitor to display karaoke lyrics, next up and empty queue screens: "
 horizontal_alignment = 2
-autowrap_mode = 2
 
-[node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
+[node name="MonitorWarningLabel" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
+size_flags_horizontal = 6
 size_flags_vertical = 0
-
-[node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-text = "Apply"
-
-[node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-text = "Hide"
+tooltip_text = "The "
+theme_override_font_sizes/font_size = 20
+text = "⚠"
+horizontal_alignment = 2
 
 [node name="GridContainer" type="GridContainer" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
+columns = 2
+
+[node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Save the selected screen setting and immediately move the Display Screen window."
+text = "Apply"
+
+[node name="IdentifyMonitorsButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+tooltip_text = "Flash the number in the corner of each display so you can see which is which"
+text = "Identify
+"
+
+[node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Temporarily dismiss the Display Screen window.  
+(Don't click this while someone is singing!)"
+text = "Hide"
 
 [node name="WaitSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2

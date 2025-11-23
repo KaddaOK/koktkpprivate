@@ -59,6 +59,12 @@ public partial class SearchTab : MarginContainer, ISearchTab
     [Node] private ILoadableLabel QueueAddSongNameLabel { get; set; } = default!;
     [Node] private ILoadableLabel QueueAddArtistNameLabel { get; set; } = default!;
     [Node] private Label QueueAddCreatorNameLabel { get; set; } = default!;
+    [Node] private ICheckBox SearchKarafunCheckBox { get; set; } = default!;
+    [Node] private ICheckBox SearchKaraokeNerdsCheckBox { get; set; } = default!;
+    [Node] private ICheckBox SearchLocalFilesCheckBox { get; set; } = default!;
+    [Node] private IVBoxContainer KarafunResultsVBox { get; set; } = default!;
+    [Node] private IVBoxContainer KaraokeNerdsResultsVBox { get; set; } = default!;
+    [Node] private IVBoxContainer LocalResultsPane { get; set; } = default!;
 
     #endregion
 
@@ -84,11 +90,26 @@ public partial class SearchTab : MarginContainer, ISearchTab
         AddToQueueDialog.Confirmed += AddToQueueDialogConfirmed;
         AddToQueueDialog.Canceled += CloseAddToQueueDialog;
 
+        // Connect checkbox events to control visibility
+        SearchKarafunCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+        SearchKaraokeNerdsCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+        SearchLocalFilesCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+
+        // Initial visibility update
+        UpdateResultPaneVisibility();
+
         KfnResultCount.SetLoaded(true, "");
         KNResultCount.SetLoaded(true, "");
         LocalFilesResultCount.SetLoaded(true, "");
     }
 
+
+    private void UpdateResultPaneVisibility()
+    {
+        KarafunResultsVBox.Visible = SearchKarafunCheckBox.ButtonPressed;
+        KaraokeNerdsResultsVBox.Visible = SearchKaraokeNerdsCheckBox.ButtonPressed;
+        LocalResultsPane.Visible = SearchLocalFilesCheckBox.ButtonPressed;
+    }
 
     private void ClearSearch()
     {
@@ -219,26 +240,29 @@ public partial class SearchTab : MarginContainer, ISearchTab
         SearchCancellationSource = new CancellationTokenSource();
         await ToggleIsSearching(true);
 
-        var searchKaraokenerds = true; // TODO: Implement a setting to enable/disable searching Karaokenerds?
-        var searchKarafun = true; // TODO: Implement a setting to enable/disable searching Karafun?
-        var searchLocalFiles = true; // TODO: Implement a setting to enable/disable searching local files?
+        var searchKaraokenerds = SearchKaraokeNerdsCheckBox.ButtonPressed;
+        var searchKarafun = SearchKarafunCheckBox.ButtonPressed;
+        var searchLocalFiles = SearchLocalFilesCheckBox.ButtonPressed;
+
+        KNResultsTree.Clear();
+        KfnResultsTree.Clear();
+        LocalFilesResultsTree.Clear();
 
         var searchTasks = new List<Task>();
         if (searchKaraokenerds)
         {
-            KNResultsTree.Clear();
+
             _knRoot = KNResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             searchTasks.Add(GetResultsFromKaraokenerds(query));
         }
         if (searchKarafun)
         {
-            KfnResultsTree.Clear();
+
             _kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             searchTasks.Add(StreamResultsFromKarafun(query, SearchCancellationSource.Token));
         }
-        if (searchLocalFiles) // TODO: doing this broke everything
+        if (searchLocalFiles)
         {
-            LocalFilesResultsTree.Clear();
             _localFilesRoot = LocalFilesResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             await SearchLocalFiles(query, SearchCancellationSource.Token);
         }

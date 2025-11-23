@@ -18,7 +18,7 @@ metadata/_tab_index = 1
 
 [node name="SearchTabVBox" type="VBoxContainer" parent="."]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 12
 
 [node name="SearchTabExplanationLabel" type="Label" parent="SearchTabVBox"]
 layout_mode = 2
@@ -26,19 +26,22 @@ theme_override_font_sizes/font_size = 13
 text = "Type something and press enter or the 'Search' button to find a song.  Double-click on a result to add it to the queue."
 autowrap_mode = 2
 
-[node name="SearchControlsHBox" type="HBoxContainer" parent="SearchTabVBox"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SearchTabVBox"]
+layout_mode = 2
+
+[node name="SearchControlsHBox" type="HBoxContainer" parent="SearchTabVBox/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SearchLabel" type="Label" parent="SearchTabVBox/SearchControlsHBox"]
+[node name="SearchLabel" type="Label" parent="SearchTabVBox/VBoxContainer/SearchControlsHBox"]
 layout_mode = 2
 text = "Search:"
 
-[node name="Control" type="Control" parent="SearchTabVBox/SearchControlsHBox"]
+[node name="Control" type="Control" parent="SearchTabVBox/VBoxContainer/SearchControlsHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SearchText" type="LineEdit" parent="SearchTabVBox/SearchControlsHBox/Control"]
+[node name="SearchText" type="LineEdit" parent="SearchTabVBox/VBoxContainer/SearchControlsHBox/Control"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 14
@@ -51,7 +54,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 
-[node name="ClearSearchButton" type="Button" parent="SearchTabVBox/SearchControlsHBox/Control/SearchText"]
+[node name="ClearSearchButton" type="Button" parent="SearchTabVBox/VBoxContainer/SearchControlsHBox/Control/SearchText"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 6
@@ -68,10 +71,40 @@ tooltip_text = "Clear/Cancel"
 text = "x"
 flat = true
 
-[node name="SearchButton" type="Button" parent="SearchTabVBox/SearchControlsHBox"]
+[node name="SearchButton" type="Button" parent="SearchTabVBox/VBoxContainer/SearchControlsHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Search"
+
+[node name="SearchTypesHBox" type="HBoxContainer" parent="SearchTabVBox/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="SearchTypesLabel" type="Label" parent="SearchTabVBox/VBoxContainer/SearchTypesHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Show results from:"
+
+[node name="SearchKarafunCheckBox" type="CheckBox" parent="SearchTabVBox/VBoxContainer/SearchTypesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "Karafun (subscription)"
+
+[node name="SearchKaraokeNerdsCheckBox" type="CheckBox" parent="SearchTabVBox/VBoxContainer/SearchTypesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "KaraokeNerds (YouTube)"
+
+[node name="SearchLocalFilesCheckBox" type="CheckBox" parent="SearchTabVBox/VBoxContainer/SearchTypesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "Local Files (scanned)"
 
 [node name="VSplitContainer" type="VSplitContainer" parent="SearchTabVBox"]
 layout_mode = 2
@@ -80,6 +113,7 @@ size_flags_vertical = 3
 [node name="HSplitContainer" type="HSplitContainer" parent="SearchTabVBox/VSplitContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+split_offset = -50
 
 [node name="KarafunResultsVBox" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer"]
 unique_name_in_owner = true
@@ -103,7 +137,7 @@ FontSize = 14
 [node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
-text = "Opens browser to song on karafun.com/web. (Requires an active Karafun subscription.)"
+text = "Opens automated browser to song on karafun.com/web. (Requires an active Karafun subscription.)"
 autowrap_mode = 2
 
 [node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox"]
@@ -141,7 +175,7 @@ FontSize = 14
 [node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
-text = "Downloads from YouTube in the background then plays locally. (or opens browser as a fallback; YouTube Premium recommended.)"
+text = "Downloads in the background then plays in the display screen window.  (or opens browser as a fallback; YouTube Premium recommended.)"
 autowrap_mode = 2
 
 [node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox"]
@@ -179,7 +213,7 @@ FontSize = 14
 [node name="LocalFilesResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/LocalResultsPane"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
-text = "Plays video or cdg files in the display screen window."
+text = "Plays your scanned local video or cdg files in the display screen window."
 
 [node name="ScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/LocalResultsPane"]
 layout_mode = 2
