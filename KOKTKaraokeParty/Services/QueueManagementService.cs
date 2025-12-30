@@ -19,6 +19,8 @@ public partial class QueueManagementService : Node
     public event Action<QueueItem> ItemRemoved;
     public event Action<QueueItem> NowPlayingChanged;
     public event Action<bool> PausedStateChanged;
+    public event Action QueueLoaded;
+    public event Action QueueReordered;
 
     private Queue<QueueItem> _queue;
     private QueueItem _nowPlaying;
@@ -32,6 +34,11 @@ public partial class QueueManagementService : Node
     public QueueItem NowPlaying => _nowPlaying;
     public bool IsPaused => _isPaused;
     public int QueueCount => _queue.Count;
+
+    public IEnumerable<QueueItem> GetQueueItems()
+    {
+        return _queue.ToList();
+    }
 
     public void Initialize(IFileWrapper fileWrapper, IYtDlpProviderNode ytDlpProvider)
     {
@@ -96,6 +103,7 @@ public partial class QueueManagementService : Node
 
         _queue = new Queue<QueueItem>(withoutMovedItem);
         SaveQueueToDisk();
+        QueueReordered?.Invoke();
     }
 
     public QueueItem GetNextInQueue()
@@ -284,6 +292,9 @@ public partial class QueueManagementService : Node
                         }
                     }
                 }
+                
+                // Fire QueueLoaded event so UI can refresh
+                QueueLoaded?.Invoke();
             }
             else
             {

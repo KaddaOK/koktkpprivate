@@ -1,3 +1,5 @@
+namespace KOKTKaraokeParty.Tests.Local;
+
 using Xunit;
 
 public class LocalFileNameMetadataParserTests

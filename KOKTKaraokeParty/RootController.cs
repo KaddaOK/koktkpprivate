@@ -167,6 +167,8 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 		_queueManagement.ItemRemoved += OnQueueItemRemoved;
 		_queueManagement.NowPlayingChanged += OnNowPlayingChanged;
 		_queueManagement.PausedStateChanged += OnQueuePausedStateChanged;
+		_queueManagement.QueueLoaded += OnQueueLoaded;
+		_queueManagement.QueueReordered += RefreshQueueTree;
 		
 		// Search tab events
 		SearchTab.ItemAddedToQueue += _queueManagement.AddToQueue;
@@ -292,6 +294,12 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 	private void OnQueueItemRemoved(QueueItem item)
 	{
 		RemoveQueueTreeRow(item);
+	}
+
+	private void OnQueueLoaded()
+	{
+		GD.Print("Queue loaded from disk, refreshing queue tree...");
+		RefreshQueueTree();
 	}
 
 	private void OnNowPlayingChanged(QueueItem nowPlaying)
@@ -512,22 +520,34 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 
 	private QueueItem FindQueueItemByMetadata(string metadata)
 	{
-		// This is a simplified version - you might need to adjust based on your queue implementation
-		// For now, we'll use the performance link as the metadata identifier
-		return null; // TODO: Implement proper queue item lookup
+		// Check if it's the now playing item
+		if (_queueManagement.NowPlaying != null && 
+		    _queueManagement.NowPlaying.PerformanceLink == metadata)
+		{
+			return _queueManagement.NowPlaying;
+		}
+		
+		// Search in the queue
+		return _queueManagement.GetQueueItems()
+			.FirstOrDefault(item => item.PerformanceLink == metadata);
 	}
 
 	private void RefreshQueueTree()
 	{
 		QueueTree.Clear();
 		_queueRoot = QueueTree.CreateItem();
+		
 		// Add current playing item if any
 		if (_queueManagement.NowPlaying != null)
 		{
 			AddQueueTreeRow(_queueManagement.NowPlaying);
 		}
-		// Add all queued items - this needs to be exposed by QueueManagementService
-		// TODO: Add method to expose queue items for UI refresh
+		
+		// Add all queued items from the queue service
+		foreach (var item in _queueManagement.GetQueueItems())
+		{
+			AddQueueTreeRow(item);
+		}
 	}
 
 	public void QueueTreeGuiInput(InputEvent @event)

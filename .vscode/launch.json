@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:GODOT}",
+            "program": "${config:godotTools.editorPath.godot4}",
             "args": [
                 "--path", 
                 "${workspaceRoot}/KOKTKaraokeParty"
@@ -18,7 +18,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:GODOT}",
+            "program": "${config:godotTools.editorPath.godot4}",
             "args": [
                 "--path",
                 "${workspaceRoot}/KOKTKaraokeParty",
@@ -45,7 +45,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:GODOT}",
+            "program": "${config:godotTools.editorPath.godot4}",
             "args": [
                 "--path", 
                 "${workspaceRoot}/KOKTKaraokeParty",
@@ -60,7 +60,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:GODOT}",
+            "program": "${config:godotTools.editorPath.godot4}",
             "args": [
                 // These command line flags are used by GoDotTest to run tests.
                 "--run-tests",
@@ -75,7 +75,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${env:GODOT}",
+            "program": "${config:godotTools.editorPath.godot4}",
             "args": [
                 // These command line flags are used by GoDotTest to run tests.
                 "--run-tests=${fileBasenameNoExtension}",
