@@ -12,6 +12,7 @@ using Godot;
 public interface ISearchTab : IMarginContainer
 {
     void ExternalFileShowAddDialog(QueueItem item);
+    void ConfigureAvailableServices(bool localFilesAvailable, bool youTubeAvailable, bool karafunAvailable);
     event SearchTab.ItemAddedToQueueEventHandler ItemAddedToQueue;
 }
 
@@ -109,6 +110,20 @@ public partial class SearchTab : MarginContainer, ISearchTab
         KarafunResultsVBox.Visible = SearchKarafunCheckBox.ButtonPressed;
         KaraokeNerdsResultsVBox.Visible = SearchKaraokeNerdsCheckBox.ButtonPressed;
         LocalResultsPane.Visible = SearchLocalFilesCheckBox.ButtonPressed;
+    }
+
+    public void ConfigureAvailableServices(bool localFilesAvailable, bool youTubeAvailable, bool karafunAvailable)
+    {
+        SearchLocalFilesCheckBox.ButtonPressed = localFilesAvailable;
+        SearchLocalFilesCheckBox.Disabled = !localFilesAvailable;
+        
+        SearchKaraokeNerdsCheckBox.ButtonPressed = youTubeAvailable;
+        SearchKaraokeNerdsCheckBox.Disabled = !youTubeAvailable;
+        
+        SearchKarafunCheckBox.ButtonPressed = karafunAvailable;
+        SearchKarafunCheckBox.Disabled = !karafunAvailable;
+        
+        UpdateResultPaneVisibility();
     }
 
     private void ClearSearch()

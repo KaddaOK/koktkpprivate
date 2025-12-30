@@ -228,5 +228,28 @@ public partial class SessionPreparationService : Node
         return "⚠";
     }
 
+    public bool IsYouTubeUsable(PrepareSessionModel model)
+    {
+        // YouTube is usable if we can download via yt-dlp and play with VLC
+        // OR if we can stream via browser
+        var canDownloadAndPlay = model.VLCStatus == VLCStatus.Ready && 
+                                 model.YtDlpStatus == YtDlpStatus.Ready;
+        var canStreamViaBrowser = model.BrowserStatus == BrowserAvailabilityStatus.Ready &&
+                                  (model.YouTubeStatus == YouTubeStatus.Premium || 
+                                   model.YouTubeStatus == YouTubeStatus.NotPremium);
+        return canDownloadAndPlay || canStreamViaBrowser;
+    }
+
+    public bool IsKarafunUsable(PrepareSessionModel model)
+    {
+        return model.BrowserStatus == BrowserAvailabilityStatus.Ready &&
+               model.KarafunStatus == KarafunStatus.Active;
+    }
+
+    public bool IsLocalFilesUsable(PrepareSessionModel model)
+    {
+        return model.VLCStatus == VLCStatus.Ready;
+    }
+
     public PrepareSessionModel GetCurrentSessionModel() => _sessionModel;
 }

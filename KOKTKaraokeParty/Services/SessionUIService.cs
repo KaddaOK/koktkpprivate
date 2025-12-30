@@ -4,6 +4,7 @@ using Chickensoft.Introspection;
 using Godot;
 using KOKTKaraokeParty.Services;
 using System;
+using System.Collections.Generic;
 
 namespace KOKTKaraokeParty.Services;
 
@@ -58,6 +59,55 @@ public partial class SessionUIService : Node
             // Update button states
             UpdateButtonStates(model, okButton, loginButton);
         }).CallDeferred();
+    }
+
+    public void PopulateServiceConfirmationDialog(ILabel messageLabel, PrepareSessionModel model)
+    {
+        var availableServices = new List<string>();
+        var disabledServices = new List<string>();
+
+        if (_sessionPreparation.IsLocalFilesUsable(model))
+        {
+            availableServices.Add("✔ Local Files");
+        }
+        else
+        {
+            disabledServices.Add("❌ Local Files");
+        }
+
+        if (_sessionPreparation.IsYouTubeUsable(model))
+        {
+            availableServices.Add("✔ YouTube");
+        }
+        else
+        {
+            disabledServices.Add("❌ YouTube");
+        }
+
+        if (_sessionPreparation.IsKarafunUsable(model))
+        {
+            availableServices.Add("✔ Karafun");
+        }
+        else
+        {
+            disabledServices.Add("❌ Karafun");
+        }
+
+        var message = "Not all services are ready. If you continue now, these services will not be available during this session.\n\n";
+        message += "Available services:\n";
+        message += string.Join("\n", availableServices);
+        message += "\n\nDisabled services:\n";
+        message += string.Join("\n", disabledServices);
+        message += "\n\nAre you sure you wish to continue anyway?";
+
+        messageLabel.Text = message;
+    }
+
+    public bool AreAllServicesReady(PrepareSessionModel model)
+    {
+        return _sessionPreparation.IsLocalFilesUsable(model) &&
+               _sessionPreparation.IsYouTubeUsable(model) &&
+               _sessionPreparation.IsKarafunUsable(model);
     }
 
     private void AddYtDlpTreeItems(TreeItem parent, PrepareSessionModel model, int fontSize)
@@ -197,33 +247,48 @@ public partial class SessionUIService : Node
         };
     }
 
-    private void UpdateButtonStates(PrepareSessionModel model, IButton okButton, IButton loginButton)
+    public void UpdateButtonStates(PrepareSessionModel model, IButton okButton, IButton loginButton)
     {
         var checksAreStillInProgress = IsAnyCheckInProgress(model);
         var nothingIsUsable = AreAllServicesUnusable(model);
 
         loginButton.Disabled = checksAreStillInProgress;
 
-        if (checksAreStillInProgress)
+        if (nothingIsUsable)
         {
             okButton.Disabled = true;
-            okButton.TooltipText = "Please wait until all checks are complete.";
-            okButton.Text = "Preparing...";
-        }
-        else if (nothingIsUsable)
-        {
-            okButton.Disabled = true;
-            okButton.TooltipText = "No usage options passed checks.";
-            okButton.Text = "Failed";
+            okButton.TooltipText = checksAreStillInProgress 
+                ? "Please wait until all checks are complete."
+                : "No usage options passed checks.";
+            okButton.Text = checksAreStillInProgress ? "Preparing..." : "Failed";
         }
         else
         {
             okButton.Disabled = false;
             okButton.Text = "Start the Party!";
+            
+            // Generate warning tooltip if some services aren't ready
+            var warningParts = new List<string>();
+            if (!_sessionPreparation.IsLocalFilesUsable(model))
+            {
+                warningParts.Add("Local files not available");
+            }
+            if (!_sessionPreparation.IsYouTubeUsable(model))
+            {
+                warningParts.Add("YouTube not available");
+            }
+            if (!_sessionPreparation.IsKarafunUsable(model))
+            {
+                warningParts.Add("Karafun not available");
+            }
+            
+            okButton.TooltipText = warningParts.Count > 0 
+                ? "Warning: " + string.Join(", ", warningParts)
+                : "All services ready!";
         }
     }
 
-    private bool IsAnyCheckInProgress(PrepareSessionModel model)
+    public bool IsAnyCheckInProgress(PrepareSessionModel model)
     {
         return model.BrowserStatus == BrowserAvailabilityStatus.NotStarted ||
                model.BrowserStatus == BrowserAvailabilityStatus.Checking ||
@@ -239,14 +304,10 @@ public partial class SessionUIService : Node
                model.YtDlpStatus == YtDlpStatus.Downloading;
     }
 
-    private bool AreAllServicesUnusable(PrepareSessionModel model)
+    public bool AreAllServicesUnusable(PrepareSessionModel model)
     {
-        var noLocalPlayback = model.VLCStatus != VLCStatus.Ready;
-        var noYoutubePlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
-                               model.YouTubeStatus == YouTubeStatus.FatalError;
-        var noKarafunPlayback = model.BrowserStatus != BrowserAvailabilityStatus.Ready ||
-                               model.KarafunStatus != KarafunStatus.Active;
-
-        return noLocalPlayback && noYoutubePlayback && noKarafunPlayback;
+        return !_sessionPreparation.IsLocalFilesUsable(model) && 
+               !_sessionPreparation.IsYouTubeUsable(model) && 
+               !_sessionPreparation.IsKarafunUsable(model);
     }
 }

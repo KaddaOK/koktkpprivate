@@ -86,6 +86,10 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 	[Node] private ILabel MonitorWarningLabel { get; set; } = default!;
 	[Node] private IButton IdentifyMonitorsButton { get; set; } = default!;
     [Node] private IMonitorIdentificationManager MonitorIdManager { get; set; } = default!;
+	
+	// Service confirmation dialog (when not all services are ready)
+	[Node] private IConfirmationDialog ServiceConfirmationDialog { get; set; } = default!;
+	[Node] private ILabel ServiceConfirmationMessage { get; set; } = default!;
 
 	// Queue management UI
 	private DraggableTree QueueTree;
@@ -184,6 +188,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 		PrepareSessionOKButton.Pressed += OnPrepareSessionOKPressed;
 		LaunchForLoginsButton.Pressed += OnLaunchForLoginsPressed;
 		PrepareQuitButton.Pressed += Quit;
+		ServiceConfirmationDialog.Confirmed += OnServiceConfirmationAccepted;
 		
 		// Monitor controls in PrepareSessionDialog
 		MonitorSpinBox.ValueChanged += OnPrepareDialogMonitorChanged;
@@ -282,6 +287,43 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 
 	private void OnPrepareSessionOKPressed()
 	{
+		var model = _sessionPreparation.GetCurrentSessionModel();
+		
+		// Check if all services are ready
+		if (_sessionUI.AreAllServicesReady(model))
+		{
+			// All services ready, proceed immediately
+			ProceedWithAvailableServices();
+		}
+		else if (_sessionUI.AreAllServicesUnusable(model))
+		{
+			// This shouldn't happen since button should be disabled, but handle it anyway
+			ShowMessageDialog("Cannot Proceed", "No services are available. Please wait for services to initialize or check for errors.");
+		}
+		else
+		{
+			// Some services are ready, show confirmation dialog
+			_sessionUI.PopulateServiceConfirmationDialog(ServiceConfirmationMessage, model);
+			ServiceConfirmationDialog.PopupCentered();
+		}
+	}
+
+	private void OnServiceConfirmationAccepted()
+	{
+		ServiceConfirmationDialog.Hide();
+		ProceedWithAvailableServices();
+	}
+
+	private void ProceedWithAvailableServices()
+	{
+		// Configure search tab based on which services are actually available
+		var model = _sessionPreparation.GetCurrentSessionModel();
+		SearchTab.ConfigureAvailableServices(
+			_sessionPreparation.IsLocalFilesUsable(model),
+			_sessionPreparation.IsYouTubeUsable(model),
+			_sessionPreparation.IsKarafunUsable(model)
+		);
+		
 		PrepareSessionDialog.Hide();
 		SetProcess(true);
 	}
