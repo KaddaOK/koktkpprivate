@@ -36,11 +36,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
     private CancellationTokenSource SearchCancellationSource = new CancellationTokenSource();
 
-    /*
-    private ILocalFileScanner _localFileScanner = new LocalFileScanner(); // TODO: this doesn't belong here
-    private ILocalFileValidator _localFileValidator = new LocalFileValidator(); // TODO: this doesn't belong here
-    private List<string> LocalFilesResults = new List<string>(); // TODO: this doesn't belong here
-    */
     private ILocalSearcher _localSearcher = new LocalSearcher(); // TODO: inject properly
 
 
@@ -300,36 +295,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
         await ToSignal(GetTree(), "process_frame");
     }
 
-/*
-    private async void StreamResultsFromLocalFiles(string query, CancellationToken cancellationToken)
-    {
-        GD.Print($"Searching local files for: {query}");
-        LocalFilesResultCount.SetLoaded(false);
-        LocalFilesResults = new List<string>();
-        var searchTerms = query.Split(' ');
-        int i = 0;
-        await foreach (var result in _localFileScanner.FindAllFilesAsync(@"\\SCORPIO\karaoke2" // TODO: fix this hardcoded path!
-        , cancellationToken))
-        {
-            if (searchTerms.All(term => result.IndexOf(term, StringComparison.OrdinalIgnoreCase) != -1)
-                // && _localFileValidator.IsValid(result).isValid //TODO: can't do this for performance reasons
-                )
-            {
-                LocalFilesResults.Add(result);
-                i++;
-                if (i % 5 == 0)
-                {
-                    //await UpdateLocalFilesResultsTree();
-                }
-            }
-            if (cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-        }
-        LocalFilesResultCount.SetLoaded(true, $"{LocalFilesResults.Count()}");
-        await UpdateLocalFilesResultsTree();
-    }*/
     private async Task SearchLocalFiles(string query, CancellationToken cancellationToken)
     {
         GD.Print($"Searching local files for: {query}");
@@ -507,18 +472,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
         treeItem.SetText(2, item.CreatorBrandName);
         treeItem.SetMetadata(0, item.YoutubeLink);
     }
-
-    /*private void AddLocalFilesResultsRow(string path) // TODO: this doesn't belong here 
-    {
-        if (_localFilesRoot == null)
-        {
-            GD.Print("Local files root item is disposed, recreating it.");
-            _localFilesRoot = LocalFilesResultsTree.CreateItem();
-        }
-        var treeItem = LocalFilesResultsTree.CreateItem(_kfnRoot);
-        treeItem.SetText(0, Path.GetFileNameWithoutExtension(path));
-        treeItem.SetMetadata(0, path);
-    }*/
 
     private void AddLocalFilesResultsRow(LocalSongFileEntry entry)
     {

@@ -78,21 +78,13 @@ public partial class DisplayScreen : Window, IDisplayScreen
     public void OnReady()
     {
         VlcMp4Player = new VlcMp4Player(); // TODO: this properly
-/*
-        VlcMp4Player.PlaybackFinished += (wasPlaying) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackFinished, wasPlaying);
-        VlcMp4Player.PlaybackProgress += (progressMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackProgress, progressMs);
-        VlcMp4Player.PlaybackDurationChanged += (durationMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackDurationChanged, durationMs);
-        */
+
         VlcMp4Player.PlaybackFinished += (wasPlaying) => LocalPlaybackFinished?.Invoke(wasPlaying);
         VlcMp4Player.PlaybackProgress += (progressMs) => LocalPlaybackProgress?.Invoke(progressMs);
         VlcMp4Player.PlaybackDurationChanged += (durationMs) => LocalPlaybackDurationChanged?.Invoke(durationMs);
         
         WindowInput += DisplayScreenWindowInput;
-/*
-        CdgRendererNode.PlaybackFinished += (wasPlaying) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackFinished, wasPlaying);
-        CdgRendererNode.PlaybackProgress += (progressMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackProgress, progressMs);
-        CdgRendererNode.PlaybackDurationChanged += (durationMs) => CallDeferred(nameof(EmitSignal), SignalName.LocalPlaybackDurationChanged, durationMs);
-        */
+
         CdgRendererNode.PlaybackFinished += (wasPlaying) => LocalPlaybackFinished?.Invoke(wasPlaying);
         CdgRendererNode.PlaybackProgress += (progressMs) => LocalPlaybackProgress?.Invoke(progressMs);
         CdgRendererNode.PlaybackDurationChanged += (durationMs) => LocalPlaybackDurationChanged?.Invoke(durationMs);

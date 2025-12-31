@@ -319,6 +319,20 @@ text = "Close the browser when finished logging in..."
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="ServiceConfirmationDialog" type="ConfirmationDialog" parent="Main GUI/PrepareSessionDialog"]
+unique_name_in_owner = true
+title = "Not all services are ready"
+initial_position = 2
+size = Vector2i(500, 300)
+
+[node name="ServiceConfirmationMessage" type="Label" parent="Main GUI/PrepareSessionDialog/ServiceConfirmationDialog"]
+unique_name_in_owner = true
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 492.0
+offset_bottom = 251.0
+autowrap_mode = 3
+
 [node name="DisplayScreen" parent="." instance=ExtResource("3_f0j17")]
 unique_name_in_owner = true
 visible = false

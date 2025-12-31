@@ -38,16 +38,6 @@ public partial class SessionUIService : Node
             tree.Clear();
             var treeRoot = tree.CreateItem();
 
-            // Streamed Content Section
-            var streamedContentItem = treeRoot.CreateChild();
-            streamedContentItem.SetText(0, _sessionPreparation.GetStreamedContentIcon(model));
-            streamedContentItem.SetText(1, "Prepare to Stream Content");
-
-            AddYtDlpTreeItems(streamedContentItem, model, infoItemsFontSize);
-            AddBrowserTreeItems(streamedContentItem, model, infoItemsFontSize);
-            AddYoutubeTreeItems(streamedContentItem, model, infoItemsFontSize);
-            AddKarafunTreeItems(streamedContentItem, model, infoItemsFontSize);
-
             // Local Content Section
             var localItem = treeRoot.CreateChild();
             var localContentIcon = GetVLCStatusIcon(model.VLCStatus);
@@ -55,6 +45,16 @@ public partial class SessionUIService : Node
             localItem.SetText(1, "Prepare for Local File Content");
             
             AddVlcTreeItems(localItem, model, infoItemsFontSize);
+
+            // Streamed Content Section
+            var streamedContentItem = treeRoot.CreateChild();
+            streamedContentItem.SetText(0, _sessionPreparation.GetStreamedContentIcon(model));
+            streamedContentItem.SetText(1, "Prepare to Stream Content");
+
+            AddYtDlpTreeItems(streamedContentItem, model, infoItemsFontSize);
+            AddBrowserTreeItems(streamedContentItem, model, infoItemsFontSize);
+            AddKarafunTreeItems(streamedContentItem, model, infoItemsFontSize);
+            AddYoutubeFallbackTreeItems(streamedContentItem, model, infoItemsFontSize);
 
             // Update button states
             UpdateButtonStates(model, okButton, loginButton);
@@ -115,7 +115,7 @@ public partial class SessionUIService : Node
         var ytDlpItem = parent.CreateChild();
         var ytDlpStatusStrings = _sessionPreparation.GetYtDlpStatusLine(model.YtDlpStatus);
         ytDlpItem.SetText(0, ytDlpStatusStrings.icon);
-        ytDlpItem.SetText(1, $"yt-dlp: {ytDlpStatusStrings.description}");
+        ytDlpItem.SetText(1, $"YouTube (on-demand download): {ytDlpStatusStrings.description}");
         
         if (!string.IsNullOrEmpty(model.YtDlpIdentity))
         {
@@ -158,12 +158,12 @@ public partial class SessionUIService : Node
         }
     }
 
-    private void AddYoutubeTreeItems(TreeItem parent, PrepareSessionModel model, int fontSize)
+    private void AddYoutubeFallbackTreeItems(TreeItem parent, PrepareSessionModel model, int fontSize)
     {
         var youtubeItem = parent.CreateChild();
         var youtubeStatusStrings = _sessionPreparation.GetYouTubeStatusLine(model.YouTubeStatus);
         youtubeItem.SetText(0, youtubeStatusStrings.icon);
-        youtubeItem.SetText(1, $"YouTube: {youtubeStatusStrings.description}");
+        youtubeItem.SetText(1, $"YouTube (web fallback): {youtubeStatusStrings.description}");
         
         if (!string.IsNullOrEmpty(model.YouTubeIdentity))
         {
@@ -187,7 +187,7 @@ public partial class SessionUIService : Node
         var karafunItem = parent.CreateChild();
         var karafunStatusStrings = _sessionPreparation.GetKarafunStatusLine(model.KarafunStatus);
         karafunItem.SetText(0, karafunStatusStrings.icon);
-        karafunItem.SetText(1, $"Karafun: {karafunStatusStrings.description}");
+        karafunItem.SetText(1, $"Karafun (web): {karafunStatusStrings.description}");
         
         if (!string.IsNullOrEmpty(model.KarafunIdentity))
         {
