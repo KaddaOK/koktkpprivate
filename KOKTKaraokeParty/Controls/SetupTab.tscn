@@ -116,6 +116,20 @@ layout_mode = 2
 layout_mode = 2
 text = "seconds"
 
+[node name="YtDlpUpdateHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+alignment = 2
+
+[node name="UpdateExplanation" type="Label" parent="StartTabVBox/YtDlpUpdateHbox"]
+layout_mode = 2
+text = "Update YouTube downloader (yt-dlp) and runtime (deno): "
+
+[node name="UpdateYtDlpButton" type="Button" parent="StartTabVBox/YtDlpUpdateHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Download the latest versions of yt-dlp and deno from GitHub"
+text = "Check for Updates"
+
 [node name="BackgroundMusicVBox" type="VBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -172,3 +186,25 @@ file_mode = 1
 access = 2
 filters = PackedStringArray("*.ogg; OGG files", "*.mp3 ; MP3 files", "*.flac; FLAC files", "*.wav; WAV files")
 use_native_dialog = true
+
+[node name="UpdateYtDlpDialog" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+title = "Update yt-dlp and deno"
+initial_position = 2
+size = Vector2i(500, 200)
+
+[node name="UpdateDialogVBox" type="VBoxContainer" parent="UpdateYtDlpDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 492.0
+offset_bottom = 151.0
+
+[node name="YtDlpStatusLabel" type="Label" parent="UpdateYtDlpDialog/UpdateDialogVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "yt-dlp: Checking version..."
+
+[node name="DenoStatusLabel" type="Label" parent="UpdateYtDlpDialog/UpdateDialogVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "deno: Checking version..."

@@ -20,6 +20,12 @@ public interface IYtDlpProviderNode : INode
 	Task<string> DownloadFromUrl(string url, string outputPath);
 	string GetYtDlpExecutablePath();
 	string GetDenoExecutablePath();
+	Task<string> GetYtDlpVersion();
+	Task<string> GetDenoVersion();
+	Task<string> GetLatestYtDlpVersionFromGitHub();
+	Task<string> GetLatestDenoVersionFromGitHub();
+	Task ForceUpdateYtDlp();
+	Task ForceUpdateDeno();
 }
 
 public enum YtDlpStatus
@@ -72,12 +78,20 @@ public partial class YtDlpProviderNode : Node, IYtDlpProviderNode
 			var ytDlpPath = await EnsureYtDlp();
 			var denoPath = await EnsureDeno();
 
+			// Get version numbers
+			var ytDlpVersion = await GetYtDlpVersion();
+			var denoVersion = await GetDenoVersion();
+
+			// Normalize paths (convert backslashes to forward slashes)
+			var normalizedYtDlpPath = ytDlpPath.Replace("\\", "/");
+			var normalizedDenoPath = denoPath.Replace("\\", "/");
+
 			GD.Print($"yt-dlp ready at {ytDlpPath}, deno ready at {denoPath}");
 			YtDlpStatusChecked?.Invoke(
 				new StatusCheckResult<YtDlpStatus>(
 					YtDlpStatus.Ready,
 					$"yt-dlp and deno ready",
-					$"{ytDlpPath}"));
+					$"yt-dlp: {normalizedYtDlpPath} (v{ytDlpVersion})\ndeno: {normalizedDenoPath} (v{denoVersion})"));
 		}
 		catch (Exception ex)
 		{
@@ -332,5 +346,193 @@ public partial class YtDlpProviderNode : Node, IYtDlpProviderNode
 		}
 
 		return "Download completed";
+	}
+
+	public async Task<string> GetYtDlpVersion()
+	{
+		try
+		{
+			var ytDlpPath = GetYtDlpExecutablePath();
+			if (!FileWrapper.Exists(ytDlpPath))
+			{
+				return "Not installed";
+			}
+
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = ytDlpPath,
+					Arguments = "--version",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					CreateNoWindow = true
+				}
+			};
+
+			process.Start();
+			var version = await process.StandardOutput.ReadToEndAsync();
+			await process.WaitForExitAsync();
+
+			return version.Trim();
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Failed to get yt-dlp version: {ex.Message}");
+			return "Unknown";
+		}
+	}
+
+	public async Task<string> GetDenoVersion()
+	{
+		try
+		{
+			var denoPath = GetDenoExecutablePath();
+			if (!FileWrapper.Exists(denoPath))
+			{
+				return "Not installed";
+			}
+
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = denoPath,
+					Arguments = "--version",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					CreateNoWindow = true
+				}
+			};
+
+			process.Start();
+			var output = await process.StandardOutput.ReadToEndAsync();
+			await process.WaitForExitAsync();
+
+			// Deno outputs multiple lines, first line has "deno X.Y.Z (stable, release, ...)"
+			var firstLine = output.Split('\n')[0].Trim();
+			// Extract just the version number
+			if (firstLine.StartsWith("deno "))
+			{
+				var versionPart = firstLine.Substring(5).Trim();
+				// Remove everything after the first space (e.g., "(stable, release, ...)")
+				var spaceIndex = versionPart.IndexOf(' ');
+				if (spaceIndex > 0)
+				{
+					versionPart = versionPart.Substring(0, spaceIndex);
+				}
+				return versionPart;
+			}
+			return firstLine;
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Failed to get deno version: {ex.Message}");
+			return "Unknown";
+		}
+	}
+
+	public async Task<string> GetLatestYtDlpVersionFromGitHub()
+	{
+		try
+		{
+			using var httpClient = new System.Net.Http.HttpClient();
+			httpClient.DefaultRequestHeaders.Add("User-Agent", "KOKTKaraokeParty");
+			
+			var response = await httpClient.GetStringAsync("https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest");
+			
+			// Parse JSON to get tag_name
+			var tagNameIndex = response.IndexOf("\"tag_name\"");
+			if (tagNameIndex == -1) return null;
+			
+			var colonIndex = response.IndexOf(':', tagNameIndex);
+			var quoteStart = response.IndexOf('"', colonIndex);
+			var quoteEnd = response.IndexOf('"', quoteStart + 1);
+			
+			if (quoteStart == -1 || quoteEnd == -1) return null;
+			
+			return response.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Error getting latest yt-dlp version from GitHub: {ex.Message}");
+			return null;
+		}
+	}
+
+	public async Task<string> GetLatestDenoVersionFromGitHub()
+	{
+		try
+		{
+			using var httpClient = new System.Net.Http.HttpClient();
+			httpClient.DefaultRequestHeaders.Add("User-Agent", "KOKTKaraokeParty");
+			
+			var response = await httpClient.GetStringAsync("https://api.github.com/repos/denoland/deno/releases/latest");
+			
+			// Parse JSON to get tag_name (will be like "v2.1.4")
+			var tagNameIndex = response.IndexOf("\"tag_name\"");
+			if (tagNameIndex == -1) return null;
+			
+			var colonIndex = response.IndexOf(':', tagNameIndex);
+			var quoteStart = response.IndexOf('"', colonIndex);
+			var quoteEnd = response.IndexOf('"', quoteStart + 1);
+			
+			if (quoteStart == -1 || quoteEnd == -1) return null;
+			
+			var tagName = response.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+			
+			// Remove 'v' prefix if present
+			if (tagName.StartsWith("v"))
+			{
+				tagName = tagName.Substring(1);
+			}
+			
+			return tagName;
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Error getting latest deno version from GitHub: {ex.Message}");
+			return null;
+		}
+	}
+
+	public async Task ForceUpdateYtDlp()
+	{
+		var ytDlpPath = GetYtDlpExecutablePath();
+		
+		// Delete existing file if it exists
+		if (FileWrapper.Exists(ytDlpPath))
+		{
+			FileWrapper.Delete(ytDlpPath);
+		}
+
+		await DownloadYtDlp(ytDlpPath);
+
+		// Make executable on Unix systems
+		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			MakeFileExecutable(ytDlpPath);
+		}
+	}
+
+	public async Task ForceUpdateDeno()
+	{
+		var denoPath = GetDenoExecutablePath();
+		
+		// Delete existing file if it exists
+		if (FileWrapper.Exists(denoPath))
+		{
+			FileWrapper.Delete(denoPath);
+		}
+
+		await DownloadDeno(denoPath);
+
+		// Make executable on Unix systems
+		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		{
+			MakeFileExecutable(denoPath);
+		}
 	}
 }

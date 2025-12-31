@@ -15,7 +15,9 @@ namespace KOKTKaraokeParty;
 
 [Meta(typeof(IAutoNode))]
 public partial class RootController : Node, 
-IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificationManager>
+IProvide<IBrowserProviderNode>, 
+IProvide<IYtDlpProviderNode>,
+IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 {
 	#region Service Dependencies
 
@@ -29,6 +31,7 @@ IProvide<IBrowserProviderNode>, IProvide<Settings>, IProvide<IMonitorIdentificat
 
 	#region Provided Dependencies
 	IBrowserProviderNode IProvide<IBrowserProviderNode>.Value() => BrowserProvider;
+	IYtDlpProviderNode IProvide<IYtDlpProviderNode>.Value() => YtDlpProvider;
     IMonitorIdentificationManager IProvide<IMonitorIdentificationManager>.Value() => MonitorIdManager;
 
 	private Settings Settings { get; set; }

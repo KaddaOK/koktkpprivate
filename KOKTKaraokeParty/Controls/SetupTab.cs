@@ -2,6 +2,7 @@ using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
+using KOKTKaraokeParty;
 using KOKTKaraokeParty.Services;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +33,7 @@ public partial class SetupTab : MarginContainer, ISetupTab
     #region Dependencies
     [Dependency] public IBrowserProviderNode BrowserProvider => this.DependOn<IBrowserProviderNode>();
     [Dependency] public IMonitorIdentificationManager MonitorIdManager => this.DependOn<IMonitorIdentificationManager>();
+    [Dependency] public IYtDlpProviderNode YtDlpProvider => this.DependOn<IYtDlpProviderNode>();
     #endregion
 
     #region Nodes
@@ -47,6 +49,10 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Node] private Button BgMusicAddButton { get; set; } = default!;
     [Node] private Button IdentifyMonitorsButton { get; set; } = default!;
     [Node] private Label MonitorWarningLabel { get; set; } = default!;
+    [Node] private Button UpdateYtDlpButton { get; set; } = default!;
+    [Node] private AcceptDialog UpdateYtDlpDialog { get; set; } = default!;
+    [Node] private Label YtDlpStatusLabel { get; set; } = default!;
+    [Node] private Label DenoStatusLabel { get; set; } = default!;
     #endregion
 
     #region Signals
@@ -75,6 +81,7 @@ public partial class SetupTab : MarginContainer, ISetupTab
         BgMusicVolumeSpinBox.ValueChanged += (double value) => EmitSignal(SignalName.BgMusicVolumeChanged, value);
         IdentifyMonitorsButton.Pressed += () => MonitorIdManager.ShowAllMonitors();
         MonitorSpinbox.ValueChanged += (double value) => UpdateMonitorWarning((int)value);
+        UpdateYtDlpButton.Pressed += ShowUpdateDialog;
     }
 
     private void BgMusicItemListGuiInput(InputEvent @event)
@@ -181,5 +188,122 @@ public partial class SetupTab : MarginContainer, ISetupTab
         }
 
         EmitSignal(SignalName.BgMusicItemsAdded, files);
+    }
+
+    private async void ShowUpdateDialog()
+    {
+        // Show dialog immediately
+        UpdateYtDlpDialog.Visible = true;
+
+        // Disable OK button until updates complete
+        var okButton = UpdateYtDlpDialog.GetOkButton();
+        if (okButton != null)
+        {
+            okButton.Disabled = true;
+        }
+
+        // Get current versions
+        var currentYtDlpVersion = await YtDlpProvider.GetYtDlpVersion();
+        var currentDenoVersion = await YtDlpProvider.GetDenoVersion();
+
+        // Start both updates simultaneously
+        var ytDlpUpdateTask = UpdateYtDlp(currentYtDlpVersion);
+        var denoUpdateTask = UpdateDeno(currentDenoVersion);
+
+        await System.Threading.Tasks.Task.WhenAll(ytDlpUpdateTask, denoUpdateTask);
+
+        // Re-enable OK button when both complete
+        if (okButton != null)
+        {
+            okButton.Disabled = false;
+        }
+    }
+
+    private async System.Threading.Tasks.Task UpdateYtDlp(string currentVersion)
+    {
+        try
+        {
+            YtDlpStatusLabel.Text = $"⏳ yt-dlp: Currently v{currentVersion}; checking...";
+
+            var latestVersion = await YtDlpProvider.GetLatestYtDlpVersionFromGitHub();
+            
+            if (latestVersion != null && latestVersion != currentVersion)
+            {
+                YtDlpStatusLabel.Text = $"⏳ yt-dlp: Currently v{currentVersion}; downloading v{latestVersion}...";
+                await YtDlpProvider.ForceUpdateYtDlp();
+                var newVersion = await YtDlpProvider.GetYtDlpVersion();
+                YtDlpStatusLabel.Text = $"✔ yt-dlp: Updated from v{currentVersion} to v{newVersion}";
+            }
+            else if (latestVersion == currentVersion)
+            {
+                YtDlpStatusLabel.Text = $"❎ yt-dlp: Already up to date (v{currentVersion})";
+            }
+            else
+            {
+                // Couldn't determine latest version, update anyway
+                YtDlpStatusLabel.Text = $"⏳ yt-dlp: Currently v{currentVersion}; downloading latest...";
+                await YtDlpProvider.ForceUpdateYtDlp();
+                var newVersion = await YtDlpProvider.GetYtDlpVersion();
+                if (newVersion != currentVersion)
+                {
+                    YtDlpStatusLabel.Text = $"✔ yt-dlp: Updated from v{currentVersion} to v{newVersion}";
+                }
+                else
+                {
+                    YtDlpStatusLabel.Text = $"❎ yt-dlp: v{newVersion} (no change)";
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            YtDlpStatusLabel.Text = $"yt-dlp: Update failed - {ex.Message}";
+        }
+    }
+
+    private async System.Threading.Tasks.Task UpdateDeno(string currentVersion)
+    {
+        try
+        {
+            DenoStatusLabel.Text = $"⏳ deno: Currently v{currentVersion}; checking...";
+
+            var latestVersion = await YtDlpProvider.GetLatestDenoVersionFromGitHub();
+            
+            if (latestVersion != null && latestVersion != currentVersion)
+            {
+                DenoStatusLabel.Text = $"⏳ deno: Currently v{currentVersion}; downloading v{latestVersion}...";
+                await YtDlpProvider.ForceUpdateDeno();
+                var newVersion = await YtDlpProvider.GetDenoVersion();
+                DenoStatusLabel.Text = $"✔ deno: Updated from v{currentVersion} to v{newVersion}";
+            }
+            else if (latestVersion == currentVersion)
+            {
+                DenoStatusLabel.Text = $"❎ deno: Already up to date (v{currentVersion})";
+            }
+            else
+            {
+                // Couldn't determine latest version, update anyway
+                DenoStatusLabel.Text = $"⏳ deno: Currently v{currentVersion}; downloading latest...";
+                await YtDlpProvider.ForceUpdateDeno();
+                var newVersion = await YtDlpProvider.GetDenoVersion();
+                if (newVersion != currentVersion)
+                {
+                    DenoStatusLabel.Text = $"✔ deno: Updated from v{currentVersion} to v{newVersion}";
+                }
+                else
+                {
+                    DenoStatusLabel.Text = $"❎ deno: v{newVersion} (no change)";
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            DenoStatusLabel.Text = $"deno: Update failed - {ex.Message}";
+        }
+    }
+
+    private void PerformUpdate()
+    {
+        // This is now unused - updates happen automatically in ShowUpdateDialog
+        // Keeping for backward compatibility in case it's wired up
     }
 }

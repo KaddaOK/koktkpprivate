@@ -29,6 +29,7 @@ public interface IFileWrapper
     string ReadAllText(string path);
     FileStream Create(string path);
     void AppendAllText(string path, string contents);
+    void Delete(string path);
 }
 public class FileWrapper : IFileWrapper
 {
@@ -37,6 +38,7 @@ public class FileWrapper : IFileWrapper
     public string ReadAllText(string path) => File.ReadAllText(path);
     public FileStream Create(string path) => File.Create(path);
     public void AppendAllText(string path, string contents) => File.AppendAllText(path, contents);
+    public void Delete(string path) => File.Delete(path);
 }
 
 public interface IZipFileManager
