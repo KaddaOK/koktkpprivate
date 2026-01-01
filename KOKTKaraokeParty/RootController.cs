@@ -177,6 +177,13 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		_queueManagement.QueueLoaded += OnQueueLoaded;
 		_queueManagement.QueueReordered += RefreshQueueTree;
 		
+		// Refresh queue tree now if items were already loaded before events were bound
+		if (_queueManagement.GetQueueItems().Any() || _queueManagement.NowPlaying != null)
+		{
+			GD.Print("Queue has items from disk, refreshing tree after event binding...");
+			RefreshQueueTree();
+		}
+		
 		// Search tab events
 		SearchTab.ItemAddedToQueue += _queueManagement.AddToQueue;
 		

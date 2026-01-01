@@ -127,98 +127,161 @@ public async Task Seek(IPage page, long positionMs)
             await page.GoToAsync(url, WaitUntilNavigation.Networkidle2);
         }
 
-        GD.Print("Waiting for the fullscreen button...");
-        var fullscreenButtonSelector = ".player__audio__fullscreen";
-        await page.WaitForSelectorAsync(fullscreenButtonSelector);
-
-        // Check if the fullscreen button needs to be clicked
-        var isEnlargeIcon = await page.EvaluateFunctionAsync<bool>(@"(selector) => {
-                const fullscreenButton = document.querySelector(selector);
-                if (fullscreenButton) {
-                    const svg = fullscreenButton.querySelector('use');
-                    return svg && svg.getAttribute('xlink:href') === '#icon-enlarge';
-                }
-                return false;
-            }", fullscreenButtonSelector);
-
-        if (isEnlargeIcon && !cancellationToken.IsCancellationRequested)
+        // Check if the dual-screen display button needs to be clicked
+        GD.Print("Checking for dual-screen display button...");
+        var dualScreenButtons = await page.QuerySelectorAllAsync("button[title='Dual-Screen Display']");
+        if (dualScreenButtons != null && dualScreenButtons.Length > 0)
         {
-            GD.Print("Fullscreen button needs to be clicked. Clicking...");
-            await page.ClickAsync(fullscreenButtonSelector);
-        }
-        else
-        {
-            GD.Print("Already in fullscreen mode.");
-        }
+            var dualScreenButton = dualScreenButtons[0];
+            var hasBrandPrimaryClass = await page.EvaluateFunctionAsync<bool>(@"(button) => {
+                return button.classList.contains('border-brand-primary');
+            }", dualScreenButton);
 
-        // Wait for the player time element to be present and get its content
-        GD.Print("Waiting for the player time element...");
-        var playerTimeSelector = ".player__audio__time";
-        await page.WaitForSelectorAsync(playerTimeSelector, new WaitForSelectorOptions { Visible = true, Timeout = 0 });
-
-        var playerTime = await GetElementTextContent(page, playerTimeSelector);
-        GD.Print($"Initial player__audio__time text: {playerTime}");
-
-        // Wait for the play button to be clickable
-        GD.Print("Waiting for the play button...");
-        var playButtonSelector = ".player__audio__play";
-        await page.WaitForSelectorAsync(playButtonSelector, new WaitForSelectorOptions { Visible = true });
-
-        bool playbackStarted = false;
-        while (!playbackStarted && !cancellationToken.IsCancellationRequested)
-        {
-            await page.ClickAsync(playButtonSelector);
-            GD.Print("Trying to start playing...");
-
-            // Wait for a sec
-            await Task.Delay(1000);
-
-            // Check if the play button is still present
-            var playButton = await page.QuerySelectorAsync(playButtonSelector);
-            if (playButton == null)
+            if (!hasBrandPrimaryClass && !cancellationToken.IsCancellationRequested)
             {
-                playbackStarted = true;
-                GD.Print("Play button is no longer present so playback probably started.");
+                GD.Print("Dual-screen display button needs to be clicked. Clicking...");
+                await dualScreenButton.ClickAsync();
             }
             else
             {
-                //GD.Print("Play button is still present. Trying again...");
+                GD.Print("Dual-screen display already active.");
             }
         }
 
+        // Wait for the player time elements to be present
+        GD.Print("Waiting for the player time elements...");
+        var playerTimeSelector = ".select-none.tabular-nums";
+        await page.WaitForSelectorAsync(playerTimeSelector, new WaitForSelectorOptions { Visible = true, Timeout = 0 });
+
+        GD.Print("Initial player time elements found.");
+
         // Monitor the player time text for changes
         GD.Print("Monitoring playback time...");
-        var previousTime = playerTime;
+        var previousElapsedTime = "";
+        var playbackHasStarted = false;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var currentTime = await GetElementTextContent(page, playerTimeSelector);
-
-            if (currentTime != null && currentTime != previousTime)
+            var timeElements = await page.QuerySelectorAllAsync(playerTimeSelector);
+            if (timeElements == null || timeElements.Length < 2)
             {
-                previousTime = currentTime;
-                if (TryParseMinutesSecondsTimeSpan(currentTime, out TimeSpan negativeTimeSpanRemaining))
+                GD.PrintErr("Could not find two time elements.");
+                break;
+            }
+
+            var time1Text = await GetInnerTextContent(page, timeElements[0]);
+            var time2Text = await GetInnerTextContent(page, timeElements[1]);
+
+            // Normalize Unicode minus sign (U+2212) to regular hyphen-minus
+            if (time1Text != null)
+            {
+                time1Text = time1Text.Replace('−', '-');
+            }
+            if (time2Text != null)
+            {
+                time2Text = time2Text.Replace('−', '-');
+            }
+
+            // TODO: this is just a debug print
+            GD.Print($"Player time texts: '{time1Text}', '{time2Text}'");
+
+            // Check if playback has started (at least one value is not 0:00 or -0:00)
+            if (!playbackHasStarted && 
+                time1Text != "0:00" && time1Text != "-0:00" && 
+                time2Text != "0:00" && time2Text != "-0:00")
+            {
+                playbackHasStarted = true;
+                GD.Print("Playback has started.");
+            }
+
+            // Check if both times are 0:00 (playback ended) - but only after playback started
+            if (playbackHasStarted && 
+                (time1Text == "0:00" || time1Text == "-0:00") && 
+                (time2Text == "0:00" || time2Text == "-0:00"))
+            {
+                GD.Print("Both time elements are 0:00. Playback has stopped.");
+                break;
+            }
+
+            string elapsedTimeText = null;
+            string totalOrRemainingTimeText = null;
+
+            // Determine which is elapsed and which is remaining/total
+            if (time1Text != null && time1Text.StartsWith("-"))
+            {
+                // time1 is remaining (negative), time2 is elapsed
+                elapsedTimeText = time2Text;
+                totalOrRemainingTimeText = time1Text.Substring(1); // Remove the minus sign
+            }
+            else if (time2Text != null && time2Text.StartsWith("-"))
+            {
+                // time2 is remaining (negative), time1 is elapsed
+                elapsedTimeText = time1Text;
+                totalOrRemainingTimeText = time2Text.Substring(1); // Remove the minus sign
+            }
+            else
+            {
+                // Neither is negative, so we need to compare them
+                var time1Parsed = TryParseMinutesSecondsTimeSpan(time1Text, out TimeSpan time1Span);
+                var time2Parsed = TryParseMinutesSecondsTimeSpan(time2Text, out TimeSpan time2Span);
+                // TODO: this is just a debug print
+                GD.Print($"Parsed times for comparison: time1Parsed={time1Parsed}, time1Span={time1Span}, time2Parsed={time2Parsed}, time2Span={time2Span}");
+                if (time1Parsed && time2Parsed)
                 {
-                    // note that this is a count DOWN
-                    if (ItemDurationMs == 0)
+                    if (time1Span > time2Span)
                     {
-                        ItemDurationMs = (long)negativeTimeSpanRemaining.TotalMilliseconds;
+                        // time1 is total, time2 is elapsed
+                        totalOrRemainingTimeText = time1Text;
+                        elapsedTimeText = time2Text;
+                    }
+                    else
+                    {
+                        // time2 is total, time1 is elapsed
+                        totalOrRemainingTimeText = time2Text;
+                        elapsedTimeText = time1Text;
+                    }
+                }
+            }
+
+            // TODO: this is just a debug print
+            GD.Print($"Parsed times: elapsed='{elapsedTimeText}', other='{totalOrRemainingTimeText}', time1='{time1Text}', time2='{time2Text}'");
+
+            if (elapsedTimeText != null && elapsedTimeText != previousElapsedTime)
+            {
+                previousElapsedTime = elapsedTimeText;
+
+                if (TryParseMinutesSecondsTimeSpan(elapsedTimeText, out TimeSpan elapsedSpan) &&
+                    TryParseMinutesSecondsTimeSpan(totalOrRemainingTimeText, out TimeSpan remainingOrTotalSpan))
+                {
+                    // Calculate total duration
+                    long calculatedDuration;
+                    if (time1Text != null && time1Text.StartsWith("-") || time2Text != null && time2Text.StartsWith("-"))
+                    {
+                        // We have remaining time, so total = elapsed + remaining
+                        calculatedDuration = (long)(elapsedSpan.TotalMilliseconds + remainingOrTotalSpan.TotalMilliseconds);
+                    }
+                    else
+                    {
+                        // We have total time directly
+                        calculatedDuration = (long)remainingOrTotalSpan.TotalMilliseconds;
+                    }
+
+                    if (ItemDurationMs == 0 || ItemDurationMs != calculatedDuration)
+                    {
+                        ItemDurationMs = calculatedDuration;
                         PlaybackDurationChanged?.Invoke(ItemDurationMs.Value);
                     }
-                    CurrentPositionMs = (long?)(ItemDurationMs - negativeTimeSpanRemaining.TotalMilliseconds);
+
+                    CurrentPositionMs = (long)elapsedSpan.TotalMilliseconds;
                     PlaybackProgress?.Invoke((long)CurrentPositionMs);
                 }
                 else
                 {
-                    GD.PrintErr($"Failed to parse player__audio__time text: '{currentTime}'");
+                    GD.PrintErr($"Failed to parse player time texts: elapsed='{elapsedTimeText}', other='{totalOrRemainingTimeText}'");
                 }
             }
 
-            // Break the loop if the player time text becomes empty
-            if (currentTime == null || currentTime.Trim() == string.Empty)
-            {
-                GD.Print("Playback has stopped.");
-                break;
-            }
+            // TODO: this is just a debug print
+
 
             await Task.Delay(1000, cancellationToken) // Small delay (1 second)
                     .ContinueWith(task => { }); // (stfu TaskCanceledException, that's expected)
@@ -226,8 +289,16 @@ public async Task Seek(IPage page, long positionMs)
 
         if (cancellationToken.IsCancellationRequested)
         {
-            GD.Print("Playback was cancelled.");
-            await page.GoToAsync("about:blank");
+            GD.Print("Playback was cancelled. Clicking 'Play Next Song' button...");
+            var playNextButtons = await page.QuerySelectorAllAsync("button[title='Play Next Song']");
+            if (playNextButtons != null && playNextButtons.Length > 0)
+            {
+                await playNextButtons[0].ClickAsync();
+            }
+            else
+            {
+                GD.PrintErr("Could not find 'Play Next Song' button.");
+            }
         }
         else
         {
