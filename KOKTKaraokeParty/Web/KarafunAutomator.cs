@@ -182,7 +182,7 @@ public async Task Seek(IPage page, long positionMs)
             }
 
             // TODO: this is just a debug print
-            GD.Print($"Player time texts: '{time1Text}', '{time2Text}'");
+            //GD.Print($"Player time texts: '{time1Text}', '{time2Text}'");
 
             // Check if playback has started (at least one value is not 0:00 or -0:00)
             if (!playbackHasStarted && 
@@ -224,7 +224,7 @@ public async Task Seek(IPage page, long positionMs)
                 var time1Parsed = TryParseMinutesSecondsTimeSpan(time1Text, out TimeSpan time1Span);
                 var time2Parsed = TryParseMinutesSecondsTimeSpan(time2Text, out TimeSpan time2Span);
                 // TODO: this is just a debug print
-                GD.Print($"Parsed times for comparison: time1Parsed={time1Parsed}, time1Span={time1Span}, time2Parsed={time2Parsed}, time2Span={time2Span}");
+                //GD.Print($"Parsed times for comparison: time1Parsed={time1Parsed}, time1Span={time1Span}, time2Parsed={time2Parsed}, time2Span={time2Span}");
                 if (time1Parsed && time2Parsed)
                 {
                     if (time1Span > time2Span)
@@ -243,7 +243,7 @@ public async Task Seek(IPage page, long positionMs)
             }
 
             // TODO: this is just a debug print
-            GD.Print($"Parsed times: elapsed='{elapsedTimeText}', other='{totalOrRemainingTimeText}', time1='{time1Text}', time2='{time2Text}'");
+            //GD.Print($"Parsed times: elapsed='{elapsedTimeText}', other='{totalOrRemainingTimeText}', time1='{time1Text}', time2='{time2Text}'");
 
             if (elapsedTimeText != null && elapsedTimeText != previousElapsedTime)
             {
