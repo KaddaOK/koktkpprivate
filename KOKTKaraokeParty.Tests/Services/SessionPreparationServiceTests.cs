@@ -15,6 +15,7 @@ public class SessionPreparationServiceTests(Node testScene) : TestClass(testScen
     private Mock<IDisplayScreen> _mockDisplayScreen = default!;
     private Mock<IBrowserProviderNode> _mockBrowserProvider = default!;
     private Mock<IYtDlpProviderNode> _mockYtDlpProvider = default!;
+    private Mock<IKarafunRemoteProviderNode> _mockKarafunRemoteProvider = default!;
 
     [Setup]
     public async Task Setup()
@@ -23,11 +24,12 @@ public class SessionPreparationServiceTests(Node testScene) : TestClass(testScen
         _mockDisplayScreen = new Mock<IDisplayScreen>();
         _mockBrowserProvider = new Mock<IBrowserProviderNode>();
         _mockYtDlpProvider = new Mock<IYtDlpProviderNode>();
+        _mockKarafunRemoteProvider = new Mock<IKarafunRemoteProviderNode>();
         
         _service = new SessionPreparationService();
         await _fixture.AddToRoot(_service);
         
-        _service.Initialize(_mockDisplayScreen.Object, _mockBrowserProvider.Object, _mockYtDlpProvider.Object);
+        _service.Initialize(_mockDisplayScreen.Object, _mockBrowserProvider.Object, _mockYtDlpProvider.Object, _mockKarafunRemoteProvider.Object);
     }
 
     [Cleanup]

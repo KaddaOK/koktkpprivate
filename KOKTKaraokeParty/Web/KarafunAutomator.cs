@@ -7,6 +7,7 @@ using PuppeteerSharp;
 public interface IKarafunAutomator
 {
     Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken);
+    Task MonitorKarafunWebPlayer(IPage page, CancellationToken cancellationToken);
     Task PauseKarafun(IPage page);
     Task ResumeKarafun(IPage page);
     Task<StatusCheckResult<KarafunStatus>> CheckStatus(IPage page);
@@ -90,6 +91,150 @@ public async Task Seek(IPage page, long positionMs)
 
     public event PlaybackProgressEventHandler PlaybackProgress;
     public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;
+
+    /// <summary>
+    /// Continuously monitor the Karafun web player for playback progress updates.
+    /// This is designed to run in the background and only emit events when something is playing.
+    /// </summary>
+    public async Task MonitorKarafunWebPlayer(IPage page, CancellationToken cancellationToken)
+    {
+        GD.Print("Starting Karafun web player monitoring...");
+        
+        // Wait for the player time elements to be present
+        var playerTimeSelector = ".select-none.tabular-nums";
+        try
+        {
+            await page.WaitForSelectorAsync(playerTimeSelector, new WaitForSelectorOptions { Visible = true, Timeout = 30000 });
+            GD.Print("Karafun player time elements found, monitoring started.");
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Could not find Karafun player time elements: {ex.Message}");
+            return;
+        }
+
+        var previousElapsedTime = "";
+        var wasPlaying = false;
+        
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                var timeElements = await page.QuerySelectorAllAsync(playerTimeSelector);
+                if (timeElements == null || timeElements.Length < 2)
+                {
+                    await Task.Delay(1000, cancellationToken).ContinueWith(task => { });
+                    continue;
+                }
+
+                var time1Text = await GetInnerTextContent(page, timeElements[0]);
+                var time2Text = await GetInnerTextContent(page, timeElements[1]);
+
+                // Normalize Unicode minus sign (U+2212) to regular hyphen-minus
+                if (time1Text != null)
+                {
+                    time1Text = time1Text.Replace('−', '-');
+                }
+                if (time2Text != null)
+                {
+                    time2Text = time2Text.Replace('−', '-');
+                }
+
+                // Check if something is playing (not both 0:00)
+                var isPlaying = !((time1Text == "0:00" || time1Text == "-0:00") && 
+                                  (time2Text == "0:00" || time2Text == "-0:00"));
+
+                if (isPlaying)
+                {
+                    if (!wasPlaying)
+                    {
+                        GD.Print("Karafun playback detected.");
+                        wasPlaying = true;
+                        ItemDurationMs = 0; // Reset duration for new song
+                    }
+
+                    string elapsedTimeText = null;
+                    string totalOrRemainingTimeText = null;
+
+                    // Determine which is elapsed and which is remaining/total
+                    if (time1Text != null && time1Text.StartsWith("-"))
+                    {
+                        elapsedTimeText = time2Text;
+                        totalOrRemainingTimeText = time1Text.Substring(1);
+                    }
+                    else if (time2Text != null && time2Text.StartsWith("-"))
+                    {
+                        elapsedTimeText = time1Text;
+                        totalOrRemainingTimeText = time2Text.Substring(1);
+                    }
+                    else
+                    {
+                        var time1Parsed = TryParseMinutesSecondsTimeSpan(time1Text, out TimeSpan time1Span);
+                        var time2Parsed = TryParseMinutesSecondsTimeSpan(time2Text, out TimeSpan time2Span);
+                        if (time1Parsed && time2Parsed)
+                        {
+                            if (time1Span > time2Span)
+                            {
+                                totalOrRemainingTimeText = time1Text;
+                                elapsedTimeText = time2Text;
+                            }
+                            else
+                            {
+                                totalOrRemainingTimeText = time2Text;
+                                elapsedTimeText = time1Text;
+                            }
+                        }
+                    }
+
+                    if (elapsedTimeText != null && elapsedTimeText != previousElapsedTime)
+                    {
+                        previousElapsedTime = elapsedTimeText;
+
+                        if (TryParseMinutesSecondsTimeSpan(elapsedTimeText, out TimeSpan elapsedSpan) &&
+                            TryParseMinutesSecondsTimeSpan(totalOrRemainingTimeText, out TimeSpan remainingOrTotalSpan))
+                        {
+                            long calculatedDuration;
+                            if (time1Text != null && time1Text.StartsWith("-") || time2Text != null && time2Text.StartsWith("-"))
+                            {
+                                calculatedDuration = (long)(elapsedSpan.TotalMilliseconds + remainingOrTotalSpan.TotalMilliseconds);
+                            }
+                            else
+                            {
+                                calculatedDuration = (long)remainingOrTotalSpan.TotalMilliseconds;
+                            }
+
+                            if (ItemDurationMs == 0 || ItemDurationMs != calculatedDuration)
+                            {
+                                ItemDurationMs = calculatedDuration;
+                                PlaybackDurationChanged?.Invoke(ItemDurationMs.Value);
+                            }
+
+                            CurrentPositionMs = (long)elapsedSpan.TotalMilliseconds;
+                            PlaybackProgress?.Invoke((long)CurrentPositionMs);
+                        }
+                    }
+                }
+                else if (wasPlaying)
+                {
+                    // Playback stopped
+                    GD.Print("Karafun playback stopped (idle).");
+                    wasPlaying = false;
+                    previousElapsedTime = "";
+                    ItemDurationMs = 0;
+                    CurrentPositionMs = 0;
+                }
+
+                await Task.Delay(1000, cancellationToken).ContinueWith(task => { });
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                GD.PrintErr($"Error monitoring Karafun web player: {ex.Message}");
+                await Task.Delay(5000, cancellationToken).ContinueWith(task => { });
+            }
+        }
+        
+        GD.Print("Karafun web player monitoring stopped.");
+    }
 
     public async Task PlayKarafunUrl(IPage page, string url, CancellationToken cancellationToken)
     {

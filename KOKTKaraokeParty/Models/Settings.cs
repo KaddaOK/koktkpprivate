@@ -12,6 +12,12 @@ public partial class Settings
     public bool BgMusicEnabled { get; set; }
     public double BgMusicVolumePercent { get; set; } = 40;
     public List<string> BgMusicFiles { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// The six-digit room code for connecting to Karafun's remote control.
+    /// This is displayed in the Karafun web player and allows remote control of playback.
+    /// </summary>
+    public string KarafunRoomCode { get; set; }
 
     private static string settingsFileName = Path.Combine(Utils.GetAppStoragePath(), "settings.json");
 

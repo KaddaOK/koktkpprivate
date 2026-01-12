@@ -130,6 +130,43 @@ layout_mode = 2
 tooltip_text = "Download the latest versions of yt-dlp and deno from GitHub"
 text = "Check for Updates"
 
+[node name="KarafunRemoteHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+alignment = 2
+
+[node name="KarafunRemoteExplanation" type="Label" parent="StartTabVBox/KarafunRemoteHbox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Karafun Remote Control - enter the 6-digit code from your Karafun player:"
+horizontal_alignment = 2
+
+[node name="KarafunRoomCodeLineEdit" type="LineEdit" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+tooltip_text = "Enter the 6-digit room code shown in your Karafun web player"
+placeholder_text = "123456"
+max_length = 6
+alignment = 1
+
+[node name="KarafunConnectButton" type="Button" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Connect to the Karafun remote control using this room code"
+text = "Connect"
+
+[node name="KarafunStatusLabel" type="Label" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Current Karafun remote control connection status"
+text = "⬛"
+
+[node name="LaunchKarafunWebButton" type="Button" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Launch the Karafun web player in a browser to get the room code"
+text = "Launch Web Player"
+
 [node name="BackgroundMusicVBox" type="VBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
 size_flags_vertical = 3

@@ -17,6 +17,7 @@ namespace KOKTKaraokeParty;
 public partial class RootController : Node, 
 IProvide<IBrowserProviderNode>, 
 IProvide<IYtDlpProviderNode>,
+IProvide<IKarafunRemoteProviderNode>,
 IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 {
 	#region Service Dependencies
@@ -32,6 +33,7 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	#region Provided Dependencies
 	IBrowserProviderNode IProvide<IBrowserProviderNode>.Value() => BrowserProvider;
 	IYtDlpProviderNode IProvide<IYtDlpProviderNode>.Value() => YtDlpProvider;
+	IKarafunRemoteProviderNode IProvide<IKarafunRemoteProviderNode>.Value() => KarafunRemoteProvider;
     IMonitorIdentificationManager IProvide<IMonitorIdentificationManager>.Value() => MonitorIdManager;
 
 	private Settings Settings { get; set; }
@@ -79,6 +81,7 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	// Session preparation UI
 	[Node] private IBrowserProviderNode BrowserProvider { get; set; } = default!;
 	[Node] private IYtDlpProviderNode YtDlpProvider { get; set; } = default!;
+	[Node] private IKarafunRemoteProviderNode KarafunRemoteProvider { get; set; } = default!;
 	[Node] private IWindow PrepareSessionDialog { get; set; } = default!;
 	[Node] private ITree SessionPreparationTree { get; set; } = default!;
 	[Node] private IButton PrepareSessionOKButton { get; set; } = default!;
@@ -89,6 +92,12 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	[Node] private ILabel MonitorWarningLabel { get; set; } = default!;
 	[Node] private IButton IdentifyMonitorsButton { get; set; } = default!;
     [Node] private IMonitorIdentificationManager MonitorIdManager { get; set; } = default!;
+	
+	// Karafun Web Player controls in PrepareSessionDialog
+	[Node] private IButton LaunchKarafunWebPlayerButton { get; set; } = default!;
+	[Node] private ILineEdit KarafunRoomCodeEdit { get; set; } = default!;
+	[Node] private IButton ConnectKarafunRemoteButton { get; set; } = default!;
+	[Node] private ILabel KarafunRemoteStatusLabel { get; set; } = default!;
 	
 	// Service confirmation dialog (when not all services are ready)
 	[Node] private IConfirmationDialog ServiceConfirmationDialog { get; set; } = default!;
@@ -147,10 +156,11 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		// Initialize them with their dependencies
 		BrowserProvider.Initialize();
 		BrowserProvider.SetSettings(Settings);
-		_sessionPreparation.Initialize(DisplayScreen, BrowserProvider, YtDlpProvider);
+		KarafunRemoteProvider.Initialize();
+		_sessionPreparation.Initialize(DisplayScreen, BrowserProvider, YtDlpProvider, KarafunRemoteProvider);
 		_queueManagement.Initialize(FileWrapper, YtDlpProvider);
 		_backgroundMusic.Initialize(Settings, FileWrapper, DisplayScreen);
-		_playbackCoordination.Initialize(Settings, DisplayScreen, BrowserProvider, _backgroundMusic);
+		_playbackCoordination.Initialize(Settings, DisplayScreen, BrowserProvider, KarafunRemoteProvider, _backgroundMusic);
 		_sessionUI.Initialize(_sessionPreparation);
 	}
 
@@ -200,6 +210,11 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		PrepareQuitButton.Pressed += Quit;
 		ServiceConfirmationDialog.Confirmed += OnServiceConfirmationAccepted;
 		
+		// Karafun web player controls in PrepareSessionDialog
+		LaunchKarafunWebPlayerButton.Pressed += OnLaunchKarafunWebPlayerPressed;
+		ConnectKarafunRemoteButton.Pressed += OnConnectKarafunRemotePressed;
+		KarafunRoomCodeEdit.TextChanged += OnKarafunRoomCodeChanged;
+		
 		// Monitor controls in PrepareSessionDialog
 		MonitorSpinBox.ValueChanged += OnPrepareDialogMonitorChanged;
 		IdentifyMonitorsButton.Pressed += OnIdentifyMonitorsPressed;
@@ -210,8 +225,23 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		// Initialize monitor controls
 		InitializePrepareDialogMonitorControls();
 		
+		// Initialize Karafun controls
+		InitializeKarafunControls();
+		
+		// Update Karafun remote status label
+		KarafunRemoteStatusLabel.Text = model.KarafunRemoteMessage;
+		
 		_sessionUI.PopulateSessionTree(SessionPreparationTree, model, 
 			PrepareSessionOKButton, LaunchForLoginsButton);
+	}
+	
+	private void InitializeKarafunControls()
+	{
+		Callable.From(() => 
+		{
+			// Set up the Karafun room code edit with current settings
+			KarafunRoomCodeEdit.Text = Settings.KarafunRoomCode ?? "";
+		}).CallDeferred();
 	}
 
 	private void InitializePrepareDialogMonitorControls()
@@ -276,6 +306,30 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		SetupTab.SetDisplayScreenMonitorUIValue(Settings.DisplayScreenMonitor);
 		
 		UpdateMonitorWarning();
+	}
+	
+	private async void OnLaunchKarafunWebPlayerPressed()
+	{
+		GD.Print("Launching Karafun web player from session preparation dialog");
+		await BrowserProvider.LaunchKarafunWebPlayer(Settings);
+	}
+	
+	private void OnKarafunRoomCodeChanged(string newCode)
+	{
+		Settings.KarafunRoomCode = newCode;
+		Settings.SaveToDisk(FileWrapper);
+	}
+	
+	private async void OnConnectKarafunRemotePressed()
+	{
+		if (string.IsNullOrWhiteSpace(Settings.KarafunRoomCode))
+		{
+			GD.PrintErr("Cannot connect: room code is empty");
+			return;
+		}
+		
+		GD.Print($"Connecting to Karafun remote with room code: {Settings.KarafunRoomCode}");
+		await KarafunRemoteProvider.ConnectAsync(Settings.KarafunRoomCode);
 	}
 
 	private async void OnLaunchForLoginsPressed()
@@ -539,14 +593,22 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		};
 
 		MainQueueSkipButton = GetNode<Button>($"%{nameof(MainQueueSkipButton)}");
-		MainQueueSkipButton.Pressed += () =>
+		MainQueueSkipButton.Pressed += async () =>
 		{
 			if (!_queueManagement.IsPaused)
 			{
+				var nowPlaying = _queueManagement.NowPlaying;
+				
+				// If Karafun is playing via remote control, send NextRequest
+				if (nowPlaying?.ItemType == ItemType.KarafunWeb && KarafunRemoteProvider.IsConnected)
+				{
+					GD.Print("Skipping Karafun song via remote control");
+					await KarafunRemoteProvider.SkipAsync();
+				}
+				
 				_queueManagement.Skip();
 				
 				// Handle local playback cleanup
-				var nowPlaying = _queueManagement.NowPlaying;
 				if (nowPlaying?.ItemType is ItemType.LocalMp3G or ItemType.LocalMp3GZip or ItemType.LocalMp4
 					|| (nowPlaying?.ItemType == ItemType.Youtube && !string.IsNullOrEmpty(nowPlaying.TemporaryDownloadPath)))
 				{
@@ -764,6 +826,37 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		SetupTab.BgMusicItemsAdded += _backgroundMusic.AddMusicFiles;
 		SetupTab.BgMusicToggle += _backgroundMusic.SetEnabled;
 		SetupTab.BgMusicVolumeChanged += _backgroundMusic.SetVolumePercent;
+		
+		// Karafun remote control
+		SetupTab.KarafunRoomCodeChanged += (roomCode) =>
+		{
+			Settings.KarafunRoomCode = roomCode;
+			Settings.SaveToDisk(FileWrapper);
+		};
+		
+		SetupTab.KarafunConnectRequested += async (roomCode) =>
+		{
+			if (KarafunRemoteProvider.IsConnected)
+			{
+				await KarafunRemoteProvider.DisconnectAsync();
+			}
+			else if (!string.IsNullOrWhiteSpace(roomCode))
+			{
+				await KarafunRemoteProvider.ConnectAsync(roomCode);
+			}
+		};
+		
+		SetupTab.KarafunLaunchWebPlayerRequested += async () =>
+		{
+			// Launch the Karafun web player in a browser
+			await BrowserProvider.LaunchUncontrolledBrowser(Settings, "https://www.karafun.com/web/discover/");
+		};
+		
+		// Listen for Karafun remote connection status changes
+		KarafunRemoteProvider.ConnectionStatusChanged += (status) =>
+		{
+			Callable.From(() => SetupTab.SetKarafunConnectionStatusUIValue(status)).CallDeferred();
+		};
 
 		SetupTab.SetBgMusicItemsUIValues(Settings.BgMusicFiles);
 		SetupTab.SetBgMusicEnabledUIValue(Settings.BgMusicEnabled);
@@ -771,6 +864,8 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 		SetupTab.SetDisplayScreenMonitorUIValue(Settings.DisplayScreenMonitor);
 		SetupTab.SetDisplayScreenMonitorMaxValue(DisplayServer.GetScreenCount() - 1);
 		SetupTab.SetCountdownLengthSecondsUIValue(Settings.CountdownLengthSeconds);
+		SetupTab.SetKarafunRoomCodeUIValue(Settings.KarafunRoomCode);
+		SetupTab.SetKarafunConnectionStatusUIValue(KarafunRemoteProvider.ConnectionStatus);
 	}
 
 	#endregion

@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=18 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://doqv2f6ufhvg8" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
 [ext_resource type="Script" uid="uid://c33s6qbvch6a6" path="res://Web/YtDlpProviderNode.cs" id="10_tw3kd"]
 [ext_resource type="Script" uid="uid://b07mmue8aipie" path="res://Services/MonitorIdentificationManager.cs" id="11_gd4vy"]
+[ext_resource type="Script" uid="uid://bqmuakvidv2f5" path="res://Web/KarafunRemoteProviderNode.cs" id="12_karafun"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
@@ -238,6 +239,42 @@ size_flags_vertical = 3
 hide_folding = true
 hide_root = true
 
+[node name="KarafunWebPlayerContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer"]
+layout_mode = 2
+
+[node name="LaunchKarafunWebPlayerButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Launch Karafun Web Player"
+
+[node name="KarafunRoomCodeHBox" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="KarafunRoomCodeLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+layout_mode = 2
+text = "Room Code:"
+
+[node name="KarafunRoomCodeEdit" type="LineEdit" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter 4-digit room code from Karafun web player"
+
+[node name="ConnectKarafunRemoteButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Connect"
+
+[node name="KarafunRemoteStatusLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remote control not connected"
+
 [node name="MarginContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_top = 4
@@ -348,3 +385,7 @@ script = ExtResource("10_tw3kd")
 [node name="MonitorIdManager" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("11_gd4vy")
+
+[node name="KarafunRemoteProvider" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("12_karafun")

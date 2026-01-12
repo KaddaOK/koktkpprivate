@@ -26,6 +26,9 @@ public class PrepareSessionModel
     public KarafunStatus KarafunStatus { get; set; }
     public string KarafunIdentity { get; set; }
     public string KarafunMessage { get; set; }
+    
+    public KarafunRemoteConnectionStatus KarafunRemoteStatus { get; set; }
+    public string KarafunRemoteMessage { get; set; }
 
     public VLCStatus VLCStatus { get; set; }
     public string VLCMessage { get; set; }
@@ -44,12 +47,14 @@ public partial class SessionPreparationService : Node
     private IDisplayScreen _displayScreen;
     private IBrowserProviderNode _browserProvider;
     private IYtDlpProviderNode _ytDlpProvider;
+    private IKarafunRemoteProviderNode _karafunRemoteProvider;
 
-    public void Initialize(IDisplayScreen displayScreen, IBrowserProviderNode browserProvider, IYtDlpProviderNode ytDlpProvider)
+    public void Initialize(IDisplayScreen displayScreen, IBrowserProviderNode browserProvider, IYtDlpProviderNode ytDlpProvider, IKarafunRemoteProviderNode karafunRemoteProvider)
     {
         _displayScreen = displayScreen;
         _browserProvider = browserProvider;
         _ytDlpProvider = ytDlpProvider;
+        _karafunRemoteProvider = karafunRemoteProvider;
         _sessionModel = new PrepareSessionModel();
         SetupEventHandlers();
     }
@@ -82,6 +87,22 @@ public partial class SessionPreparationService : Node
             _sessionModel.KarafunStatus = status.StatusResult;
             _sessionModel.KarafunIdentity = status.Identity;
             _sessionModel.KarafunMessage = status.Message;
+            SessionStatusUpdated?.Invoke(_sessionModel);
+        };
+        
+        _karafunRemoteProvider.ConnectionStatusChanged += (status) =>
+        {
+            _sessionModel.KarafunRemoteStatus = status;
+            _sessionModel.KarafunRemoteMessage = status switch
+            {
+                KarafunRemoteConnectionStatus.Disconnected => "Not connected",
+                KarafunRemoteConnectionStatus.FetchingSettings => "Fetching settings...",
+                KarafunRemoteConnectionStatus.Connecting => "Connecting...",
+                KarafunRemoteConnectionStatus.Connected => "Connected",
+                KarafunRemoteConnectionStatus.Reconnecting => "Reconnecting...",
+                KarafunRemoteConnectionStatus.Error => "Connection failed",
+                _ => "Unknown"
+            };
             SessionStatusUpdated?.Invoke(_sessionModel);
         };
         
@@ -242,8 +263,14 @@ public partial class SessionPreparationService : Node
 
     public bool IsKarafunUsable(PrepareSessionModel model)
     {
-        return model.BrowserStatus == BrowserAvailabilityStatus.Ready &&
+        // Karafun is usable if:
+        // 1. Browser automation approach works (logged in with active subscription), OR
+        // 2. Karafun remote control is connected (user has web player open separately)
+        var browserAutomationWorks = model.BrowserStatus == BrowserAvailabilityStatus.Ready &&
                model.KarafunStatus == KarafunStatus.Active;
+        var remoteControlConnected = model.KarafunRemoteStatus == KarafunRemoteConnectionStatus.Connected;
+        
+        return browserAutomationWorks || remoteControlConnected;
     }
 
     public bool IsLocalFilesUsable(PrepareSessionModel model)

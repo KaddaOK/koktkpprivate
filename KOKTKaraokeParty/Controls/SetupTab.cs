@@ -16,6 +16,9 @@ public interface ISetupTab: IMarginContainer
     event SetupTab.BgMusicItemsAddedEventHandler BgMusicItemsAdded;
     event SetupTab.BgMusicToggleEventHandler BgMusicToggle;
     event SetupTab.BgMusicVolumeChangedEventHandler BgMusicVolumeChanged;
+    event SetupTab.KarafunRoomCodeChangedEventHandler KarafunRoomCodeChanged;
+    event SetupTab.KarafunConnectRequestedEventHandler KarafunConnectRequested;
+    event SetupTab.KarafunLaunchWebPlayerRequestedEventHandler KarafunLaunchWebPlayerRequested;
 
     void SetBgMusicItemsUIValues(List<string> bgMusicFiles);
     void SetBgMusicEnabledUIValue(bool enabled);
@@ -23,6 +26,8 @@ public interface ISetupTab: IMarginContainer
     void SetDisplayScreenMonitorUIValue(int monitor);
     void SetDisplayScreenMonitorMaxValue(int maxMonitor);
     void SetCountdownLengthSecondsUIValue(int countdownLengthSeconds);
+    void SetKarafunRoomCodeUIValue(string roomCode);
+    void SetKarafunConnectionStatusUIValue(KarafunRemoteConnectionStatus status);
 }
 
 [Meta(typeof(IAutoNode))]
@@ -53,6 +58,10 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Node] private AcceptDialog UpdateYtDlpDialog { get; set; } = default!;
     [Node] private Label YtDlpStatusLabel { get; set; } = default!;
     [Node] private Label DenoStatusLabel { get; set; } = default!;
+    [Node] private LineEdit KarafunRoomCodeLineEdit { get; set; } = default!;
+    [Node] private Button KarafunConnectButton { get; set; } = default!;
+    [Node] private Label KarafunStatusLabel { get; set; } = default!;
+    [Node] private Button LaunchKarafunWebButton { get; set; } = default!;
     #endregion
 
     #region Signals
@@ -64,6 +73,9 @@ public partial class SetupTab : MarginContainer, ISetupTab
     [Signal] public delegate void BgMusicItemsAddedEventHandler(string[] pathsToAdd);
     [Signal] public delegate void BgMusicToggleEventHandler(bool enabled);
     [Signal] public delegate void BgMusicVolumeChangedEventHandler(double newVolume);
+    [Signal] public delegate void KarafunRoomCodeChangedEventHandler(string roomCode);
+    [Signal] public delegate void KarafunConnectRequestedEventHandler(string roomCode);
+    [Signal] public delegate void KarafunLaunchWebPlayerRequestedEventHandler();
 
     #endregion
 
@@ -82,6 +94,11 @@ public partial class SetupTab : MarginContainer, ISetupTab
         IdentifyMonitorsButton.Pressed += () => MonitorIdManager.ShowAllMonitors();
         MonitorSpinbox.ValueChanged += (double value) => UpdateMonitorWarning((int)value);
         UpdateYtDlpButton.Pressed += ShowUpdateDialog;
+        
+        // Karafun remote control
+        KarafunRoomCodeLineEdit.TextChanged += (text) => EmitSignal(SignalName.KarafunRoomCodeChanged, text);
+        KarafunConnectButton.Pressed += () => EmitSignal(SignalName.KarafunConnectRequested, KarafunRoomCodeLineEdit.Text);
+        LaunchKarafunWebButton.Pressed += () => EmitSignal(SignalName.KarafunLaunchWebPlayerRequested);
     }
 
     private void BgMusicItemListGuiInput(InputEvent @event)
@@ -137,6 +154,32 @@ public partial class SetupTab : MarginContainer, ISetupTab
     public void SetCountdownLengthSecondsUIValue(int countdownLengthSeconds)
     {
         WaitSpinbox.Value = countdownLengthSeconds;
+    }
+
+    public void SetKarafunRoomCodeUIValue(string roomCode)
+    {
+        KarafunRoomCodeLineEdit.Text = roomCode ?? "";
+    }
+
+    public void SetKarafunConnectionStatusUIValue(KarafunRemoteConnectionStatus status)
+    {
+        Callable.From(() => {
+            var (icon, tooltip, buttonEnabled) = status switch
+            {
+                KarafunRemoteConnectionStatus.Disconnected => ("⬛", "Not connected", true),
+                KarafunRemoteConnectionStatus.FetchingSettings => ("⏳", "Fetching settings...", false),
+                KarafunRemoteConnectionStatus.Connecting => ("⏳", "Connecting...", false),
+                KarafunRemoteConnectionStatus.Connected => ("✔", "Connected to Karafun remote control", false),
+                KarafunRemoteConnectionStatus.Reconnecting => ("⏳", "Reconnecting...", false),
+                KarafunRemoteConnectionStatus.Error => ("❌", "Connection failed", true),
+                _ => ("⚠", "Unknown status", true)
+            };
+            
+            KarafunStatusLabel.Text = icon;
+            KarafunStatusLabel.TooltipText = tooltip;
+            KarafunConnectButton.Disabled = !buttonEnabled;
+            KarafunConnectButton.Text = status == KarafunRemoteConnectionStatus.Connected ? "Disconnect" : "Connect";
+        }).CallDeferred();
     }
 
 	private void UpdateMonitorWarning(int selectedMonitor)

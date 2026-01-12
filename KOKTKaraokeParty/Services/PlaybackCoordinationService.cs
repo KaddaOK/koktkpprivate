@@ -20,13 +20,15 @@ public partial class PlaybackCoordinationService : Node
     private Settings _settings;
     private IDisplayScreen _displayScreen;
     private IBrowserProviderNode _browserProvider;
+    private IKarafunRemoteProviderNode _karafunRemoteProvider;
     private BackgroundMusicService _backgroundMusicService;
 
-    public void Initialize(Settings settings, IDisplayScreen displayScreen, IBrowserProviderNode browserProvider, BackgroundMusicService backgroundMusicService)
+    public void Initialize(Settings settings, IDisplayScreen displayScreen, IBrowserProviderNode browserProvider, IKarafunRemoteProviderNode karafunRemoteProvider, BackgroundMusicService backgroundMusicService)
     {
         _settings = settings;
         _displayScreen = displayScreen;
         _browserProvider = browserProvider;
+        _karafunRemoteProvider = karafunRemoteProvider;
         _backgroundMusicService = backgroundMusicService;
         SetupEventHandlers();
     }
@@ -110,10 +112,74 @@ public partial class PlaybackCoordinationService : Node
 
     private async Task PlayKarafunAsync(QueueItem item, CancellationToken cancellationToken)
     {
+        // If the Karafun remote client is connected, use it to queue the song
+        // The user has already set up the web player on the display screen, so we just need to queue
+        if (_karafunRemoteProvider.IsConnected)
+        {
+            GD.Print("Using Karafun remote control to queue song");
+            
+            // Queue the song via remote control - this will start playback on the already-open web player
+            var success = await _karafunRemoteProvider.QueueSongFromUrlAsync(item.PerformanceLink, item.SingerName, cancellationToken);
+            
+            if (!success)
+            {
+                GD.PrintErr("Failed to queue song via Karafun remote, falling back to browser automation");
+                // Fall back to browser automation
+                await PlayKarafunViaBrowserAsync(item, cancellationToken);
+                return;
+            }
+            
+            // Wait for playback to complete via remote status events
+            await WaitForKarafunRemotePlaybackToFinishAsync(cancellationToken);
+            
+            GD.Print("Karafun remote playback finished.");
+            PlaybackFinished?.Invoke(item);
+        }
+        else
+        {
+            // Fall back to legacy browser automation approach
+            await PlayKarafunViaBrowserAsync(item, cancellationToken);
+        }
+    }
+    
+    private async Task PlayKarafunViaBrowserAsync(QueueItem item, CancellationToken cancellationToken)
+    {
         Callable.From(() => _displayScreen.HideDisplayScreen()).CallDeferred();
         await _browserProvider.PlayKarafunUrl(item.PerformanceLink, cancellationToken);
-        GD.Print("Karafun playback finished.");
+        GD.Print("Karafun browser playback finished.");
         PlaybackFinished?.Invoke(item);
+    }
+    
+    private async Task WaitForKarafunRemotePlaybackToFinishAsync(CancellationToken cancellationToken)
+    {
+        // Wait for Karafun to indicate that the song has finished
+        // The remote control status events will tell us when playback state changes
+        var playbackStarted = false;
+        
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var currentState = _karafunRemoteProvider.CurrentPlaybackState;
+            
+            // Track if playback has started (state 4 = Playing)
+            if (currentState == KOKTKaraokeParty.Web.KarafunPlaybackState.Playing)
+            {
+                if (!playbackStarted)
+                {
+                    // First time entering playing state - hide the next-up display
+                    Callable.From(() => _displayScreen.HideDisplayScreen()).CallDeferred();
+                    playbackStarted = true;
+                }
+            }
+            
+            // If we started playing and now we're idle (state 1), song is done
+            if (playbackStarted && currentState == KOKTKaraokeParty.Web.KarafunPlaybackState.Idle)
+            {
+                GD.Print("Karafun remote detected playback finished (idle state)");
+                break;
+            }
+            
+            await ToSignal(GetTree().CreateTimer(0.5f), "timeout");
+        }
     }
 
     private async Task PlayYoutubeAsync(QueueItem item, CancellationToken cancellationToken)
@@ -194,7 +260,15 @@ public partial class PlaybackCoordinationService : Node
         switch (currentItem.ItemType)
         {
             case ItemType.KarafunWeb:
-                await _browserProvider.PauseKarafun();
+                // Prefer remote control if connected, otherwise fall back to browser
+                if (_karafunRemoteProvider.IsConnected)
+                {
+                    await _karafunRemoteProvider.PauseAsync();
+                }
+                else
+                {
+                    await _browserProvider.PauseKarafun();
+                }
                 break;
             case ItemType.Youtube:
                 if (string.IsNullOrEmpty(currentItem.TemporaryDownloadPath))
@@ -218,7 +292,15 @@ public partial class PlaybackCoordinationService : Node
         switch (currentItem.ItemType)
         {
             case ItemType.KarafunWeb:
-                await _browserProvider.ResumeKarafun();
+                // Prefer remote control if connected, otherwise fall back to browser
+                if (_karafunRemoteProvider.IsConnected)
+                {
+                    await _karafunRemoteProvider.ResumeAsync();
+                }
+                else
+                {
+                    await _browserProvider.ResumeKarafun();
+                }
                 break;
             case ItemType.Youtube:
                 if (string.IsNullOrEmpty(currentItem.TemporaryDownloadPath))

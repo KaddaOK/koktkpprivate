@@ -22,6 +22,7 @@ public interface IBrowserProviderNode : INode
 
     Task LaunchControlledBrowser(Settings settings);
     Task LaunchControlledBrowser(); // Backward compatibility
+    Task LaunchKarafunWebPlayer(Settings settings);
     Task<Process> LaunchUncontrolledBrowser(Settings settings, params string[] sites);
     Task<Process> LaunchUncontrolledBrowser(params string[] sites); // Backward compatibility
     Task CloseControlledBrowser();
@@ -63,6 +64,8 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
     //private int _uncontrolledBrowserPid = -1;
     private Process _uncontrolledBrowserProcess;
     private IPage _page; // TODO: rename
+    private IPage _karafunWebPlayerPage;
+    private CancellationTokenSource _karafunMonitoringCts;
     private IBrowserFetcher _browserFetcher;
     private Settings _settings;
 
@@ -500,4 +503,52 @@ public partial class BrowserProviderNode : Node, IBrowserProviderNode
     }
 
     public async Task SeekKarafun(long positionMs) => await _karafunAutomator.Seek(_page, positionMs);
+    
+    /// <summary>
+    /// Launch the Karafun web player in a controlled browser and start monitoring for progress updates.
+    /// This is used with the remote control approach where the web player runs continuously.
+    /// </summary>
+    public async Task LaunchKarafunWebPlayer(Settings settings)
+    {
+        // Stop any existing monitoring
+        if (_karafunMonitoringCts != null)
+        {
+            _karafunMonitoringCts.Cancel();
+            _karafunMonitoringCts.Dispose();
+            _karafunMonitoringCts = null;
+        }
+        
+        // Launch or reuse the controlled browser
+        if (_headedBrowser == null || _headedBrowser.IsClosed)
+        {
+            await LaunchControlledBrowser(settings);
+        }
+        
+        // Create a new page for the Karafun web player if needed
+        if (_karafunWebPlayerPage == null || _karafunWebPlayerPage.IsClosed)
+        {
+            _karafunWebPlayerPage = await _headedBrowser.NewPageAsync();
+            await _karafunWebPlayerPage.SetBypassCSPAsync(true);
+        }
+        
+        // Navigate to the Karafun web player
+        GD.Print("Launching Karafun web player at https://www.karafun.com/web/discover/");
+        await _karafunWebPlayerPage.GoToAsync("https://www.karafun.com/web/discover/", WaitUntilNavigation.Networkidle2);
+        
+        // Start monitoring the web player for playback progress
+        _karafunMonitoringCts = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _karafunAutomator.MonitorKarafunWebPlayer(_karafunWebPlayerPage, _karafunMonitoringCts.Token);
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"Karafun web player monitoring error: {ex.Message}");
+            }
+        });
+        
+        GD.Print("Karafun web player launched and monitoring started.");
+    }
 }
