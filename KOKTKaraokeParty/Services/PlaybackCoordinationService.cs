@@ -96,6 +96,9 @@ public partial class PlaybackCoordinationService : Node
             case ItemType.KarafunWeb:
                 await PlayKarafunAsync(item, cancellationToken);
                 break;
+            case ItemType.KarafunRemote:
+                await PlayKarafunRemoteAsync(item, cancellationToken);
+                break;
             case ItemType.Youtube:
                 await PlayYoutubeAsync(item, cancellationToken);
                 break;
@@ -107,6 +110,51 @@ public partial class PlaybackCoordinationService : Node
             default:
                 GD.PrintErr($"Unknown item type: {item.ItemType}");
                 break;
+        }
+    }
+    
+    private async Task PlayKarafunRemoteAsync(QueueItem item, CancellationToken cancellationToken)
+    {
+        // KarafunRemote items have the song ID in the Identifier field
+        if (!int.TryParse(item.Identifier, out int songId))
+        {
+            GD.PrintErr($"Invalid song ID in KarafunRemote item: {item.Identifier}");
+            // Try to fall back to web playback if we have a performance link
+            if (!string.IsNullOrWhiteSpace(item.PerformanceLink))
+            {
+                await PlayKarafunAsync(item, cancellationToken);
+            }
+            return;
+        }
+        
+        if (_karafunRemoteProvider.IsConnected)
+        {
+            GD.Print($"Using Karafun remote control to queue song ID {songId}");
+            var success = await _karafunRemoteProvider.QueueSongAsync(songId, item.SingerName, cancellationToken);
+            
+            if (!success)
+            {
+                GD.PrintErr("Failed to queue song via Karafun remote");
+                // Try to fall back to web playback if we have a performance link
+                if (!string.IsNullOrWhiteSpace(item.PerformanceLink))
+                {
+                    await PlayKarafunViaBrowserAsync(item, cancellationToken);
+                }
+                return;
+            }
+            
+            await WaitForKarafunRemotePlaybackToFinishAsync(cancellationToken);
+            GD.Print("Karafun remote playback finished.");
+            PlaybackFinished?.Invoke(item);
+        }
+        else
+        {
+            GD.PrintErr("Karafun remote not connected for KarafunRemote item type");
+            // Try to fall back to web playback if we have a performance link
+            if (!string.IsNullOrWhiteSpace(item.PerformanceLink))
+            {
+                await PlayKarafunViaBrowserAsync(item, cancellationToken);
+            }
         }
     }
 
@@ -270,6 +318,9 @@ public partial class PlaybackCoordinationService : Node
                     await _browserProvider.PauseKarafun();
                 }
                 break;
+            case ItemType.KarafunRemote:
+                await _karafunRemoteProvider.PauseAsync();
+                break;
             case ItemType.Youtube:
                 if (string.IsNullOrEmpty(currentItem.TemporaryDownloadPath))
                 {
@@ -301,6 +352,9 @@ public partial class PlaybackCoordinationService : Node
                 {
                     await _browserProvider.ResumeKarafun();
                 }
+                break;
+            case ItemType.KarafunRemote:
+                await _karafunRemoteProvider.ResumeAsync();
                 break;
             case ItemType.Youtube:
                 if (string.IsNullOrEmpty(currentItem.TemporaryDownloadPath))
@@ -334,6 +388,8 @@ public partial class PlaybackCoordinationService : Node
                 }
                 break;
             case ItemType.KarafunWeb:
+            case ItemType.KarafunRemote:
+                // Note: Karafun remote control doesn't support seeking, fall back to browser if available
                 _ = Task.Run(async () => await _browserProvider.SeekKarafun(positionMs));
                 break;
             case ItemType.LocalMp3G:

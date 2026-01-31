@@ -21,7 +21,13 @@ public partial class SearchTab : MarginContainer, ISearchTab
 {
     public override void _Notification(int what) => this.Notify(what);
 
-    private List<KarafunSearchScrapeResultItem> KarafunResults;
+    #region Dependencies
+    
+    [Dependency] private Settings Settings => this.DependOn<Settings>();
+    
+    #endregion
+
+    private List<KarafunApiSong> KarafunApiResults;
     private List<KNSearchResultItem> KNResults;
     private List<LocalSongFileEntry> LocalFilesResults;
     private bool isStreamingKfnResults = false;
@@ -315,49 +321,27 @@ public partial class SearchTab : MarginContainer, ISearchTab
         GD.Print($"Searching Karafun for: {query}");
         KfnResultCount.SetLoaded(false);
         isStreamingKfnResults = true;
-        var mayHaveMore = false;
-        var pageResults = new List<KarafunSearchScrapeResultItem>();
-        var artistResults = new Dictionary<string, List<KarafunSearchScrapeResultItem>>();
-        KarafunResults = new List<KarafunSearchScrapeResultItem>();
-        await foreach (var result in KarafunSearchScrape.Search(query, cancellationToken))
+        KarafunApiResults = new List<KarafunApiSong>();
+        
+        var roomCode = Settings?.KarafunRoomCode;
+        if (string.IsNullOrWhiteSpace(roomCode) || roomCode.Length != 6)
         {
-            GD.Print($"Received {result.Results.Count} results from Karafun");
-            if (result.MayHaveMore)
-            {
-                mayHaveMore = true;
-            }
-            if (result.PartOfArtistSet != null)
-            {
-                if (artistResults.ContainsKey(result.PartOfArtistSet))
-                {
-                    artistResults[result.PartOfArtistSet].AddRange(result.Results);
-                }
-                else
-                {
-                    artistResults.Add(result.PartOfArtistSet, result.Results);
-                }
-            }
-            else
-            {
-                pageResults.AddRange(result.Results);
-            }
-
-            KarafunResults = new List<KarafunSearchScrapeResultItem>(pageResults);
-            foreach (var artist in artistResults)
-            {
-                // Find the index of the Artist item and replace it with the new results
-                int artistIndex = KarafunResults.FindIndex(a => a.ResultType == KarafunSearchScrapeResultItemType.Artist && a.ArtistLink == artist.Key);
-                if (artistIndex != -1)
-                {
-                    KarafunResults.RemoveAt(artistIndex);
-                    KarafunResults.InsertRange(artistIndex, artist.Value);
-                }
-            }
-            KarafunResults = KarafunResults
-                .Where(r => r.ResultType != KarafunSearchScrapeResultItemType.Artist)
-                .DistinctBy(r => r.SongInfoLink)
-                .OrderBy(item => item.ResultType == KarafunSearchScrapeResultItemType.UnlicensedSong ? 1 : 0)
-                .ThenBy(item => KarafunResults.IndexOf(item)) // Preserve the original relative order
+            GD.Print("No valid Karafun room code available - Karafun search requires a connected room");
+            KfnResultCount.SetLoaded(true, "0 (no room code)");
+            isStreamingKfnResults = false;
+            return;
+        }
+        
+        await foreach (var result in KarafunApiSearch.Search(roomCode, query, cancellationToken))
+        {
+            if (result?.Songs == null) continue;
+            
+            GD.Print($"Received {result.Songs.Count} results from Karafun API");
+            KarafunApiResults.AddRange(result.Songs);
+            
+            // Deduplicate by song ID
+            KarafunApiResults = KarafunApiResults
+                .DistinctBy(s => s.SongId)
                 .ToList();
 
             await UpdateKarafunResultsTree();
@@ -368,7 +352,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
             }
         }
         isStreamingKfnResults = false;
-        KfnResultCount.SetLoaded(true, $"{KarafunResults.Count}");//{(mayHaveMore ? "*" : "")}");
+        KfnResultCount.SetLoaded(true, $"{KarafunApiResults.Count}");
     }
 
     private async Task UpdateKarafunResultsTree()
@@ -381,12 +365,10 @@ public partial class SearchTab : MarginContainer, ISearchTab
             selectedItems.Add(selectedItem.GetMetadata(0).ToString()); // Use metadata to track selections
         }
 
-        //GD.Print($"Updating karafun tree with {KarafunResults.Count} results");
-
         //actually probably fine to just clear and re-add everything
         KfnResultsTree.Clear();
         _kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-        foreach (var result in KarafunResults)
+        foreach (var result in KarafunApiResults)
         {
             AddKarafunResultsRow(result);
         }
@@ -450,7 +432,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
         return null;
     }
 
-    private void AddKarafunResultsRow(KarafunSearchScrapeResultItem item)
+    private void AddKarafunResultsRow(KarafunApiSong song)
     {
         if (_kfnRoot == null)
         {
@@ -458,9 +440,10 @@ public partial class SearchTab : MarginContainer, ISearchTab
             _kfnRoot = KfnResultsTree.CreateItem();
         }
         var treeItem = KfnResultsTree.CreateItem(_kfnRoot);
-        treeItem.SetText(0, item.SongName);
-        treeItem.SetText(1, item.ArtistName);
-        treeItem.SetMetadata(0, item.SongInfoLink);
+        treeItem.SetText(0, song.Title);
+        treeItem.SetText(1, song.Artist);
+        // Store song ID as metadata for use when adding to queue
+        treeItem.SetMetadata(0, song.SongId.ToString());
     }
 
     private void AddKNResultsRow(KNSearchResultItem item)
@@ -515,39 +498,30 @@ public partial class SearchTab : MarginContainer, ISearchTab
         DisableOrEnableAddToQueueOkButton();
     }
 
-    private async void OnKfnItemDoubleClicked()
+    private void OnKfnItemDoubleClicked()
     {
         TreeItem selectedItem = KfnResultsTree.GetSelected();
         if (selectedItem != null)
         {
             string songName = selectedItem.GetText(0);
             string artistName = selectedItem.GetText(1);
-            GD.Print($"Double-clicked: {songName} by {artistName}");
-            string songInfoLink = selectedItem.GetMetadata(0).ToString();
+            string songId = selectedItem.GetMetadata(0).ToString();
+            
+            GD.Print($"Double-clicked Karafun: {songName} by {artistName} (ID: {songId})");
 
-            SetResolvingPerformLink(true);
-            Input.SetDefaultCursorShape(Input.CursorShape.Busy);
-            ShowAddToQueueDialog("Karafun (loading perform link...)", false);
-            await ToSignal(GetTree(), "process_frame");
-
-            GD.Print($"Getting perform link for {songInfoLink}");
-            var performLink = await KarafunSearchScrape.GetDirectPerformanceLinkForSong(songInfoLink);
-            GD.Print($"Perform link: {performLink}");
-
+            // With the API, we have the song ID directly - no need to resolve a perform link
             itemBeingAdded = new QueueItem
             {
                 SongName = songName,
                 ArtistName = artistName,
                 CreatorName = "Karafun",
-                SongInfoLink = songInfoLink,
-                PerformanceLink = performLink,
-                ItemType = ItemType.KarafunWeb
+                Identifier = songId,
+                // Generate a performance link for fallback/browser mode if needed
+                PerformanceLink = $"https://www.karafun.com/karaoke/{songId}/",
+                ItemType = ItemType.KarafunRemote
             };
 
-            SetResolvingPerformLink(false);
-            Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-            DisableOrEnableAddToQueueOkButton();
-            SetAddToQueueBoxText("Karafun Web", true, songName, artistName);
+            ShowAddToQueueDialog("Karafun", true, songName, artistName);
         }
     }
 

@@ -133,6 +133,7 @@ public static class WizardLogic
                     result.RequiresYouTube = true;
                     break;
                 case ItemType.KarafunWeb:
+                case ItemType.KarafunRemote:
                     result.RequiresKarafun = true;
                     break;
             }
