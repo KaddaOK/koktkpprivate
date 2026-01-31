@@ -110,42 +110,43 @@ text = "Local Files (scanned)"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HSplitContainer" type="HSplitContainer" parent="SearchTabVBox/VSplitContainer"]
+[node name="WebResultsHSplitContainer" type="HSplitContainer" parent="SearchTabVBox/VSplitContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 split_offset = -50
 
-[node name="KarafunResultsVBox" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer"]
+[node name="KarafunResultsVBox" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox"]
+[node name="KfnSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox"]
 layout_mode = 2
 
-[node name="KfnLabel" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox/KfnSearchHeader"]
+[node name="KfnLabel" type="Label" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox/KfnSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karafun:"
 
-[node name="KfnResultCount" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="KfnResultCount" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox/KfnSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox"]
+[node name="KfnResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Opens automated browser to song on karafun.com/web. (Requires an active Karafun subscription.)"
 autowrap_mode = 2
 
-[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox"]
+[node name="KfnScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KarafunResultsVBox/KfnScrollContainer"]
+[node name="KfnResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KarafunResultsVBox/KfnScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -153,37 +154,37 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 13
 theme_override_font_sizes/title_button_font_size = 13
 
-[node name="KaraokeNerdsResultsVBox" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer"]
+[node name="KaraokeNerdsResultsVBox" type="VBoxContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox"]
+[node name="KNSearchHeader" type="HBoxContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox"]
 layout_mode = 2
 
-[node name="KNLabel" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox/KNSearchHeader"]
+[node name="KNLabel" type="Label" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox/KNSearchHeader"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Results from Karaokenerds:"
 
-[node name="KNResultCount" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox/KNSearchHeader" instance=ExtResource("2_pm6ve")]
+[node name="KNResultCount" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox/KNSearchHeader" instance=ExtResource("2_pm6ve")]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("3_h8wwf")
 FontSize = 14
 
-[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox"]
+[node name="KNResultsExplanation" type="Label" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
-text = "Downloads in the background then plays in the display screen window.  (or opens browser as a fallback; YouTube Premium recommended.)"
+text = "Downloads in the background then plays in the display screen window."
 autowrap_mode = 2
 
-[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox"]
+[node name="KNScrollContainer" type="ScrollContainer" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/HSplitContainer/KaraokeNerdsResultsVBox/KNScrollContainer"]
+[node name="KNResultsTree" type="Tree" parent="SearchTabVBox/VSplitContainer/WebResultsHSplitContainer/KaraokeNerdsResultsVBox/KNScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

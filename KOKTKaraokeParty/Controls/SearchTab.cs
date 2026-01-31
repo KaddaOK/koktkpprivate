@@ -61,6 +61,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
     [Node] private IVBoxContainer KarafunResultsVBox { get; set; } = default!;
     [Node] private IVBoxContainer KaraokeNerdsResultsVBox { get; set; } = default!;
     [Node] private IVBoxContainer LocalResultsPane { get; set; } = default!;
+    [Node] private IHSplitContainer WebResultsHSplitContainer { get; set; } = default!;
 
     #endregion
 
@@ -105,6 +106,9 @@ public partial class SearchTab : MarginContainer, ISearchTab
         KarafunResultsVBox.Visible = SearchKarafunCheckBox.ButtonPressed;
         KaraokeNerdsResultsVBox.Visible = SearchKaraokeNerdsCheckBox.ButtonPressed;
         LocalResultsPane.Visible = SearchLocalFilesCheckBox.ButtonPressed;
+        
+        // Hide the WebResultsHSplitContainer entirely if both its children are hidden
+        WebResultsHSplitContainer.Visible = SearchKarafunCheckBox.ButtonPressed || SearchKaraokeNerdsCheckBox.ButtonPressed;
     }
 
     public void ConfigureAvailableServices(bool localFilesAvailable, bool youTubeAvailable, bool karafunAvailable)

@@ -4,6 +4,7 @@ using Chickensoft.Introspection;
 using Godot;
 using KOKTKaraokeParty.Services;
 using KOKTKaraokeParty.Controls;
+using KOKTKaraokeParty.Controls.SessionPrepWizard;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +19,9 @@ public partial class RootController : Node,
 IProvide<IBrowserProviderNode>, 
 IProvide<IYtDlpProviderNode>,
 IProvide<IKarafunRemoteProviderNode>,
-IProvide<Settings>, IProvide<IMonitorIdentificationManager>
+IProvide<Settings>, 
+IProvide<IMonitorIdentificationManager>,
+IProvide<IDisplayScreen>
 {
 	#region Service Dependencies
 
@@ -28,6 +31,7 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	private PlaybackCoordinationService _playbackCoordination;
 	private SessionUIService _sessionUI;
 
+
 	#endregion
 
 	#region Provided Dependencies
@@ -35,6 +39,7 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	IYtDlpProviderNode IProvide<IYtDlpProviderNode>.Value() => YtDlpProvider;
 	IKarafunRemoteProviderNode IProvide<IKarafunRemoteProviderNode>.Value() => KarafunRemoteProvider;
     IMonitorIdentificationManager IProvide<IMonitorIdentificationManager>.Value() => MonitorIdManager;
+	IDisplayScreen IProvide<IDisplayScreen>.Value() => DisplayScreen;
 
 	private Settings Settings { get; set; }
 	Settings IProvide<Settings>.Value() => Settings;
@@ -93,6 +98,9 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 	[Node] private IButton IdentifyMonitorsButton { get; set; } = default!;
     [Node] private IMonitorIdentificationManager MonitorIdManager { get; set; } = default!;
 	
+	// Session Prep Wizard (new startup flow)
+	[Node("%SessionPrepWizard")] private ISessionPrepWizard SessionPrepWizard { get; set; } = default!;
+	
 	// Karafun Web Player controls in PrepareSessionDialog
 	[Node] private IButton LaunchKarafunWebPlayerButton { get; set; } = default!;
 	[Node] private ILineEdit KarafunRoomCodeEdit { get; set; } = default!;
@@ -134,7 +142,73 @@ IProvide<Settings>, IProvide<IMonitorIdentificationManager>
 
 		this.Provide();
 		
-		_sessionPreparation.StartSessionPreparation();
+		// Start the session prep wizard instead of old dialog
+		// Use CallDeferred to allow the wizard to initialize its dependencies first
+		Callable.From(StartSessionPrepWizard).CallDeferred();
+	}
+
+	private void StartSessionPrepWizard()
+	{
+		// Get saved queue items for wizard preview
+		var savedQueueItems = Utils.GetSavedQueueItemsFromDisk();
+		
+		// Wire up wizard events
+		SessionPrepWizard.WizardCompleted += OnWizardCompleted;
+		SessionPrepWizard.WizardCancelled += OnWizardCancelled;
+		
+		// Start the wizard
+		SessionPrepWizard.StartWizard(savedQueueItems);
+	}
+	
+	private void OnWizardCompleted(WizardState state)
+	{
+		// Save service selections to settings
+		Settings.UseLocalFiles = state.UseLocalFiles;
+		Settings.UseYouTube = state.UseYouTube;
+		Settings.UseKarafun = state.UseKarafun;
+		Settings.KarafunMode = state.KarafunMode;
+		Settings.DisplayScreenMonitor = state.SelectedMonitor;
+		Settings.SaveToDisk(FileWrapper);
+		
+		// Handle queue restoration choice
+		HandleQueueRestoration(state);
+		
+		// Configure search tab based on wizard selections
+		SearchTab.ConfigureAvailableServices(
+			state.UseLocalFiles,
+			state.UseYouTube,
+			state.UseKarafun
+		);
+		
+		// Sync SetupTab with display settings
+		SetupTab.SetDisplayScreenMonitorUIValue(state.SelectedMonitor);
+		
+		SetProcess(true);
+	}
+	
+	private void HandleQueueRestoration(WizardState state)
+	{
+		switch (state.QueueRestoreChoice)
+		{
+			case QueueRestoreOption.StartFresh:
+				// Delete the saved queue file so QueueManagementService starts fresh
+				Utils.DeleteSavedQueueFile();
+				break;
+			case QueueRestoreOption.YesExceptFirst:
+				// TODO: The QueueManagementService needs to support this option
+				// For now, we'll just let it load normally and skip the first item logic
+				// would need to be handled separately
+				break;
+			case QueueRestoreOption.YesAll:
+			case QueueRestoreOption.NotSet:
+				// Queue will be loaded as-is by QueueManagementService
+				break;
+		}
+	}
+	
+	private void OnWizardCancelled()
+	{
+		Quit();
 	}
 
 	private void SetupServices()

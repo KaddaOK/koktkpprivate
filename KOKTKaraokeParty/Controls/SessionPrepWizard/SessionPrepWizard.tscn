@@ -1,0 +1,402 @@
+[gd_scene load_steps=3 format=3 uid="uid://dvsnt8nu65xl2"]
+
+[ext_resource type="Script" uid="uid://be8gy011sr1si" path="res://Controls/SessionPrepWizard/SessionPrepWizard.cs" id="1_wizard"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_karafun"]
+
+[node name="SessionPrepWizard" type="Window"]
+title = "Session Preparation"
+initial_position = 2
+size = Vector2i(700, 550)
+transient = true
+exclusive = true
+unresizable = true
+script = ExtResource("1_wizard")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepAContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepATitle" type="Label" parent="MarginContainer/VBoxContainer/StepAContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Restore Queue?"
+
+[node name="StepADescription" type="Label" parent="MarginContainer/VBoxContainer/StepAContainer"]
+layout_mode = 2
+text = "There were still songs in the queue the last time this app closed:"
+autowrap_mode = 2
+
+[node name="RestoreQueueTree" type="Tree" parent="MarginContainer/VBoxContainer/StepAContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="StepAQuestion" type="Label" parent="MarginContainer/VBoxContainer/StepAContainer"]
+layout_mode = 2
+text = "Do you want to put these songs back in the queue?"
+
+[node name="StepAButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepAContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="StartFreshButton" type="Button" parent="MarginContainer/VBoxContainer/StepAContainer/StepAButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No, start fresh"
+
+[node name="YesExceptFirstButton" type="Button" parent="MarginContainer/VBoxContainer/StepAContainer/StepAButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Yes, except the first one"
+
+[node name="YesAllButton" type="Button" parent="MarginContainer/VBoxContainer/StepAContainer/StepAButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Yes, all of them"
+
+[node name="StepBContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepBTitle" type="Label" parent="MarginContainer/VBoxContainer/StepBContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Set Display"
+
+[node name="StepBDescription" type="Label" parent="MarginContainer/VBoxContainer/StepBContainer"]
+layout_mode = 2
+text = "Choose which monitor to display karaoke lyrics, next up, and empty queue screens:"
+autowrap_mode = 2
+
+[node name="MonitorHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepBContainer"]
+layout_mode = 2
+
+[node name="MonitorLabel" type="Label" parent="MarginContainer/VBoxContainer/StepBContainer/MonitorHBox"]
+layout_mode = 2
+text = "Monitor:"
+
+[node name="MonitorSpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/StepBContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IdentifyMonitorsButton" type="Button" parent="MarginContainer/VBoxContainer/StepBContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Identify Monitors"
+
+[node name="MonitorWarningLabel" type="Label" parent="MarginContainer/VBoxContainer/StepBContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚠"
+
+[node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/StepBContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepBButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepBContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepBBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepBContainer/StepBButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepBNextButton" type="Button" parent="MarginContainer/VBoxContainer/StepBContainer/StepBButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next >"
+
+[node name="StepCContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepCTitle" type="Label" parent="MarginContainer/VBoxContainer/StepCContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Select Services"
+
+[node name="StepCDescription" type="Label" parent="MarginContainer/VBoxContainer/StepCContainer"]
+layout_mode = 2
+text = "What services do you want to use in this session?"
+autowrap_mode = 2
+
+[node name="ServicesList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/StepCContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UseLocalFilesCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Locally scanned files"
+
+[node name="LocalFilesInfoLabel" type="Label" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "No files scanned yet. Do this on the Local Files tab once the app has started."
+
+[node name="UseYouTubeCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "YouTube, curated by KaraokeNerds"
+
+[node name="UseKarafunCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Karafun Subscription"
+
+[node name="KarafunModeContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ControlledBrowserRadio" type="CheckBox" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList/KarafunModeContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+button_group = SubResource("ButtonGroup_karafun")
+text = "Using Controlled Browser"
+
+[node name="ControlledBrowserDesc" type="Label" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList/KarafunModeContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "Launches an automated Chromium to visit the Karafun Web player. This allows the song progress bar in KOKT to still work by reading the web page, and you don't have to download and install anything, but might be slower on low-powered systems or be less compatible."
+autowrap_mode = 2
+
+[node name="InstalledAppRadio" type="CheckBox" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList/KarafunModeContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_group = SubResource("ButtonGroup_karafun")
+text = "Using Installed Karafun App"
+
+[node name="InstalledAppDesc" type="Label" parent="MarginContainer/VBoxContainer/StepCContainer/ServicesList/KarafunModeContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "You must download and install and launch the Karafun app yourself. Instructions will be shown on subsequent screens. The song progress bar in KOKT will not function correctly."
+autowrap_mode = 2
+
+[node name="StepCButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepCContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepCBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepCContainer/StepCButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepCNextButton" type="Button" parent="MarginContainer/VBoxContainer/StepCContainer/StepCButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next >"
+
+[node name="StepDContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepDTitle" type="Label" parent="MarginContainer/VBoxContainer/StepDContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Prepare Session"
+
+[node name="StepDDescription" type="Label" parent="MarginContainer/VBoxContainer/StepDContainer"]
+layout_mode = 2
+text = "Checking required services..."
+autowrap_mode = 2
+
+[node name="PrepareSessionTree" type="Tree" parent="MarginContainer/VBoxContainer/StepDContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="StepDStatusLabel" type="Label" parent="MarginContainer/VBoxContainer/StepDContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="StepDButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepDContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepDBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepDContainer/StepDButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepDNextButton" type="Button" parent="MarginContainer/VBoxContainer/StepDContainer/StepDButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"
+
+[node name="StepEContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepETitle" type="Label" parent="MarginContainer/VBoxContainer/StepEContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Launch Karafun"
+
+[node name="StepEInstructionsLabel" type="Label" parent="MarginContainer/VBoxContainer/StepEContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Instructions will appear here..."
+autowrap_mode = 2
+
+[node name="LaunchKarafunWebPlayerButton" type="Button" parent="MarginContainer/VBoxContainer/StepEContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Launch Karafun Web Player"
+
+[node name="StepEButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepEContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepEBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepEContainer/StepEButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepENextButton" type="Button" parent="MarginContainer/VBoxContainer/StepEContainer/StepEButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"
+
+[node name="StepFContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepFTitle" type="Label" parent="MarginContainer/VBoxContainer/StepFContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Karafun Remote Control"
+
+[node name="StepFInstructions" type="Label" parent="MarginContainer/VBoxContainer/StepFContainer"]
+layout_mode = 2
+text = "To control Karafun from this app:
+
+1. In Karafun, click the Remote Control icon (smartphone with waves)
+2. UNCHECK \"Display QR Code on Screen\" - this would interfere with KOKT
+3. Enter the 6-digit room code shown in the dialog below:"
+autowrap_mode = 2
+
+[node name="RoomCodeHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepFContainer"]
+layout_mode = 2
+
+[node name="RoomCodeLabel" type="Label" parent="MarginContainer/VBoxContainer/StepFContainer/RoomCodeHBox"]
+layout_mode = 2
+text = "Room Code:"
+
+[node name="RoomCodeEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/StepFContainer/RoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter 6-digit room code"
+max_length = 6
+
+[node name="ConnectButton" type="Button" parent="MarginContainer/VBoxContainer/StepFContainer/RoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Connect"
+
+[node name="ConnectionStatusLabel" type="Label" parent="MarginContainer/VBoxContainer/StepFContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Not connected"
+
+[node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/StepFContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepFButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepFContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepFBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepFContainer/StepFButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepFNextButton" type="Button" parent="MarginContainer/VBoxContainer/StepFContainer/StepFButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"
+
+[node name="StepGContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StepGTitle" type="Label" parent="MarginContainer/VBoxContainer/StepGContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Position the Karafun Display"
+
+[node name="StepGInstructionsLabel" type="Label" parent="MarginContainer/VBoxContainer/StepGContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Instructions will appear here..."
+autowrap_mode = 2
+
+[node name="StepGButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/StepGContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="StepGBackButton" type="Button" parent="MarginContainer/VBoxContainer/StepGContainer/StepGButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="StepGFinishButton" type="Button" parent="MarginContainer/VBoxContainer/StepGContainer/StepGButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Finish"
+
+[node name="QuitButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Quit"

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Godot;
+using KOKTKaraokeParty.Controls.SessionPrepWizard;
 using Newtonsoft.Json;
 
 [Serializable]
@@ -18,6 +19,26 @@ public partial class Settings
     /// This is displayed in the Karafun web player and allows remote control of playback.
     /// </summary>
     public string KarafunRoomCode { get; set; }
+    
+    /// <summary>
+    /// Whether to use locally scanned files in this session
+    /// </summary>
+    public bool UseLocalFiles { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to use YouTube (KaraokeNerds) in this session
+    /// </summary>
+    public bool UseYouTube { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to use Karafun subscription in this session
+    /// </summary>
+    public bool UseKarafun { get; set; } = true;
+    
+    /// <summary>
+    /// The mode for Karafun usage: ControlledBrowser or InstalledApp
+    /// </summary>
+    public KarafunMode KarafunMode { get; set; } = KarafunMode.ControlledBrowser;
 
     private static string settingsFileName = Path.Combine(Utils.GetAppStoragePath(), "settings.json");
 

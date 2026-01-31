@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=19 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://c33s6qbvch6a6" path="res://Web/YtDlpProviderNode.cs" id="10_tw3kd"]
 [ext_resource type="Script" uid="uid://b07mmue8aipie" path="res://Services/MonitorIdentificationManager.cs" id="11_gd4vy"]
 [ext_resource type="Script" uid="uid://bqmuakvidv2f5" path="res://Web/KarafunRemoteProviderNode.cs" id="12_karafun"]
+[ext_resource type="PackedScene" uid="uid://dvsnt8nu65xl2" path="res://Controls/SessionPrepWizard/SessionPrepWizard.tscn" id="13_wizard"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
@@ -195,6 +196,7 @@ unique_name_in_owner = true
 title = "Prepare Session"
 initial_position = 2
 size = Vector2i(850, 650)
+visible = false
 transient = true
 exclusive = true
 unresizable = true
@@ -389,3 +391,6 @@ script = ExtResource("11_gd4vy")
 [node name="KarafunRemoteProvider" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("12_karafun")
+
+[node name="SessionPrepWizard" parent="." instance=ExtResource("13_wizard")]
+unique_name_in_owner = true
