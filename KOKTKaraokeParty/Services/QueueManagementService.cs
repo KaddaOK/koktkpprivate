@@ -76,6 +76,34 @@ public partial class QueueManagementService : Node
         SaveQueueToDisk();
     }
 
+    /// <summary>
+    /// Clears all items from the queue and deletes the saved queue file.
+    /// </summary>
+    public void ClearQueue()
+    {
+        _queue.Clear();
+        _nowPlaying = null;
+        Utils.DeleteSavedQueueFile();
+        QueueLoaded?.Invoke(); // Trigger UI refresh
+    }
+
+    /// <summary>
+    /// Removes the first item from the queue (useful for "Yes, except first" restore option).
+    /// </summary>
+    /// <returns>The removed item, or null if the queue was empty.</returns>
+    public QueueItem RemoveFirstItem()
+    {
+        if (_queue.Count == 0)
+        {
+            return null;
+        }
+        
+        var firstItem = _queue.Dequeue();
+        ItemRemoved?.Invoke(firstItem);
+        SaveQueueToDisk();
+        return firstItem;
+    }
+
     public void ReorderQueue(QueueItem draggedItem, QueueItem targetItem, int dropSection)
     {
         var withoutMovedItem = _queue.Where(q => q != draggedItem).ToList();

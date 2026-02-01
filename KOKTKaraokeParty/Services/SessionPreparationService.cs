@@ -249,7 +249,7 @@ public partial class SessionPreparationService : Node
         return "⚠";
     }
 
-    public bool IsYouTubeUsable(PrepareSessionModel model)
+    public virtual bool IsYouTubeUsable(PrepareSessionModel model)
     {
         // YouTube is usable if we can download via yt-dlp and play with VLC
         // OR if we can stream via browser
@@ -261,7 +261,7 @@ public partial class SessionPreparationService : Node
         return canDownloadAndPlay || canStreamViaBrowser;
     }
 
-    public bool IsKarafunUsable(PrepareSessionModel model)
+    public virtual bool IsKarafunUsable(PrepareSessionModel model)
     {
         // Karafun is usable if:
         // 1. Browser automation approach works (logged in with active subscription), OR
@@ -273,7 +273,7 @@ public partial class SessionPreparationService : Node
         return browserAutomationWorks || remoteControlConnected;
     }
 
-    public bool IsLocalFilesUsable(PrepareSessionModel model)
+    public virtual bool IsLocalFilesUsable(PrepareSessionModel model)
     {
         return model.VLCStatus == VLCStatus.Ready;
     }

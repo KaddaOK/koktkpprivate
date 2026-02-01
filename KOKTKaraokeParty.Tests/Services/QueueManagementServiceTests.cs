@@ -336,4 +336,197 @@ public class QueueManagementServiceTests(Node testScene) : TestClass(testScene)
         pausedStates.Count.ShouldBe(2);
         pausedStates[1].ShouldBeFalse();
     }
+
+    #region ClearQueue Tests
+
+    [Test]
+    public void ClearQueue_RemovesAllItems_AndFiresQueueLoadedEvent()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com");
+        var item2 = CreateTestItem("http://test2.com");
+        var item3 = CreateTestItem("http://test3.com");
+        
+        _service.AddToQueue(item1);
+        _service.AddToQueue(item2);
+        _service.AddToQueue(item3);
+
+        bool queueLoadedFired = false;
+        _service.QueueLoaded += () => queueLoadedFired = true;
+
+        // Act
+        _service.ClearQueue();
+
+        // Assert
+        _service.QueueCount.ShouldBe(0);
+        _service.NowPlaying.ShouldBeNull();
+        queueLoadedFired.ShouldBeTrue();
+    }
+
+    [Test]
+    public void ClearQueue_ClearsNowPlaying_WhenItemIsPlaying()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com");
+        var item2 = CreateTestItem("http://test2.com");
+        
+        _service.AddToQueue(item1);
+        _service.AddToQueue(item2);
+        _service.GetNextInQueue(); // Sets item1 as NowPlaying
+
+        _service.NowPlaying.ShouldNotBeNull();
+
+        // Act
+        _service.ClearQueue();
+
+        // Assert
+        _service.QueueCount.ShouldBe(0);
+        _service.NowPlaying.ShouldBeNull();
+    }
+
+    [Test]
+    public void ClearQueue_WorksOnEmptyQueue()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        bool queueLoadedFired = false;
+        _service.QueueLoaded += () => queueLoadedFired = true;
+
+        // Act
+        _service.ClearQueue();
+
+        // Assert
+        _service.QueueCount.ShouldBe(0);
+        queueLoadedFired.ShouldBeTrue();
+    }
+
+    #endregion
+
+    #region RemoveFirstItem Tests
+
+    [Test]
+    public void RemoveFirstItem_RemovesAndReturnsFirstItem()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com", "Singer 1");
+        var item2 = CreateTestItem("http://test2.com", "Singer 2");
+        var item3 = CreateTestItem("http://test3.com", "Singer 3");
+        
+        _service.AddToQueue(item1);
+        _service.AddToQueue(item2);
+        _service.AddToQueue(item3);
+
+        // Act
+        var removedItem = _service.RemoveFirstItem();
+
+        // Assert
+        removedItem.ShouldNotBeNull();
+        removedItem!.SingerName.ShouldBe("Singer 1");
+        _service.QueueCount.ShouldBe(2);
+        
+        var remainingItems = _service.GetQueueItems().ToList();
+        remainingItems[0].SingerName.ShouldBe("Singer 2");
+        remainingItems[1].SingerName.ShouldBe("Singer 3");
+    }
+
+    [Test]
+    public void RemoveFirstItem_FiresItemRemovedEvent()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com", "Singer 1");
+        var item2 = CreateTestItem("http://test2.com", "Singer 2");
+        
+        _service.AddToQueue(item1);
+        _service.AddToQueue(item2);
+
+        QueueItem? removedItem = null;
+        _service.ItemRemoved += (item) => removedItem = item;
+
+        // Act
+        _service.RemoveFirstItem();
+
+        // Assert
+        removedItem.ShouldNotBeNull();
+        removedItem!.SingerName.ShouldBe("Singer 1");
+    }
+
+    [Test]
+    public void RemoveFirstItem_ReturnsNull_WhenQueueIsEmpty()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        // Act
+        var removedItem = _service.RemoveFirstItem();
+
+        // Assert
+        removedItem.ShouldBeNull();
+    }
+
+    [Test]
+    public void RemoveFirstItem_DoesNotAffectNowPlaying()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com", "Singer 1");
+        var item2 = CreateTestItem("http://test2.com", "Singer 2");
+        var item3 = CreateTestItem("http://test3.com", "Singer 3");
+        
+        _service.AddToQueue(item1);
+        _service.AddToQueue(item2);
+        _service.AddToQueue(item3);
+        
+        // Set item1 as NowPlaying (removes it from queue)
+        _service.GetNextInQueue();
+        
+        // Now queue has [item2, item3] and NowPlaying is item1
+
+        // Act
+        var removedItem = _service.RemoveFirstItem();
+
+        // Assert
+        removedItem.ShouldNotBeNull();
+        removedItem!.SingerName.ShouldBe("Singer 2"); // First in queue, not NowPlaying
+        _service.NowPlaying.ShouldNotBeNull();
+        _service.NowPlaying!.SingerName.ShouldBe("Singer 1"); // Still playing
+        _service.QueueCount.ShouldBe(1); // Only item3 remains
+    }
+
+    [Test]
+    public void RemoveFirstItem_LeavesQueueEmpty_WhenOnlyOneItem()
+    {
+        // Arrange
+        _mockFileWrapper.Setup(f => f.Exists(It.IsAny<string>())).Returns(false);
+        _service.Initialize(_mockFileWrapper.Object, _mockYtDlpProvider.Object);
+
+        var item1 = CreateTestItem("http://test1.com", "Singer 1");
+        _service.AddToQueue(item1);
+
+        // Act
+        var removedItem = _service.RemoveFirstItem();
+
+        // Assert
+        removedItem.ShouldNotBeNull();
+        removedItem!.SingerName.ShouldBe("Singer 1");
+        _service.QueueCount.ShouldBe(0);
+    }
+
+    #endregion
 }

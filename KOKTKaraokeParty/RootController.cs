@@ -191,13 +191,14 @@ IProvide<IDisplayScreen>
 		switch (state.QueueRestoreChoice)
 		{
 			case QueueRestoreOption.StartFresh:
-				// Delete the saved queue file so QueueManagementService starts fresh
-				Utils.DeleteSavedQueueFile();
+				// Clear the queue that was already loaded and delete the save file
+				_queueManagement.ClearQueue();
+				RefreshQueueTree();
 				break;
 			case QueueRestoreOption.YesExceptFirst:
-				// TODO: The QueueManagementService needs to support this option
-				// For now, we'll just let it load normally and skip the first item logic
-				// would need to be handled separately
+				// Remove the first item (presumably what was playing when the app closed)
+				_queueManagement.RemoveFirstItem();
+				RefreshQueueTree();
 				break;
 			case QueueRestoreOption.YesAll:
 			case QueueRestoreOption.NotSet:
