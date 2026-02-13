@@ -12,6 +12,7 @@ using Godot;
 public interface ISearchTab : IMarginContainer
 {
     void ExternalFileShowAddDialog(QueueItem item);
+    void ConfigureAvailableServices(bool localFilesAvailable, bool youTubeAvailable, bool karafunAvailable);
     event SearchTab.ItemAddedToQueueEventHandler ItemAddedToQueue;
 }
 
@@ -20,7 +21,13 @@ public partial class SearchTab : MarginContainer, ISearchTab
 {
     public override void _Notification(int what) => this.Notify(what);
 
-    private List<KarafunSearchScrapeResultItem> KarafunResults;
+    #region Dependencies
+    
+    [Dependency] private Settings Settings => this.DependOn<Settings>();
+    
+    #endregion
+
+    private List<KarafunApiSong> KarafunApiResults;
     private List<KNSearchResultItem> KNResults;
     private List<LocalSongFileEntry> LocalFilesResults;
     private bool isStreamingKfnResults = false;
@@ -35,11 +42,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
 
     private CancellationTokenSource SearchCancellationSource = new CancellationTokenSource();
 
-    /*
-    private ILocalFileScanner _localFileScanner = new LocalFileScanner(); // TODO: this doesn't belong here
-    private ILocalFileValidator _localFileValidator = new LocalFileValidator(); // TODO: this doesn't belong here
-    private List<string> LocalFilesResults = new List<string>(); // TODO: this doesn't belong here
-    */
     private ILocalSearcher _localSearcher = new LocalSearcher(); // TODO: inject properly
 
 
@@ -59,6 +61,13 @@ public partial class SearchTab : MarginContainer, ISearchTab
     [Node] private ILoadableLabel QueueAddSongNameLabel { get; set; } = default!;
     [Node] private ILoadableLabel QueueAddArtistNameLabel { get; set; } = default!;
     [Node] private Label QueueAddCreatorNameLabel { get; set; } = default!;
+    [Node] private ICheckBox SearchKarafunCheckBox { get; set; } = default!;
+    [Node] private ICheckBox SearchKaraokeNerdsCheckBox { get; set; } = default!;
+    [Node] private ICheckBox SearchLocalFilesCheckBox { get; set; } = default!;
+    [Node] private IVBoxContainer KarafunResultsVBox { get; set; } = default!;
+    [Node] private IVBoxContainer KaraokeNerdsResultsVBox { get; set; } = default!;
+    [Node] private IVBoxContainer LocalResultsPane { get; set; } = default!;
+    [Node] private IHSplitContainer WebResultsHSplitContainer { get; set; } = default!;
 
     #endregion
 
@@ -84,11 +93,43 @@ public partial class SearchTab : MarginContainer, ISearchTab
         AddToQueueDialog.Confirmed += AddToQueueDialogConfirmed;
         AddToQueueDialog.Canceled += CloseAddToQueueDialog;
 
+        // Connect checkbox events to control visibility
+        SearchKarafunCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+        SearchKaraokeNerdsCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+        SearchLocalFilesCheckBox.Toggled += (_) => UpdateResultPaneVisibility();
+
+        // Initial visibility update
+        UpdateResultPaneVisibility();
+
         KfnResultCount.SetLoaded(true, "");
         KNResultCount.SetLoaded(true, "");
         LocalFilesResultCount.SetLoaded(true, "");
     }
 
+
+    private void UpdateResultPaneVisibility()
+    {
+        KarafunResultsVBox.Visible = SearchKarafunCheckBox.ButtonPressed;
+        KaraokeNerdsResultsVBox.Visible = SearchKaraokeNerdsCheckBox.ButtonPressed;
+        LocalResultsPane.Visible = SearchLocalFilesCheckBox.ButtonPressed;
+        
+        // Hide the WebResultsHSplitContainer entirely if both its children are hidden
+        WebResultsHSplitContainer.Visible = SearchKarafunCheckBox.ButtonPressed || SearchKaraokeNerdsCheckBox.ButtonPressed;
+    }
+
+    public void ConfigureAvailableServices(bool localFilesAvailable, bool youTubeAvailable, bool karafunAvailable)
+    {
+        SearchLocalFilesCheckBox.ButtonPressed = localFilesAvailable;
+        SearchLocalFilesCheckBox.Disabled = !localFilesAvailable;
+        
+        SearchKaraokeNerdsCheckBox.ButtonPressed = youTubeAvailable;
+        SearchKaraokeNerdsCheckBox.Disabled = !youTubeAvailable;
+        
+        SearchKarafunCheckBox.ButtonPressed = karafunAvailable;
+        SearchKarafunCheckBox.Disabled = !karafunAvailable;
+        
+        UpdateResultPaneVisibility();
+    }
 
     private void ClearSearch()
     {
@@ -219,26 +260,29 @@ public partial class SearchTab : MarginContainer, ISearchTab
         SearchCancellationSource = new CancellationTokenSource();
         await ToggleIsSearching(true);
 
-        var searchKaraokenerds = true; // TODO: Implement a setting to enable/disable searching Karaokenerds?
-        var searchKarafun = true; // TODO: Implement a setting to enable/disable searching Karafun?
-        var searchLocalFiles = true; // TODO: Implement a setting to enable/disable searching local files?
+        var searchKaraokenerds = SearchKaraokeNerdsCheckBox.ButtonPressed;
+        var searchKarafun = SearchKarafunCheckBox.ButtonPressed;
+        var searchLocalFiles = SearchLocalFilesCheckBox.ButtonPressed;
+
+        KNResultsTree.Clear();
+        KfnResultsTree.Clear();
+        LocalFilesResultsTree.Clear();
 
         var searchTasks = new List<Task>();
         if (searchKaraokenerds)
         {
-            KNResultsTree.Clear();
+
             _knRoot = KNResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             searchTasks.Add(GetResultsFromKaraokenerds(query));
         }
         if (searchKarafun)
         {
-            KfnResultsTree.Clear();
+
             _kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             searchTasks.Add(StreamResultsFromKarafun(query, SearchCancellationSource.Token));
         }
-        if (searchLocalFiles) // TODO: doing this broke everything
+        if (searchLocalFiles)
         {
-            LocalFilesResultsTree.Clear();
             _localFilesRoot = LocalFilesResultsTree.CreateItem(); // Recreate the root item after clearing the tree
             await SearchLocalFiles(query, SearchCancellationSource.Token);
         }
@@ -261,36 +305,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
         await ToSignal(GetTree(), "process_frame");
     }
 
-/*
-    private async void StreamResultsFromLocalFiles(string query, CancellationToken cancellationToken)
-    {
-        GD.Print($"Searching local files for: {query}");
-        LocalFilesResultCount.SetLoaded(false);
-        LocalFilesResults = new List<string>();
-        var searchTerms = query.Split(' ');
-        int i = 0;
-        await foreach (var result in _localFileScanner.FindAllFilesAsync(@"\\SCORPIO\karaoke2" // TODO: fix this hardcoded path!
-        , cancellationToken))
-        {
-            if (searchTerms.All(term => result.IndexOf(term, StringComparison.OrdinalIgnoreCase) != -1)
-                // && _localFileValidator.IsValid(result).isValid //TODO: can't do this for performance reasons
-                )
-            {
-                LocalFilesResults.Add(result);
-                i++;
-                if (i % 5 == 0)
-                {
-                    //await UpdateLocalFilesResultsTree();
-                }
-            }
-            if (cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-        }
-        LocalFilesResultCount.SetLoaded(true, $"{LocalFilesResults.Count()}");
-        await UpdateLocalFilesResultsTree();
-    }*/
     private async Task SearchLocalFiles(string query, CancellationToken cancellationToken)
     {
         GD.Print($"Searching local files for: {query}");
@@ -307,49 +321,27 @@ public partial class SearchTab : MarginContainer, ISearchTab
         GD.Print($"Searching Karafun for: {query}");
         KfnResultCount.SetLoaded(false);
         isStreamingKfnResults = true;
-        var mayHaveMore = false;
-        var pageResults = new List<KarafunSearchScrapeResultItem>();
-        var artistResults = new Dictionary<string, List<KarafunSearchScrapeResultItem>>();
-        KarafunResults = new List<KarafunSearchScrapeResultItem>();
-        await foreach (var result in KarafunSearchScrape.Search(query, cancellationToken))
+        KarafunApiResults = new List<KarafunApiSong>();
+        
+        var roomCode = Settings?.KarafunRoomCode;
+        if (string.IsNullOrWhiteSpace(roomCode) || roomCode.Length != 6)
         {
-            GD.Print($"Received {result.Results.Count} results from Karafun");
-            if (result.MayHaveMore)
-            {
-                mayHaveMore = true;
-            }
-            if (result.PartOfArtistSet != null)
-            {
-                if (artistResults.ContainsKey(result.PartOfArtistSet))
-                {
-                    artistResults[result.PartOfArtistSet].AddRange(result.Results);
-                }
-                else
-                {
-                    artistResults.Add(result.PartOfArtistSet, result.Results);
-                }
-            }
-            else
-            {
-                pageResults.AddRange(result.Results);
-            }
-
-            KarafunResults = new List<KarafunSearchScrapeResultItem>(pageResults);
-            foreach (var artist in artistResults)
-            {
-                // Find the index of the Artist item and replace it with the new results
-                int artistIndex = KarafunResults.FindIndex(a => a.ResultType == KarafunSearchScrapeResultItemType.Artist && a.ArtistLink == artist.Key);
-                if (artistIndex != -1)
-                {
-                    KarafunResults.RemoveAt(artistIndex);
-                    KarafunResults.InsertRange(artistIndex, artist.Value);
-                }
-            }
-            KarafunResults = KarafunResults
-                .Where(r => r.ResultType != KarafunSearchScrapeResultItemType.Artist)
-                .DistinctBy(r => r.SongInfoLink)
-                .OrderBy(item => item.ResultType == KarafunSearchScrapeResultItemType.UnlicensedSong ? 1 : 0)
-                .ThenBy(item => KarafunResults.IndexOf(item)) // Preserve the original relative order
+            GD.Print("No valid Karafun room code available - Karafun search requires a connected room");
+            KfnResultCount.SetLoaded(true, "0 (no room code)");
+            isStreamingKfnResults = false;
+            return;
+        }
+        
+        await foreach (var result in KarafunApiSearch.Search(roomCode, query, cancellationToken))
+        {
+            if (result?.Songs == null) continue;
+            
+            GD.Print($"Received {result.Songs.Count} results from Karafun API");
+            KarafunApiResults.AddRange(result.Songs);
+            
+            // Deduplicate by song ID
+            KarafunApiResults = KarafunApiResults
+                .DistinctBy(s => s.SongId)
                 .ToList();
 
             await UpdateKarafunResultsTree();
@@ -360,7 +352,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
             }
         }
         isStreamingKfnResults = false;
-        KfnResultCount.SetLoaded(true, $"{KarafunResults.Count}");//{(mayHaveMore ? "*" : "")}");
+        KfnResultCount.SetLoaded(true, $"{KarafunApiResults.Count}");
     }
 
     private async Task UpdateKarafunResultsTree()
@@ -373,12 +365,10 @@ public partial class SearchTab : MarginContainer, ISearchTab
             selectedItems.Add(selectedItem.GetMetadata(0).ToString()); // Use metadata to track selections
         }
 
-        //GD.Print($"Updating karafun tree with {KarafunResults.Count} results");
-
         //actually probably fine to just clear and re-add everything
         KfnResultsTree.Clear();
         _kfnRoot = KfnResultsTree.CreateItem(); // Recreate the root item after clearing the tree
-        foreach (var result in KarafunResults)
+        foreach (var result in KarafunApiResults)
         {
             AddKarafunResultsRow(result);
         }
@@ -442,7 +432,7 @@ public partial class SearchTab : MarginContainer, ISearchTab
         return null;
     }
 
-    private void AddKarafunResultsRow(KarafunSearchScrapeResultItem item)
+    private void AddKarafunResultsRow(KarafunApiSong song)
     {
         if (_kfnRoot == null)
         {
@@ -450,9 +440,10 @@ public partial class SearchTab : MarginContainer, ISearchTab
             _kfnRoot = KfnResultsTree.CreateItem();
         }
         var treeItem = KfnResultsTree.CreateItem(_kfnRoot);
-        treeItem.SetText(0, item.SongName);
-        treeItem.SetText(1, item.ArtistName);
-        treeItem.SetMetadata(0, item.SongInfoLink);
+        treeItem.SetText(0, song.Title);
+        treeItem.SetText(1, song.Artist);
+        // Store song ID as metadata for use when adding to queue
+        treeItem.SetMetadata(0, song.SongId.ToString());
     }
 
     private void AddKNResultsRow(KNSearchResultItem item)
@@ -468,18 +459,6 @@ public partial class SearchTab : MarginContainer, ISearchTab
         treeItem.SetText(2, item.CreatorBrandName);
         treeItem.SetMetadata(0, item.YoutubeLink);
     }
-
-    /*private void AddLocalFilesResultsRow(string path) // TODO: this doesn't belong here 
-    {
-        if (_localFilesRoot == null)
-        {
-            GD.Print("Local files root item is disposed, recreating it.");
-            _localFilesRoot = LocalFilesResultsTree.CreateItem();
-        }
-        var treeItem = LocalFilesResultsTree.CreateItem(_kfnRoot);
-        treeItem.SetText(0, Path.GetFileNameWithoutExtension(path));
-        treeItem.SetMetadata(0, path);
-    }*/
 
     private void AddLocalFilesResultsRow(LocalSongFileEntry entry)
     {
@@ -519,40 +498,50 @@ public partial class SearchTab : MarginContainer, ISearchTab
         DisableOrEnableAddToQueueOkButton();
     }
 
-    private async void OnKfnItemDoubleClicked()
+    private void OnKfnItemDoubleClicked()
     {
         TreeItem selectedItem = KfnResultsTree.GetSelected();
         if (selectedItem != null)
         {
             string songName = selectedItem.GetText(0);
             string artistName = selectedItem.GetText(1);
-            GD.Print($"Double-clicked: {songName} by {artistName}");
-            string songInfoLink = selectedItem.GetMetadata(0).ToString();
+            string songId = selectedItem.GetMetadata(0).ToString();
+            
+            GD.Print($"Double-clicked Karafun: {songName} by {artistName} (ID: {songId})");
 
-            SetResolvingPerformLink(true);
-            Input.SetDefaultCursorShape(Input.CursorShape.Busy);
-            ShowAddToQueueDialog("Karafun (loading perform link...)", false);
-            await ToSignal(GetTree(), "process_frame");
-
-            GD.Print($"Getting perform link for {songInfoLink}");
-            var performLink = await KarafunSearchScrape.GetDirectPerformanceLinkForSong(songInfoLink);
-            GD.Print($"Perform link: {performLink}");
-
+            // With the API, we have the song ID directly - no need to resolve a perform link
             itemBeingAdded = new QueueItem
             {
                 SongName = songName,
                 ArtistName = artistName,
                 CreatorName = "Karafun",
-                SongInfoLink = songInfoLink,
-                PerformanceLink = performLink,
-                ItemType = ItemType.KarafunWeb
+                Identifier = songId,
+                // Generate a performance link for fallback/browser mode if needed
+                PerformanceLink = $"https://www.karafun.com/karaoke/{songId}/",
+                ItemType = ItemType.KarafunRemote
             };
 
-            SetResolvingPerformLink(false);
-            Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-            DisableOrEnableAddToQueueOkButton();
-            SetAddToQueueBoxText("Karafun Web", true, songName, artistName);
+            ShowAddToQueueDialog("Karafun", true, songName, artistName);
         }
+    }
+
+    private string CleanYoutubeLink(string url)
+    {
+        // Check if the URL is valid (it must be `?v=`)
+		if (string.IsNullOrWhiteSpace(url) || !url.Contains("?v="))
+		{
+			GD.PrintErr($"Not a youtube '?v=' URL: {url}");
+			return url; // TODO: this would not be helpful. We should just return null or throw
+		}        
+
+		// and we should cut off any additional query params because they can be playlists and other disruptive things
+		int ampIndex = url.IndexOf("&");
+		if (ampIndex != -1)
+		{
+			GD.PushWarning($"Removed additional queryparams from youtube URL '{url}'");
+			url = url.Substring(0, ampIndex);
+		}
+		return url;
     }
 
     private void OnKNItemDoubleClicked()
@@ -563,9 +552,8 @@ public partial class SearchTab : MarginContainer, ISearchTab
             string songName = selectedItem.GetText(0);
             string artistName = selectedItem.GetText(1);
             string creatorName = selectedItem.GetText(2);
-            string youtubeLink = selectedItem.GetMetadata(0).ToString();
+            string youtubeLink = CleanYoutubeLink(selectedItem.GetMetadata(0).ToString());
             GD.Print($"Double-clicked: {songName} by {artistName} ({creatorName}), {youtubeLink}");
-
             itemBeingAdded = new QueueItem
             {
                 SongName = songName,

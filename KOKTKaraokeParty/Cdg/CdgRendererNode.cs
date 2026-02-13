@@ -55,8 +55,6 @@ public partial class CdgRendererNode : TextureRect, ICdgRendererNode
     #endregion
 
     #region Signals
-
-    //[Signal] public delegate void PlaybackFinishedEventHandler(string wasPlaying);
     public event PlaybackFinishedEventHandler PlaybackFinished;
     public event PlaybackProgressEventHandler PlaybackProgress;
     public event PlaybackDurationChangedEventHandler PlaybackDurationChanged;

@@ -1,6 +1,11 @@
 [gd_scene format=3 uid="uid://bj51n7hh48ikh"]
 
 [node name="Setup" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 metadata/_tab_index = 0
 
 [node name="StartTabVBox" type="VBoxContainer" parent="."]
@@ -8,15 +13,28 @@ layout_mode = 2
 theme_override_constants/separation = 30
 
 [node name="Label" type="Label" parent="StartTabVBox"]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Set up the app in this tab, and when you're satisfied, switch to the \"Search\" tab to start singing!"
 
 [node name="GridContainer" type="GridContainer" parent="StartTabVBox"]
+visible = false
 layout_mode = 2
 theme_override_constants/h_separation = 9
 theme_override_constants/v_separation = 13
 columns = 2
+
+[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Google blocks login from automated browsers, so if  you want to use YouTube Premium to avoid being interrupted by ads, click this button to sign in.  
+You might as well use it to log into Karafun web as well. 
+Once you've done those things once, they should be remembered in the automated browser for a long while.  
+Note: be sure to CLOSE it when you're finished logging into things, or the app will probably not be able to launch the automated one successfully!"
+horizontal_alignment = 2
+autowrap_mode = 2
 
 [node name="LaunchUnautomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
 unique_name_in_owner = true
@@ -26,60 +44,65 @@ size_flags_vertical = 0
 text = "Launch Browser 
 Unautomated"
 
-[node name="LaunchUnautomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
-text = "<-- Google blocks login from automated browsers, so if  you want to use YouTube Premium to avoid being interrupted by ads, click here to sign in.  You might as well use it to log into Karafun web as well. 
-Once you've done those things once, they should be remembered in the automated browser for a long while.  
-Note: be sure to CLOSE it when you're finished logging into things, or the app will probably not be able to launch the automated one successfully!"
-autowrap_mode = 2
-
-[node name="LaunchAutomatedButton" type="Button" parent="StartTabVBox/GridContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 0
-text = "Launch Browser 
-Automated"
-
-[node name="LaunchAutomatedExplanation" type="Label" parent="StartTabVBox/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
-text = "<-- This launches the browser the same way that starting a song in this app does, so if you need to, you can use it to place the browser on the correct monitor ahead of time. 
-(This is generally remembered between sessions too though, so you may only need it once or never at all.)"
-autowrap_mode = 2
-
 [node name="DisplayScreenMonitorSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
+size_flags_horizontal = 8
+alignment = 2
 
 [node name="Monitor Explanation" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
-text = "Set monitor to show the \"next up\" / \"empty queue\" display screen: "
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "Set which monitor to display karaoke lyrics, next up and empty queue screens: "
+horizontal_alignment = 2
 
-[node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
+[node name="MonitorWarningLabel" type="Label" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 6
 size_flags_vertical = 0
-
-[node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-text = "Apply"
-
-[node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-text = "Hide"
+tooltip_text = "The "
+mouse_filter = 1
+theme_override_font_sizes/font_size = 20
+text = "⚠"
+horizontal_alignment = 2
 
 [node name="GridContainer" type="GridContainer" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox"]
 layout_mode = 2
+columns = 2
+
+[node name="MonitorSpinbox" type="SpinBox" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="ApplyMonitorButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Save the selected screen setting and immediately move the Display Screen window."
+text = "Apply"
+
+[node name="IdentifyMonitorsButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+tooltip_text = "Flash the number in the corner of each display so you can see which is which"
+text = "Identify
+"
+
+[node name="HideDisplayScreenButton" type="Button" parent="StartTabVBox/DisplayScreenMonitorSettingsHbox/GridContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Temporarily dismiss the Display Screen window.  
+(Don't click this while someone is singing!)"
+text = "Hide"
 
 [node name="WaitSettingsHbox" type="HBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
+alignment = 2
 
 [node name="Wait between songs" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
 layout_mode = 2
@@ -92,6 +115,57 @@ layout_mode = 2
 [node name="Label" type="Label" parent="StartTabVBox/WaitSettingsHbox"]
 layout_mode = 2
 text = "seconds"
+
+[node name="YtDlpUpdateHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+alignment = 2
+
+[node name="UpdateExplanation" type="Label" parent="StartTabVBox/YtDlpUpdateHbox"]
+layout_mode = 2
+text = "Update YouTube downloader (yt-dlp) and runtime (deno): "
+
+[node name="UpdateYtDlpButton" type="Button" parent="StartTabVBox/YtDlpUpdateHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Download the latest versions of yt-dlp and deno from GitHub"
+text = "Check for Updates"
+
+[node name="KarafunRemoteHbox" type="HBoxContainer" parent="StartTabVBox"]
+layout_mode = 2
+alignment = 2
+
+[node name="KarafunRemoteExplanation" type="Label" parent="StartTabVBox/KarafunRemoteHbox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Karafun Remote Control - enter the 6-digit code from your Karafun player:"
+horizontal_alignment = 2
+
+[node name="KarafunRoomCodeLineEdit" type="LineEdit" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+tooltip_text = "Enter the 6-digit room code shown in your Karafun web player"
+placeholder_text = "123456"
+max_length = 6
+alignment = 1
+
+[node name="KarafunConnectButton" type="Button" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Connect to the Karafun remote control using this room code"
+text = "Connect"
+
+[node name="KarafunStatusLabel" type="Label" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Current Karafun remote control connection status"
+text = "⬛"
+
+[node name="LaunchKarafunWebButton" type="Button" parent="StartTabVBox/KarafunRemoteHbox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Launch the Karafun web player in a browser to get the room code"
+text = "Launch Web Player"
 
 [node name="BackgroundMusicVBox" type="VBoxContainer" parent="StartTabVBox"]
 layout_mode = 2
@@ -149,3 +223,25 @@ file_mode = 1
 access = 2
 filters = PackedStringArray("*.ogg; OGG files", "*.mp3 ; MP3 files", "*.flac; FLAC files", "*.wav; WAV files")
 use_native_dialog = true
+
+[node name="UpdateYtDlpDialog" type="AcceptDialog" parent="."]
+unique_name_in_owner = true
+title = "Update yt-dlp and deno"
+initial_position = 2
+size = Vector2i(500, 200)
+
+[node name="UpdateDialogVBox" type="VBoxContainer" parent="UpdateYtDlpDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 492.0
+offset_bottom = 151.0
+
+[node name="YtDlpStatusLabel" type="Label" parent="UpdateYtDlpDialog/UpdateDialogVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "yt-dlp: Checking version..."
+
+[node name="DenoStatusLabel" type="Label" parent="UpdateYtDlpDialog/UpdateDialogVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "deno: Checking version..."

@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://carwq23qmjl1g"]
+[gd_scene load_steps=19 format=3 uid="uid://carwq23qmjl1g"]
 
 [ext_resource type="Theme" uid="uid://ciyu88fdbdbqc" path="res://margin.tres" id="1_62q84"]
 [ext_resource type="Script" uid="uid://cw7x2rmga8rd1" path="res://RootController.cs" id="1_fuv7c"]
@@ -9,11 +9,27 @@
 [ext_resource type="Script" uid="uid://tbuij48j50ca" path="res://Controls/SetupTab.cs" id="5_mkmvn"]
 [ext_resource type="PackedScene" uid="uid://d3x1a61anrsna" path="res://Controls/LocalFiles.tscn" id="7_o1jyo"]
 [ext_resource type="Script" uid="uid://doqv2f6ufhvg8" path="res://Web/BrowserProviderNode.cs" id="9_fqu17"]
+[ext_resource type="Script" uid="uid://c33s6qbvch6a6" path="res://Web/YtDlpProviderNode.cs" id="10_tw3kd"]
+[ext_resource type="Script" uid="uid://b07mmue8aipie" path="res://Services/MonitorIdentificationManager.cs" id="11_gd4vy"]
+[ext_resource type="Script" uid="uid://bqmuakvidv2f5" path="res://Web/KarafunRemoteProviderNode.cs" id="12_karafun"]
+[ext_resource type="PackedScene" uid="uid://dvsnt8nu65xl2" path="res://Controls/SessionPrepWizard/SessionPrepWizard.tscn" id="13_wizard"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_et6fv"]
 bg_color = Color(0.347817, 0.347817, 0.347817, 1)
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_huihk"]
+bg_color = Color(0.438071, 0.266046, 0.366008, 0.756863)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_huihk"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tw3kd"]
+
+[sub_resource type="Theme" id="Theme_tw3kd"]
+Label/styles/normal = SubResource("StyleBoxFlat_huihk")
+Window/styles/embedded_border = SubResource("StyleBoxEmpty_huihk")
+Window/styles/embedded_unfocused_border = SubResource("StyleBoxEmpty_tw3kd")
 
 [node name="RootController" type="Node"]
 script = ExtResource("1_fuv7c")
@@ -22,6 +38,7 @@ script = ExtResource("1_fuv7c")
 unique_name_in_owner = true
 
 [node name="Main GUI" type="Control" parent="."]
+custom_minimum_size = Vector2(1000, 700)
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -119,7 +136,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="LeftPane" type="VBoxContainer" parent="Main GUI/Main Margin/VBoxContainer/HSplitContainer"]
-custom_minimum_size = Vector2(350, 0)
+custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 
 [node name="QueueLabel" type="Label" parent="Main GUI/Main Margin/VBoxContainer/HSplitContainer/LeftPane"]
@@ -174,34 +191,186 @@ unique_name_in_owner = true
 title = "Message"
 initial_position = 2
 
-[node name="PrepareSessionDialog" type="ConfirmationDialog" parent="Main GUI"]
+[node name="PrepareSessionDialog" type="Window" parent="Main GUI"]
 unique_name_in_owner = true
 title = "Prepare Session"
 initial_position = 2
-size = Vector2i(800, 600)
-visible = true
+size = Vector2i(850, 650)
+visible = false
+transient = true
+exclusive = true
+unresizable = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog"]
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 792.0
-offset_bottom = 551.0
+[node name="MarginContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 23
 
-[node name="GeneratePluginCacheButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer"]
+layout_mode = 2
+
+[node name="GeneratePluginCacheButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Generate VLC Plugin Cache (first-run)"
 
-[node name="RunChecksButton" type="Button" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+[node name="RunChecksButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Run Checks"
 
-[node name="RunChecksResultLabel" type="Label" parent="Main GUI/PrepareSessionDialog/VBoxContainer"]
+[node name="RunChecksResultLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SessionPreparationTree" type="Tree" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+hide_folding = true
+hide_root = true
+
+[node name="KarafunWebPlayerContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer"]
+layout_mode = 2
+
+[node name="LaunchKarafunWebPlayerButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Launch Karafun Web Player"
+
+[node name="KarafunRoomCodeHBox" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="KarafunRoomCodeLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+layout_mode = 2
+text = "Room Code:"
+
+[node name="KarafunRoomCodeEdit" type="LineEdit" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter 4-digit room code from Karafun web player"
+
+[node name="ConnectKarafunRemoteButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer/KarafunRoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Connect"
+
+[node name="KarafunRemoteStatusLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/KarafunWebPlayerContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remote control not connected"
+
+[node name="MarginContainer" type="MarginContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 14
+
+[node name="DisplayScreenMonitorHBox" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="MonitorLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Set which monitor to display karaoke lyrics, next up and empty queue screens: "
+horizontal_alignment = 2
+
+[node name="MonitorSpinBox" type="SpinBox" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="IdentifyMonitorsButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Flash the number in the corner of each display so you can see which is which"
+theme_override_font_sizes/font_size = 14
+text = "Identify"
+
+[node name="MonitorWarningLabel" type="Label" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/MarginContainer/DisplayScreenMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 1
+theme_override_font_sizes/font_size = 24
+text = "⚠"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PrepareQuitButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+text = "Quit"
+
+[node name="LaunchForLoginsButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+tooltip_text = "Open the browser so you can log into Karafun and/or YouTube"
+text = "Change Logins..."
+
+[node name="PrepareSessionOKButton" type="Button" parent="Main GUI/PrepareSessionDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 6
+tooltip_text = "Dismisses the Prepare Session window and starts the app"
+disabled = true
+text = "Start the Party!"
+
+[node name="WaitingForBrowserDialog" type="Window" parent="Main GUI/PrepareSessionDialog"]
+unique_name_in_owner = true
+initial_position = 2
+size = Vector2i(400, 100)
+visible = false
+transient = true
+exclusive = true
+unresizable = true
+borderless = true
+theme = SubResource("Theme_tw3kd")
+
+[node name="Label" type="Label" parent="Main GUI/PrepareSessionDialog/WaitingForBrowserDialog"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+text = "Close the browser when finished logging in..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ServiceConfirmationDialog" type="ConfirmationDialog" parent="Main GUI/PrepareSessionDialog"]
+unique_name_in_owner = true
+title = "Not all services are ready"
+initial_position = 2
+size = Vector2i(500, 300)
+
+[node name="ServiceConfirmationMessage" type="Label" parent="Main GUI/PrepareSessionDialog/ServiceConfirmationDialog"]
+unique_name_in_owner = true
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 492.0
+offset_bottom = 251.0
+autowrap_mode = 3
 
 [node name="DisplayScreen" parent="." instance=ExtResource("3_f0j17")]
 unique_name_in_owner = true
@@ -210,3 +379,18 @@ visible = false
 [node name="BrowserProvider" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("9_fqu17")
+
+[node name="YtDlpProvider" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("10_tw3kd")
+
+[node name="MonitorIdManager" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("11_gd4vy")
+
+[node name="KarafunRemoteProvider" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("12_karafun")
+
+[node name="SessionPrepWizard" parent="." instance=ExtResource("13_wizard")]
+unique_name_in_owner = true

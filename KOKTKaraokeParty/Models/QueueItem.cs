@@ -11,5 +11,7 @@ public partial class QueueItem : GodotObject
     public string Identifier { get; set; }
     public string SongInfoLink { get; set; }
     public string PerformanceLink { get; set; }
+    public string TemporaryDownloadPath { get; set; }
+    public bool IsDownloading { get; set; }
     public ItemType ItemType { get; set; }
 }

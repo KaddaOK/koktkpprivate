@@ -1,3 +1,5 @@
+namespace KOKTKaraokeParty.Tests.Local;
+
 using Moq;
 using Xunit;
 

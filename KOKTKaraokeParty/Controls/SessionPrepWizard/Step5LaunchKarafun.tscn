@@ -1,0 +1,182 @@
+[gd_scene load_steps=6 format=3 uid="uid://hr1orf3qdevv"]
+
+[ext_resource type="Script" uid="uid://cy2asb1ksxydp" path="res://Controls/SessionPrepWizard/Step5LaunchKarafun.cs" id="1_bj487"]
+[ext_resource type="Texture2D" uid="uid://cmm6l8r6jjh80" path="res://Graphics/KF3-IsLoggedIn.png" id="2_78apd"]
+[ext_resource type="Texture2D" uid="uid://bvqssr1rgqlg8" path="res://Graphics/KF3-NotLoggedIn.png" id="3_8x35h"]
+[ext_resource type="Texture2D" uid="uid://bcqsug4vp2sew" path="res://Graphics/KF3-NotSubscribed.png" id="4_g63kk"]
+[ext_resource type="Texture2D" uid="uid://dva24fcckv1xk" path="res://Graphics/KF3-SkipButton.png" id="5_ro1s0"]
+
+[node name="Step5LaunchKarafun" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_bj487")
+
+[node name="Step5LaunchKarafunTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Setup Step: Launch Karafun"
+
+[node name="BodyVBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="Step1WebLaunch" type="MarginContainer" parent="BodyVBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/Step1WebLaunch"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/Step1WebLaunch/VBoxContainer"]
+layout_mode = 2
+text = "1. Click the button below to launch the Karafun web player in a controlled browser:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/Step1WebLaunch/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LaunchKarafunWebPlayerButton" type="Button" parent="BodyVBoxContainer/Step1WebLaunch/VBoxContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Launch Karafun Web Player"
+
+[node name="Step1ManualLaunch" type="MarginContainer" parent="BodyVBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/Step1ManualLaunch"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/Step1ManualLaunch/VBoxContainer"]
+layout_mode = 2
+text = "1. Please launch your installed Karafun application manually now. "
+
+[node name="StepMarginContainer2" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer"]
+layout_mode = 2
+text = "2. Ensure that you're logged in by looking at the upper right."
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "You should see your Karafun subscription username:"
+
+[node name="LoggedInImageMarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer/LoggedInImageMarginContainer"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+texture = ExtResource("2_78apd")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="Label2" type="Label" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "If you see a Sign Up/Sign In button instead, you need to click it and sign in."
+
+[node name="NotLoggedInImageMarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer/MarginContainer/VBoxContainer/NotLoggedInImageMarginContainer"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+texture = ExtResource("3_8x35h")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="StepMarginContainer3" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer3/VBoxContainer"]
+layout_mode = 2
+text = "3. If you see this banner, your subscription is inactive. You need to click it and renew."
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer3/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/StepMarginContainer3/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+texture = ExtResource("4_g63kk")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="StepMarginContainer4" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer4"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer4/VBoxContainer"]
+layout_mode = 2
+text = "4. If there are any songs already in its queue, push Skip until there aren't."
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer4/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/StepMarginContainer4/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+texture = ExtResource("5_ro1s0")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="Label" type="Label" parent="BodyVBoxContainer"]
+layout_mode = 2
+text = "Push Next when you have finished these steps."
+
+[node name="Step5LaunchKarafunButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step5LaunchKarafunBackButton" type="Button" parent="Step5LaunchKarafunButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step5LaunchKarafunNextButton" type="Button" parent="Step5LaunchKarafunButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"

@@ -8,7 +8,7 @@ Supports searching and playing:
 - [Karafun](https://www.karafun.com/karaoke/) subscription (web player)
 - YouTube (via [KaraokeNerds](https://karaokenerds.com/) search)
 - Local playback from scanned folder (or drag-and-drop):
-  - .mp4 (via libvlc)
+  - .mp4, .mkv, or .webm (via libvlc)
   - .cdg with adjacent .mp3
   - .zip of a .cdg and a .mp3
 
@@ -30,9 +30,11 @@ If you need singer management, but don't need the Karafun or YouTube playback an
 
 ## How does it work?
 
-When playing a local CDG/ZIP or MP4 file, this app shows it in the same full-screen window it uses to show the Next Up or Empty Queue display.  
+When playing a local video or CDG/ZIP file, this app shows it in the same full-screen window it uses to show the Next Up or Empty Queue display.  
 
-When playing off of Karafun or YouTube, however, it hides that full-screen window and launches a browser it can automate, so that it can  
+It now (Nov 2025) also works this way for YouTube playback, after first downloading the video to a temporary file via `yt-dlp`.  (If this fails, it will fall back to the following)
+
+When playing off of Karafun (or YouTube after a failure to download), however, it hides that full-screen window and launches a browser it can automate, so that it can  
 go to the web address for that song,  
 click the full-screen button,  
 click the play button (or the pause button if you pause the queue),  
@@ -98,7 +100,8 @@ and the outline of the window should now follow your mouse around until you left
 ### I can hear the music from a local .mp4 file but just see an empty purple-plasma window!
 
 Yeah... Sometimes libvlc doesn't take over the display screen properly and spawns its own window instead, and I haven't figured out why yet (I can't reproduce it on my dev machine but it happens on the one I'm actually using the app regularly on).  
-Press Esc to hide the display window, and you should see its video window on one of your screens; drag it to the right one if it isn't.  You should be able to rewind the song to the beginning using the progress bar at the top of the app.  When this has happened to me, it also didn't detect the song ending and I had to push the skip button to get the queue to advance.  Hopefully I'll get that figured out (or it just doesn't happen to anyone else ever, that would also be okay)
+Press Esc to hide the display window, and you should see its video window on one of your screens; drag it to the right one if it isn't.  You should be able to rewind the song to the beginning using the progress bar at the top of the app.  When this has happened to me, it also didn't detect the song ending and I had to push the skip button to get the queue to advance.  Hopefully I'll get that figured out (or it just doesn't happen to anyone else ever, that would also be okay)  
+_I'm not sure if this is still happening in Nov 2025 actually; I haven't seen it in a while, but I haven't been using local files much either... Will be doing so a lot more now that the YouTube is primarily `yt-dlp`-driven, so I guess we'll find out?_
 
 ### Something weird happened and I don't know what to do now
 
@@ -106,7 +109,8 @@ Close and reopen the software.  The queue is saved to disk so it should come bac
 
 ## Some Major Roadmap Items (not necessarily in any order):
 
-- Figure out what's up with MP4 spawning its own window on some machines and taking over our own window on others
+This section is now out of date as of Nov 2025, but I'll go through it at some point.
+
 - Overall design/UX cleanup (I know, it's bad out there; out-of-the-box Godot user interface is not friendly)
 - Cleaning up and opening source code
 - Add a status bar (and use it to tell the user important things like that chromium is downloading, which right now you only get to know if you launch with console and are reading that, otherwise there's a big delay)

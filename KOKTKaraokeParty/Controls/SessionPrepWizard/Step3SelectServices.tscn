@@ -1,0 +1,137 @@
+[gd_scene load_steps=3 format=3 uid="uid://c4oaboouh7r73"]
+
+[ext_resource type="Script" uid="uid://b3ye3t5ci2kx1" path="res://Controls/SessionPrepWizard/Step3SelectServices.cs" id="1_w3gqd"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_karafun"]
+
+[node name="Step3SelectServices" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_w3gqd")
+
+[node name="StepTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Setup Step: Select Services"
+
+[node name="BodyVBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="StepDescriptionMarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 5
+
+[node name="StepDescription" type="Label" parent="BodyVBoxContainer/StepDescriptionMarginContainer"]
+layout_mode = 2
+text = "What services do you want to use in this session?"
+autowrap_mode = 2
+
+[node name="ServicesListMarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+
+[node name="ServicesList" type="VBoxContainer" parent="BodyVBoxContainer/ServicesListMarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UseLocalFilesCheckBox" type="CheckBox" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Locally scanned files"
+
+[node name="LocalFilesInfoMarginContainer" type="MarginContainer" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_bottom = 5
+
+[node name="LocalFilesInfoLabel" type="Label" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/LocalFilesInfoMarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "No files scanned yet. Do this on the Local Files tab once the app has started."
+
+[node name="UseYouTubeCheckBox" type="CheckBox" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "YouTube, curated by KaraokeNerds"
+
+[node name="UseKarafunCheckBox" type="CheckBox" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Karafun Subscription"
+
+[node name="KarafunModeMarginContainer" type="MarginContainer" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_bottom = 5
+
+[node name="KarafunModeContainer" type="VBoxContainer" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ControlledBrowserRadio" type="CheckBox" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+button_group = SubResource("ButtonGroup_karafun")
+text = "Using Controlled Browser"
+
+[node name="ControlledBrowserDescMarginContainer" type="MarginContainer" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_bottom = 5
+
+[node name="ControlledBrowserDesc" type="Label" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer/ControlledBrowserDescMarginContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "Launches an automated Chromium to visit the Karafun Web player. This allows the song progress bar in KOKT to still work by reading the web page, and you don't have to download and install anything, but might be slower on low-powered systems or be less compatible."
+autowrap_mode = 2
+
+[node name="InstalledAppRadio" type="CheckBox" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_group = SubResource("ButtonGroup_karafun")
+text = "Using Installed Karafun App"
+
+[node name="InstalledAppDescMarginContainer2" type="MarginContainer" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_bottom = 5
+
+[node name="InstalledAppDesc" type="Label" parent="BodyVBoxContainer/ServicesListMarginContainer/ServicesList/KarafunModeMarginContainer/KarafunModeContainer/InstalledAppDescMarginContainer2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "You must download and install and launch the Karafun app yourself. Instructions will be shown on subsequent screens. The song progress bar in KOKT will not function correctly."
+autowrap_mode = 2
+
+[node name="Step3SelectServicesButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step3SelectServicesBackButton" type="Button" parent="Step3SelectServicesButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step3SelectServicesNextButton" type="Button" parent="Step3SelectServicesButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next >"

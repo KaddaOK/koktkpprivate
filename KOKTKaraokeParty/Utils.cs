@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Godot;
 using HtmlAgilityPack;
+using Newtonsoft.Json;
 using PuppeteerSharp;
 
 public class Utils
@@ -14,52 +16,54 @@ public class Utils
     {
         return ProjectSettings.GlobalizePath("user://");
     }
-    
-#region TODO this is all stupid
-    private static IBrowserFetcher GetBrowserFetcher()
+
+    public static string GetSavedQueueFilePath()
     {
-        var downloadPath = ProjectSettings.GlobalizePath("user://browser");
-        return Puppeteer.CreateBrowserFetcher(new BrowserFetcherOptions
+        return Path.Combine(GetAppStoragePath(), "queue.json");
+    }
+
+    /// <summary>
+    /// Reads saved queue items from disk without modifying any state.
+    /// Returns an empty list if no saved queue exists or if there's an error.
+    /// </summary>
+    public static List<QueueItem> GetSavedQueueItemsFromDisk()
+    {
+        try
         {
-            Browser = SupportedBrowser.Chromium,
-            Path = downloadPath
-        });
-    }
-
-    public static async Task<string> CheckForBrowser()
-    {
-        return await CheckForBrowser(GetBrowserFetcher());
-    }
-
-    public static async Task<string> CheckForBrowser(IBrowserFetcher fetcher)
-    {
-        return await Task.Run(() => { 
-            var fetcher = GetBrowserFetcher();
-            var installedBrowsers = fetcher.GetInstalledBrowsers();
-            var chromiumRevision = installedBrowsers.FirstOrDefault(a => a.Browser == SupportedBrowser.Chromium)?.BuildId;
-            return chromiumRevision;
-        });
-    }
-
-    public static async Task<string> EnsureBrowser()
-    {
-        GD.Print("Ensuring browser...");
-        var fetcher = GetBrowserFetcher();
-        var chromiumRevision = await CheckForBrowser(fetcher);
-
-        if (chromiumRevision == null)
-        {
-            GD.Print("Downloading Chromium...");
-            var revisionInfo = await fetcher.DownloadAsync();
-            chromiumRevision = revisionInfo.BuildId;
+            var filePath = GetSavedQueueFilePath();
+            if (File.Exists(filePath))
+            {
+                var json = File.ReadAllText(filePath);
+                var items = JsonConvert.DeserializeObject<QueueItem[]>(json);
+                return items?.ToList() ?? new List<QueueItem>();
+            }
         }
-
-        var path = fetcher.GetExecutablePath(chromiumRevision);
-        GD.Print($"Browser is ready ({chromiumRevision} at {path}).");
-        return path;
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to read saved queue for preview: {ex.Message}");
+        }
+        return new List<QueueItem>();
     }
 
-#endregion
+    /// <summary>
+    /// Deletes the saved queue file if it exists.
+    /// </summary>
+    public static void DeleteSavedQueueFile()
+    {
+        try
+        {
+            var filePath = GetSavedQueueFilePath();
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                GD.Print("Deleted saved queue file.");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to delete saved queue file: {ex.Message}");
+        }
+    }
 
     public static string EnsureAbsoluteUrl(string maybeRelativeUrl, string previousAbsoluteUrl)
     {

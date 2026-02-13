@@ -30,52 +30,60 @@ text = "/path/label/"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/InfoLabels"]
 layout_mode = 2
+size_flags_vertical = 0
 columns = 2
 
 [node name="Filename format" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Format:
-"
+text = "Format:"
+vertical_alignment = 1
 
 [node name="FormatSpecifierLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 text = "{identifier} - {artist} - {title}"
 
 [node name="Last scanned" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Last scanned:
-"
+size_flags_vertical = 0
+text = "Last scanned:"
 
 [node name="LastScannedLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 0
 text = "Never"
 
 [node name="Files found" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Files found:
-"
+size_flags_vertical = 0
+text = "Files found:"
 
 [node name="FilesFoundCountLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoLabels/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0 files
-"
+size_flags_vertical = 0
+text = "0 files"
 
 [node name="ActionButtons" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="EditButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
+[node name="EditEntryButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Edit..."
 
-[node name="RescanButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
+[node name="RescanEntryButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Rescan..."
+
+[node name="RemoveEntryButton" type="Button" parent="MarginContainer/HBoxContainer/ActionButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remove"

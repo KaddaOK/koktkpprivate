@@ -1,0 +1,109 @@
+[gd_scene load_steps=3 format=3 uid="uid://b570e2pax4t1e"]
+
+[ext_resource type="Script" uid="uid://dqtl84vqo1l40" path="res://Controls/SessionPrepWizard/Step7PositionKarafunDisplay.cs" id="1_j47wc"]
+[ext_resource type="Texture2D" uid="uid://cd03jeh5hp7qo" path="res://Graphics/KF3-DualScreenIcon.png" id="2_l4j8v"]
+
+[node name="Step7PositionKarafunDisplay" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_j47wc")
+
+[node name="Step7PositionKarafunDisplayTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Setup Step: Position the Karafun Display"
+
+[node name="BodyVBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="StepMarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "1. In Karafun, open the Dual-Screen Display window by clicking this icon:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/StepMarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/StepMarginContainer/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+texture = ExtResource("2_l4j8v")
+stretch_mode = 4
+
+[node name="StepMarginContainer2" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer2/VBoxContainer"]
+layout_mode = 2
+text = "2. Drag the display window to your desired screen."
+
+[node name="StepMarginContainer3" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer3/VBoxContainer"]
+layout_mode = 2
+text = "3. Maximize the window."
+
+[node name="StepMarginContainer4" type="MarginContainer" parent="BodyVBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/StepMarginContainer4"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/StepMarginContainer4/VBoxContainer"]
+layout_mode = 2
+text = "4. Tip: if you have a F11 key, press it in that window for better fullscreen."
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 10
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/MarginContainer"]
+layout_mode = 2
+text = "(Don't worry, the KOKT display will appear over top of it when not playing from Karafun.)"
+
+[node name="Step7PositionKarafunDisplayButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step7PositionKarafunDisplayBackButton" type="Button" parent="Step7PositionKarafunDisplayButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step7PositionKarafunDisplayFinishButton" type="Button" parent="Step7PositionKarafunDisplayButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Finish"

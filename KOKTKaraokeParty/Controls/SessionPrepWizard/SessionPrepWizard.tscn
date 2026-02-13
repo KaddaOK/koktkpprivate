@@ -1,0 +1,75 @@
+[gd_scene load_steps=9 format=3 uid="uid://dvsnt8nu65xl2"]
+
+[ext_resource type="Script" uid="uid://be8gy011sr1si" path="res://Controls/SessionPrepWizard/SessionPrepWizard.cs" id="1_wizard"]
+[ext_resource type="PackedScene" uid="uid://c8rjtx23v0rip" path="res://Controls/SessionPrepWizard/Step1RestoreQueue.tscn" id="2_ia7m0"]
+[ext_resource type="PackedScene" uid="uid://brm6dvvqvocef" path="res://Controls/SessionPrepWizard/Step2SetDisplay.tscn" id="3_bo66g"]
+[ext_resource type="PackedScene" path="res://Controls/SessionPrepWizard/Step3SelectServices.tscn" id="4_okmqe"]
+[ext_resource type="PackedScene" uid="uid://w8nnnbjbbapu" path="res://Controls/SessionPrepWizard/Step4PrepareSession.tscn" id="5_g6258"]
+[ext_resource type="PackedScene" uid="uid://hr1orf3qdevv" path="res://Controls/SessionPrepWizard/Step5LaunchKarafun.tscn" id="6_62yxl"]
+[ext_resource type="PackedScene" uid="uid://d1lutwoexv1my" path="res://Controls/SessionPrepWizard/Step6KarafunRemoteControl.tscn" id="7_duv28"]
+[ext_resource type="PackedScene" uid="uid://b570e2pax4t1e" path="res://Controls/SessionPrepWizard/Step7PositionKarafunDisplay.tscn" id="8_2x0lo"]
+
+[node name="SessionPrepWizard" type="Window"]
+title = "Session Preparation"
+initial_position = 2
+size = Vector2i(700, 550)
+transient = true
+exclusive = true
+unresizable = true
+script = ExtResource("1_wizard")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Step1RestoreQueue" parent="MarginContainer/VBoxContainer" instance=ExtResource("2_ia7m0")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step2SetDisplay" parent="MarginContainer/VBoxContainer" instance=ExtResource("3_bo66g")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step3SelectServices" parent="MarginContainer/VBoxContainer" instance=ExtResource("4_okmqe")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step4PrepareSession" parent="MarginContainer/VBoxContainer" instance=ExtResource("5_g6258")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step5LaunchKarafun" parent="MarginContainer/VBoxContainer" instance=ExtResource("6_62yxl")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step6KarafunRemoteControl" parent="MarginContainer/VBoxContainer" instance=ExtResource("7_duv28")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Step7PositionKarafunDisplay" parent="MarginContainer/VBoxContainer" instance=ExtResource("8_2x0lo")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="QuitButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Quit"

@@ -26,7 +26,7 @@ file_logging/max_log_files=10
 
 [display]
 
-window/size/viewport_width=1250
+window/size/viewport_width=1280
 window/size/viewport_height=700
 window/subwindows/embed_subwindows=false
 
@@ -37,5 +37,6 @@ project/solution_directory="../"
 
 [rendering]
 
-renderer/rendering_method="mobile"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true

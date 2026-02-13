@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  GODOT_VERSION: 4.4.1
+  EXPORT_NAME: KOKTKaraokeParty
+  DOTNET_VERSION: 8.0.x
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.runner }}
+    name: Build and Release ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - identifier: windows-desktop
+            name: Windows Desktop
+            runner: windows-latest
+            export-preset: "Windows Desktop"
+            archive-format: zip
+          # TODO: Enable these builds once deployment targets are tested
+          # - identifier: linux-x11
+          #   name: Linux/X11
+          #   runner: ubuntu-latest
+          #   export-preset: "Linux/X11"
+          #   archive-format: tar.gz
+          # - identifier: macos
+          #   name: macOS
+          #   runner: macos-latest
+          #   export-preset: "macOS"
+          #   archive-format: zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache .NET packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          include-templates: true
+
+      - name: Import project
+        run: godot --headless --import
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Build .NET project
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Create builds directory
+        run: mkdir -p builds/${{ matrix.identifier }}
+
+      - name: Export project
+        run: godot --headless --export-release "${{ matrix.export-preset }}" builds/${{ matrix.identifier }}/${{ env.EXPORT_NAME }}${{ matrix.identifier == 'windows-desktop' && '.exe' || '' }}
+        working-directory: ./KOKTKaraokeParty
+
+      - name: Create archive (Windows)
+        if: matrix.archive-format == 'zip'
+        run: |
+          cd builds
+          powershell Compress-Archive -Path ${{ matrix.identifier }} -DestinationPath ${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}.zip
+
+      - name: Create archive (Unix)
+        if: matrix.archive-format == 'tar.gz'
+        run: |
+          cd builds
+          tar -czf ${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}.tar.gz ${{ matrix.identifier }}
+
+      - name: Upload release asset (zip)
+        if: matrix.archive-format == 'zip'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}
+          path: builds/${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}.zip
+
+      - name: Upload release asset (tar.gz)
+        if: matrix.archive-format == 'tar.gz'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}
+          path: builds/${{ env.EXPORT_NAME }}-${{ github.ref_name }}-${{ matrix.identifier }}.tar.gz
+
+  # TODO: Add web build when needed
+  # web-build:
+  #   runs-on: ubuntu-latest
+  #   name: Build Web for Release
+
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+    needs: [build-and-release]  # Only depends on Windows build now
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Display structure of downloaded files
+        run: ls -la release-assets/
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Release ${{ github.ref_name }}
+            
+            Automated release for ${{ env.EXPORT_NAME }} version ${{ github.ref_name }}.
+            
+            ### Downloads
+            - **Windows Desktop**: Download the ZIP file for Windows
+            
+            ### Installation
+            1. Download the Windows ZIP file
+            2. Extract the archive
+            3. Run the executable
+            
+            ### System Requirements
+            - .NET 8.0 Runtime
+            - Windows 10/11
+
+      - name: Upload Release Assets
+        run: |
+          for dir in release-assets/*/; do
+            for file in "$dir"*; do
+              if [[ -f "$file" ]]; then
+                echo "Uploading: $file"
+                curl -X POST \
+                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  -H "Content-Type: application/octet-stream" \
+                  --data-binary @"$file" \
+                  "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.id }}/assets?name=$(basename "$file")"
+              fi
+            done
+          done

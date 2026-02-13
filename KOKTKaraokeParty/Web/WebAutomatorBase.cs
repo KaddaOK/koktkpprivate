@@ -35,6 +35,13 @@ public abstract class WebAutomatorBase<T> where T : Enum
         }", selector);
     }
 
+    protected async Task<string> GetInnerTextContent(IPage page, IElementHandle element)
+    {
+        return await page.EvaluateFunctionAsync<string>(@"(el) => {
+            return el?.innerText?.trim();
+        }", element);
+    }
+
     protected async Task<string> GetParentInnerTextContent(IPage page, string selector)
     {
         return await page.EvaluateFunctionAsync<string>(@"(selector) => {
