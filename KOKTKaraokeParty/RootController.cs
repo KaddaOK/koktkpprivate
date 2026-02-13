@@ -123,12 +123,41 @@ IProvide<IDisplayScreen>
 
 	private bool IsWaitingToReturnFromBrowserControl { get; set; }
 	private string sessionPlayHistoryFileName;
+	private bool _isIndeterminateKarafunProgressActive;
+	private double _indeterminateKarafunProgressValue;
+	private int _indeterminateKarafunProgressDirection = 1;
+	private bool _hasWizardCompleted;
 
 	#endregion
+
+	public override void _Process(double delta)
+	{
+		if (!_isIndeterminateKarafunProgressActive || _queueManagement == null || _queueManagement.IsPaused)
+		{
+			return;
+		}
+
+		const double pulseSpeed = 90.0;
+		_indeterminateKarafunProgressValue += _indeterminateKarafunProgressDirection * pulseSpeed * delta;
+
+		if (_indeterminateKarafunProgressValue >= 100)
+		{
+			_indeterminateKarafunProgressValue = 100;
+			_indeterminateKarafunProgressDirection = -1;
+		}
+		else if (_indeterminateKarafunProgressValue <= 0)
+		{
+			_indeterminateKarafunProgressValue = 0;
+			_indeterminateKarafunProgressDirection = 1;
+		}
+
+		MainWindowProgressSlider.SetValueNoSignal(_indeterminateKarafunProgressValue);
+	}
 
 	public void OnReady()
 	{
 		Initialize();
+		SetProcess(false);
 		
 		DisplayServer.WindowSetMinSize(new Vector2I(1000, 700));
 
@@ -150,7 +179,7 @@ IProvide<IDisplayScreen>
 	private void StartSessionPrepWizard()
 	{
 		// Get saved queue items for wizard preview
-		var savedQueueItems = Utils.GetSavedQueueItemsFromDisk();
+		var savedQueueItems = _queueManagement.GetSavedQueuePreviewItems();
 		
 		// Wire up wizard events
 		SessionPrepWizard.WizardCompleted += OnWizardCompleted;
@@ -170,6 +199,8 @@ IProvide<IDisplayScreen>
 		Settings.DisplayScreenMonitor = state.SelectedMonitor;
 		Settings.SaveToDisk(FileWrapper);
 		
+		_hasWizardCompleted = true;
+
 		// Handle queue restoration choice
 		HandleQueueRestoration(state);
 		
@@ -188,23 +219,7 @@ IProvide<IDisplayScreen>
 	
 	private void HandleQueueRestoration(SessionPrepWizardState state)
 	{
-		switch (state.QueueRestoreChoice)
-		{
-			case QueueRestoreOption.StartFresh:
-				// Clear the queue that was already loaded and delete the save file
-				_queueManagement.ClearQueue();
-				RefreshQueueTree();
-				break;
-			case QueueRestoreOption.YesExceptFirst:
-				// Remove the first item (presumably what was playing when the app closed)
-				_queueManagement.RemoveFirstItem();
-				RefreshQueueTree();
-				break;
-			case QueueRestoreOption.YesAll:
-			case QueueRestoreOption.NotSet:
-				// Queue will be loaded as-is by QueueManagementService
-				break;
-		}
+		_queueManagement.ApplySavedQueueRestoreOption(state.QueueRestoreChoice);
 	}
 	
 	private void OnWizardCancelled()
@@ -263,7 +278,7 @@ IProvide<IDisplayScreen>
 		_queueManagement.QueueReordered += RefreshQueueTree;
 		
 		// Refresh queue tree now if items were already loaded before events were bound
-		if (_queueManagement.GetQueueItems().Any() || _queueManagement.NowPlaying != null)
+		if (_hasWizardCompleted && (_queueManagement.GetQueueItems().Any() || _queueManagement.NowPlaying != null))
 		{
 			GD.Print("Queue has items from disk, refreshing tree after event binding...");
 			RefreshQueueTree();
@@ -479,6 +494,11 @@ IProvide<IDisplayScreen>
 
 	private void OnQueueLoaded()
 	{
+		if (!_hasWizardCompleted)
+		{
+			return;
+		}
+
 		GD.Print("Queue loaded from disk, refreshing queue tree...");
 		RefreshQueueTree();
 	}
@@ -611,6 +631,11 @@ IProvide<IDisplayScreen>
 
 	public async void OnProcess(double delta)
 	{
+		if (!_hasWizardCompleted)
+		{
+			return;
+		}
+
 		if (!_queueManagement.IsPaused && _queueManagement.NowPlaying == null)
 		{
 			if (_queueManagement.QueueCount > 0)
@@ -819,6 +844,8 @@ IProvide<IDisplayScreen>
 			return;
 		}
 
+		StopIndeterminateKarafunProgress();
+
 		GD.Print($"Playback duration changed: {durationMs}");
 		Callable.From(() => {
 			DurationLabel.Text = TimeSpan.FromMilliseconds(durationMs).ToString(@"mm\:ss");
@@ -833,14 +860,66 @@ IProvide<IDisplayScreen>
 		{
 			return;
 		}
+
+		StopIndeterminateKarafunProgress();
+
 		Callable.From(() => {
 			CurrentTimeLabel.Text = TimeSpan.FromMilliseconds(progressMs).ToString(@"mm\:ss");
 			MainWindowProgressSlider.SetValueNoSignal(progressMs);
 		}).CallDeferred();
 	}
 
+	private bool ShouldUseIndeterminateKarafunProgress()
+	{
+		if (Settings?.KarafunMode != KarafunMode.InstalledApp || _queueManagement?.NowPlaying == null)
+		{
+			return false;
+		}
+
+		return _queueManagement.NowPlaying.ItemType is ItemType.KarafunWeb or ItemType.KarafunRemote;
+	}
+
+	private void StartIndeterminateKarafunProgress()
+	{
+		if (_isIndeterminateKarafunProgressActive)
+		{
+			return;
+		}
+
+		_isIndeterminateKarafunProgressActive = true;
+		_indeterminateKarafunProgressValue = 0;
+		_indeterminateKarafunProgressDirection = 1;
+		MainWindowProgressSlider.MaxValue = 100;
+		MainWindowProgressSlider.Editable = false;
+		MainWindowProgressSlider.SetValueNoSignal(0);
+		CurrentTimeLabel.Text = "--:--";
+		DurationLabel.Text = "--:--";
+	}
+
+	private void StopIndeterminateKarafunProgress()
+	{
+		if (!_isIndeterminateKarafunProgressActive)
+		{
+			return;
+		}
+
+		_isIndeterminateKarafunProgressActive = false;
+		_indeterminateKarafunProgressValue = 0;
+		_indeterminateKarafunProgressDirection = 1;
+	}
+
 	private void SetProgressSlider(string stateText = null, int maxSeconds = 0, int valueSeconds = 0, bool enableEditing = false)
 	{
+		var noTimingDataProvided = maxSeconds <= 0 && valueSeconds <= 0;
+		if (ShouldUseIndeterminateKarafunProgress() && noTimingDataProvided)
+		{
+			ProgressSliderLabel.Text = stateText;
+			StartIndeterminateKarafunProgress();
+			return;
+		}
+
+		StopIndeterminateKarafunProgress();
+
 		ProgressSliderLabel.Text = stateText;
 		MainWindowProgressSlider.SetValueNoSignal(valueSeconds);
 		MainWindowProgressSlider.MaxValue = maxSeconds;

@@ -103,6 +103,8 @@ public class KarafunRemoteClient : IKarafunRemoteClient
     private const string KarafunBaseUrl = "https://www.karafun.com";
     private const string WebSocketSubProtocol = "kcpj~v2+emuping";
     private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private const string DefaultUsernamePrefix = "koktkp";
+    private const int MaxUsernameLength = 16;
     
     private ClientWebSocket _webSocket;
     private CookieContainer _cookies;
@@ -170,7 +172,7 @@ public class KarafunRemoteClient : IKarafunRemoteClient
             _receiveTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
             
             // Step 4: Set username (required before queueing songs)
-            await UpdateUsernameAsync("koktkp", cancellationToken);
+            await UpdateUsernameAsync(BuildDefaultSessionUsername(), cancellationToken);
             
             SetConnectionStatus(KarafunRemoteConnectionStatus.Connected);
             GD.Print("Connected to Karafun remote control");
@@ -480,6 +482,18 @@ public class KarafunRemoteClient : IKarafunRemoteClient
         
         GD.Print($"Sending username update: {username}");
         await SendMessageAsync(request);
+    }
+
+    private string BuildDefaultSessionUsername()
+    {
+        const int randomDigits = 5;
+        var suffix = Random.Shared.Next(0, 100000).ToString($"D{randomDigits}");
+        var maxPrefixLength = Math.Max(0, MaxUsernameLength - suffix.Length);
+        var prefix = DefaultUsernamePrefix.Length <= maxPrefixLength
+            ? DefaultUsernamePrefix
+            : DefaultUsernamePrefix.Substring(0, maxPrefixLength);
+
+        return $"{prefix}{suffix}";
     }
     
     public async Task<bool> QueueSongAsync(int songId, string singerName, CancellationToken cancellationToken = default)

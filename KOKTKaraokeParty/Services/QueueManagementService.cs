@@ -2,6 +2,7 @@ using Chickensoft.AutoInject;
 using Chickensoft.GodotNodeInterfaces;
 using Chickensoft.Introspection;
 using Godot;
+using KOKTKaraokeParty.Controls.SessionPrepWizard;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ public partial class QueueManagementService : Node
     private IFileWrapper _fileWrapper;
     private IYtDlpProviderNode _ytDlpProvider;
     private string _savedQueueFileName;
+    private List<QueueItem> _savedQueuePreview = new();
 
     public QueueItem NowPlaying => _nowPlaying;
     public bool IsPaused => _isPaused;
@@ -40,6 +42,11 @@ public partial class QueueManagementService : Node
         return _queue.ToList();
     }
 
+    public List<QueueItem> GetSavedQueuePreviewItems()
+    {
+        return _savedQueuePreview.ToList();
+    }
+
     public void Initialize(IFileWrapper fileWrapper, IYtDlpProviderNode ytDlpProvider)
     {
         _fileWrapper = fileWrapper;
@@ -47,6 +54,61 @@ public partial class QueueManagementService : Node
         _queue = new Queue<QueueItem>();
         _savedQueueFileName = Path.Combine(Utils.GetAppStoragePath(), "queue.json");
         LoadQueueFromDiskIfExists();
+    }
+
+    public void ApplySavedQueueRestoreOption(QueueRestoreOption restoreOption)
+    {
+        IEnumerable<QueueItem> restoredItems = restoreOption switch
+        {
+            QueueRestoreOption.StartFresh => Enumerable.Empty<QueueItem>(),
+            QueueRestoreOption.YesExceptFirst => _savedQueuePreview.Skip(1),
+            QueueRestoreOption.YesAll => _savedQueuePreview,
+            QueueRestoreOption.NotSet => _savedQueuePreview,
+            _ => _savedQueuePreview
+        };
+
+        _queue = new Queue<QueueItem>(restoredItems);
+        _nowPlaying = null;
+        _isPaused = false;
+
+        if (_queue.Count == 0)
+        {
+            Utils.DeleteSavedQueueFile();
+        }
+        else
+        {
+            SaveQueueToDisk();
+
+            // Check YouTube items and restart downloads if needed
+            foreach (var item in _queue)
+            {
+                if (item.ItemType == ItemType.Youtube)
+                {
+                    bool needsDownload = false;
+
+                    if (string.IsNullOrEmpty(item.TemporaryDownloadPath)
+                        || !File.Exists(item.TemporaryDownloadPath))
+                    {
+                        needsDownload = true;
+                        GD.Print($"YouTube item missing download file, will restart: {item.PerformanceLink}");
+                    }
+                    else if (item.IsDownloading)
+                    {
+                        needsDownload = true;
+                        GD.Print($"YouTube item was downloading when saved, will restart: {item.PerformanceLink}");
+                    }
+
+                    if (needsDownload)
+                    {
+                        item.TemporaryDownloadPath = null;
+                        item.IsDownloading = false;
+                        _ = Task.Run(async () => await StartYoutubeDownload(item));
+                    }
+                }
+            }
+        }
+
+        QueueLoaded?.Invoke();
     }
 
     public void OnReady()
@@ -291,47 +353,19 @@ public partial class QueueManagementService : Node
                 var queueJson = _fileWrapper.ReadAllText(_savedQueueFileName);
                 var queueList = JsonConvert.DeserializeObject<QueueItem[]>(queueJson);
                 GD.Print($"Loaded {queueList?.Length} items from disk.");
-                _queue = new Queue<QueueItem>(queueList);
-                
-                // Check YouTube items and restart downloads if needed
-                foreach (var item in _queue)
-                {
-                    if (item.ItemType == ItemType.Youtube)
-                    {
-                        bool needsDownload = false;
-                        
-                        if (string.IsNullOrEmpty(item.TemporaryDownloadPath) || 
-                            !File.Exists(item.TemporaryDownloadPath))
-                        {
-                            needsDownload = true;
-                            GD.Print($"YouTube item missing download file, will restart: {item.PerformanceLink}");
-                        }
-                        else if (item.IsDownloading)
-                        {
-                            needsDownload = true;
-                            GD.Print($"YouTube item was downloading when saved, will restart: {item.PerformanceLink}");
-                        }
-                        
-                        if (needsDownload)
-                        {
-                            item.TemporaryDownloadPath = null;
-                            item.IsDownloading = false;
-                            _ = Task.Run(async () => await StartYoutubeDownload(item));
-                        }
-                    }
-                }
-                
-                // Fire QueueLoaded event so UI can refresh
-                QueueLoaded?.Invoke();
+                _savedQueuePreview = queueList?.ToList() ?? new List<QueueItem>();
+                _queue = new Queue<QueueItem>();
             }
             else
             {
+                _savedQueuePreview = new List<QueueItem>();
                 _queue = new Queue<QueueItem>();
             }
         }
         catch (Exception ex)
         {
             GD.PrintErr($"Failed to load queue from disk: {ex.Message}");
+            _savedQueuePreview = new List<QueueItem>();
             _queue = new Queue<QueueItem>();
         }
     }
