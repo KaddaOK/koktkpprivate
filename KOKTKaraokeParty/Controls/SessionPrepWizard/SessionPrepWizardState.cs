@@ -37,18 +37,18 @@ public class RequiredServicesFromQueue
 /// <summary>
 /// Holds all state for the session preparation wizard
 /// </summary>
-public class WizardState
+public class SessionPrepWizardState
 {
-    // Step A: Queue restoration
+    // Step 1: Queue restoration
     public bool HasSavedQueue { get; set; }
     public List<SavedQueueItemInfo> SavedQueueItems { get; set; } = new();
     public QueueRestoreOption QueueRestoreChoice { get; set; } = QueueRestoreOption.NotSet;
     
-    // Step B: Display settings
+    // Step 2: Display settings
     public int SelectedMonitor { get; set; }
     public int AvailableMonitorCount { get; set; }
     
-    // Step C: Service selection
+    // Step 3: Service selection
     public bool UseLocalFiles { get; set; } = true;
     public bool UseYouTube { get; set; } = true;
     public bool UseKarafun { get; set; } = true;
@@ -59,12 +59,12 @@ public class WizardState
     public bool YouTubeRequiredByQueue { get; set; }
     public bool KarafunRequiredByQueue { get; set; }
     
-    // Step C info display
+    // Step 3 info display
     public int LocalSongCount { get; set; }
     public int LocalArtistCount { get; set; }
     public int LocalPathCount { get; set; }
     
-    // Step D: Session preparation results
+    // Step 4: Session preparation results
     public bool VlcReady { get; set; }
     public bool YtDlpReady { get; set; }
     public bool BrowserReady { get; set; }
@@ -72,10 +72,10 @@ public class WizardState
     public string YtDlpMessage { get; set; }
     public string BrowserMessage { get; set; }
     
-    // Step E: Karafun launch
+    // Step 5: Karafun launch
     public bool KarafunWebPlayerLaunched { get; set; }
     
-    // Step F: Remote control
+    // Step 6: Remote control
     public string KarafunRoomCode { get; set; }
     public bool KarafunRemoteConnected { get; set; }
     public string KarafunRemoteMessage { get; set; }
@@ -92,12 +92,12 @@ public enum QueueRestoreOption
 /// <summary>
 /// Pure logic class for wizard decisions - no Godot dependencies for easy testing
 /// </summary>
-public static class WizardLogic
+public static class SessionPrepWizardLogic
 {
     /// <summary>
-    /// Determines if Step A should be shown
+    /// Determines if Step 1 should be shown
     /// </summary>
-    public static bool ShouldShowRestoreQueueStep(WizardState state)
+    public static bool ShouldShowRestoreQueueStep(SessionPrepWizardState state)
     {
         return state.HasSavedQueue && state.SavedQueueItems.Count > 0;
     }
@@ -145,7 +145,7 @@ public static class WizardLogic
     /// <summary>
     /// Determines if VLC session preparation is needed
     /// </summary>
-    public static bool NeedsVlcPrepare(WizardState state)
+    public static bool NeedsVlcPrepare(SessionPrepWizardState state)
     {
         // VLC is needed for local files AND for YouTube (downloaded playback)
         return state.UseLocalFiles || state.UseYouTube;
@@ -154,7 +154,7 @@ public static class WizardLogic
     /// <summary>
     /// Determines if yt-dlp session preparation is needed
     /// </summary>
-    public static bool NeedsYtDlpPrepare(WizardState state)
+    public static bool NeedsYtDlpPrepare(SessionPrepWizardState state)
     {
         return state.UseYouTube;
     }
@@ -162,41 +162,41 @@ public static class WizardLogic
     /// <summary>
     /// Determines if browser status check is needed
     /// </summary>
-    public static bool NeedsBrowserCheck(WizardState state)
+    public static bool NeedsBrowserCheck(SessionPrepWizardState state)
     {
         // Browser is only needed for Karafun with Controlled Browser mode
         return state.UseKarafun && state.KarafunMode == KarafunMode.ControlledBrowser;
     }
     
     /// <summary>
-    /// Determines if Karafun steps (E, F, G) should be shown
+    /// Determines if Karafun steps (5, 6, 7) should be shown
     /// </summary>
-    public static bool ShouldShowKarafunSteps(WizardState state)
+    public static bool ShouldShowKarafunSteps(SessionPrepWizardState state)
     {
         return state.UseKarafun;
     }
     
     /// <summary>
-    /// Determines if any preparation is needed (Step D should be shown)
+    /// Determines if any preparation is needed (Step 4 should be shown)
     /// </summary>
-    public static bool NeedsAnyPreparation(WizardState state)
+    public static bool NeedsAnyPreparation(SessionPrepWizardState state)
     {
         return NeedsVlcPrepare(state) || NeedsYtDlpPrepare(state) || NeedsBrowserCheck(state);
     }
     
     /// <summary>
-    /// Determines if the Next button should be enabled on Step C
+    /// Determines if the Next button should be enabled on Step 3
     /// </summary>
-    public static bool IsStepCNextEnabled(WizardState state)
+    public static bool IsStep3SelectServicesNextEnabled(SessionPrepWizardState state)
     {
         // At least one service must be selected
         return state.UseLocalFiles || state.UseYouTube || state.UseKarafun;
     }
     
     /// <summary>
-    /// Determines if Step D can auto-continue (all checks passed)
+    /// Determines if Step 4 can auto-continue (all checks passed)
     /// </summary>
-    public static bool CanAutoAdvanceFromStepD(WizardState state)
+    public static bool CanAutoAdvanceFromStep4PrepareSession(SessionPrepWizardState state)
     {
         // Check only the services that were required
         if (NeedsVlcPrepare(state) && !state.VlcReady)
@@ -210,9 +210,9 @@ public static class WizardLogic
     }
     
     /// <summary>
-    /// Determines if Step E Next button should be enabled
+    /// Determines if Step 5 Next button should be enabled
     /// </summary>
-    public static bool IsStepENextEnabled(WizardState state)
+    public static bool IsStep5LaunchKarafunNextEnabled(SessionPrepWizardState state)
     {
         // If using controlled browser, must have launched
         // If using installed app, always enabled (user manages it themselves)
@@ -224,9 +224,9 @@ public static class WizardLogic
     }
     
     /// <summary>
-    /// Determines if Step F Next button should be enabled
+    /// Determines if Step 6 Next button should be enabled
     /// </summary>
-    public static bool IsStepFNextEnabled(WizardState state)
+    public static bool IsStep6KarafunRemoteControlNextEnabled(SessionPrepWizardState state)
     {
         return state.KarafunRemoteConnected;
     }
@@ -234,15 +234,15 @@ public static class WizardLogic
     /// <summary>
     /// Gets the initial tab to navigate to after wizard completion
     /// </summary>
-    public static WizardDestination GetWizardDestination(WizardState state)
+    public static SessionPrepWizardFinishDestination GetWizardDestination(SessionPrepWizardState state)
     {
         // If local files is selected but no songs are scanned, go to Local Files tab
         if (state.UseLocalFiles && state.LocalSongCount == 0)
         {
-            return WizardDestination.LocalFilesTab;
+            return SessionPrepWizardFinishDestination.LocalFilesTab;
         }
         
-        return WizardDestination.SearchTab;
+        return SessionPrepWizardFinishDestination.SearchTab;
     }
     
     /// <summary>
@@ -257,7 +257,7 @@ public static class WizardLogic
     }
 }
 
-public enum WizardDestination
+public enum SessionPrepWizardFinishDestination
 {
     SearchTab,
     LocalFilesTab

@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3 uid="uid://brm6dvvqvocef"]
+
+[ext_resource type="Script" uid="uid://bbepmnxfjipom" path="res://Controls/SessionPrepWizard/Step2SetDisplay.cs" id="1_hqss7"]
+
+[node name="StepContainer" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_hqss7")
+
+[node name="StepTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Setup Step: Set Display Screen"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 10
+
+[node name="StepDescription" type="Label" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+text = "Choose which monitor to display karaoke lyrics, next up, and empty queue screens:"
+autowrap_mode = 2
+
+[node name="MonitorHBox" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="MonitorLabel" type="Label" parent="VBoxContainer/MonitorHBox"]
+layout_mode = 2
+text = "Monitor:"
+
+[node name="MonitorSpinBox" type="SpinBox" parent="VBoxContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IdentifyMonitorsButton" type="Button" parent="VBoxContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Identify Monitors"
+
+[node name="MonitorWarningLabel" type="Label" parent="VBoxContainer/MonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚠"
+
+[node name="Step2SetDisplayButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step2SetDisplayBackButton" type="Button" parent="Step2SetDisplayButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step2SetDisplayNextButton" type="Button" parent="Step2SetDisplayButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next >"

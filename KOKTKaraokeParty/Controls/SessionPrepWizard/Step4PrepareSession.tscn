@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://w8nnnbjbbapu"]
+
+[ext_resource type="Script" uid="uid://bisktbs41xp38" path="res://Controls/SessionPrepWizard/Step4PrepareSession.cs" id="1_ffd7v"]
+
+[node name="Step4PrepareSession" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_ffd7v")
+
+[node name="StepTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Setup Step: Prepare Session"
+
+[node name="StepDescription" type="Label" parent="."]
+layout_mode = 2
+text = "Checking required services..."
+autowrap_mode = 2
+
+[node name="PrepareSessionTree" type="Tree" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="Step4PrepareSessionStatusLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="StepButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step4PrepareSessionBackButton" type="Button" parent="StepButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step4PrepareSessionNextButton" type="Button" parent="StepButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"

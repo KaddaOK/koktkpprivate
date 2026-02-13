@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8rjtx23v0rip"]
+
+[ext_resource type="Script" uid="uid://nxkp55kfwwd0" path="res://Controls/SessionPrepWizard/Step1RestoreQueue.cs" id="1_6jxtp"]
+
+[node name="Step1RestoreQueue" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_6jxtp")
+
+[node name="StepTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Restore Queue?"
+
+[node name="StepDescription" type="Label" parent="."]
+layout_mode = 2
+text = "There were still songs in the queue the last time this app closed:"
+autowrap_mode = 2
+
+[node name="RestoreQueueTree" type="Tree" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="StepQuestion" type="Label" parent="."]
+layout_mode = 2
+text = "Do you want to put these songs back in the queue?"
+
+[node name="StepButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+
+[node name="StartFreshButton" type="Button" parent="StepButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No, start fresh"
+
+[node name="YesExceptFirstButton" type="Button" parent="StepButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Yes, except the first one"
+
+[node name="YesAllButton" type="Button" parent="StepButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Yes, all of them"

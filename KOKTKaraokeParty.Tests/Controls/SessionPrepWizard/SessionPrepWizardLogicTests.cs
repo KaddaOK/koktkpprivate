@@ -4,14 +4,14 @@ using System.Collections.Generic;
 
 namespace KOKTKaraokeParty.Tests.Controls;
 
-public class WizardLogicTests
+public class SessionPrepWizardLogicTests
 {
     #region ShouldShowRestoreQueueStep Tests
     
     [Fact]
     public void ShouldShowRestoreQueueStep_WithSavedQueue_ReturnsTrue()
     {
-        var state = new WizardState
+        var state = new SessionPrepWizardState
         {
             HasSavedQueue = true,
             SavedQueueItems = new List<SavedQueueItemInfo>
@@ -20,25 +20,25 @@ public class WizardLogicTests
             }
         };
         
-        Assert.True(WizardLogic.ShouldShowRestoreQueueStep(state));
+        Assert.True(SessionPrepWizardLogic.ShouldShowRestoreQueueStep(state));
     }
     
     [Fact]
     public void ShouldShowRestoreQueueStep_WithEmptyQueue_ReturnsFalse()
     {
-        var state = new WizardState
+        var state = new SessionPrepWizardState
         {
             HasSavedQueue = true,
             SavedQueueItems = new List<SavedQueueItemInfo>()
         };
         
-        Assert.False(WizardLogic.ShouldShowRestoreQueueStep(state));
+        Assert.False(SessionPrepWizardLogic.ShouldShowRestoreQueueStep(state));
     }
     
     [Fact]
     public void ShouldShowRestoreQueueStep_WithNoSavedQueue_ReturnsFalse()
     {
-        var state = new WizardState
+        var state = new SessionPrepWizardState
         {
             HasSavedQueue = false,
             SavedQueueItems = new List<SavedQueueItemInfo>
@@ -47,7 +47,7 @@ public class WizardLogicTests
             }
         };
         
-        Assert.False(WizardLogic.ShouldShowRestoreQueueStep(state));
+        Assert.False(SessionPrepWizardLogic.ShouldShowRestoreQueueStep(state));
     }
     
     #endregion
@@ -64,7 +64,7 @@ public class WizardLogicTests
             new() { ItemType = ItemType.KarafunWeb }
         };
         
-        var result = WizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.StartFresh);
+        var result = SessionPrepWizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.StartFresh);
         
         Assert.False(result.RequiresLocalFiles);
         Assert.False(result.RequiresYouTube);
@@ -81,7 +81,7 @@ public class WizardLogicTests
             new() { ItemType = ItemType.KarafunWeb }
         };
         
-        var result = WizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
+        var result = SessionPrepWizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
         
         Assert.True(result.RequiresLocalFiles);
         Assert.True(result.RequiresYouTube);
@@ -98,7 +98,7 @@ public class WizardLogicTests
             new() { ItemType = ItemType.LocalMp3G }
         };
         
-        var result = WizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesExceptFirst);
+        var result = SessionPrepWizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesExceptFirst);
         
         Assert.True(result.RequiresLocalFiles);
         Assert.True(result.RequiresYouTube);
@@ -113,7 +113,7 @@ public class WizardLogicTests
             new() { ItemType = ItemType.LocalMp3G }
         };
         
-        var result = WizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
+        var result = SessionPrepWizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
         
         Assert.True(result.RequiresLocalFiles);
         Assert.False(result.RequiresYouTube);
@@ -128,7 +128,7 @@ public class WizardLogicTests
             new() { ItemType = ItemType.LocalMp3GZip }
         };
         
-        var result = WizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
+        var result = SessionPrepWizardLogic.GetRequiredServicesFromQueue(items, QueueRestoreOption.YesAll);
         
         Assert.True(result.RequiresLocalFiles);
     }
@@ -140,77 +140,77 @@ public class WizardLogicTests
     [Fact]
     public void NeedsVlcPrepare_LocalFilesEnabled_ReturnsTrue()
     {
-        var state = new WizardState { UseLocalFiles = true, UseYouTube = false };
+        var state = new SessionPrepWizardState { UseLocalFiles = true, UseYouTube = false };
         
-        Assert.True(WizardLogic.NeedsVlcPrepare(state));
+        Assert.True(SessionPrepWizardLogic.NeedsVlcPrepare(state));
     }
     
     [Fact]
     public void NeedsVlcPrepare_YouTubeEnabled_ReturnsTrue()
     {
-        var state = new WizardState { UseLocalFiles = false, UseYouTube = true };
+        var state = new SessionPrepWizardState { UseLocalFiles = false, UseYouTube = true };
         
-        Assert.True(WizardLogic.NeedsVlcPrepare(state));
+        Assert.True(SessionPrepWizardLogic.NeedsVlcPrepare(state));
     }
     
     [Fact]
     public void NeedsVlcPrepare_BothDisabled_ReturnsFalse()
     {
-        var state = new WizardState { UseLocalFiles = false, UseYouTube = false };
+        var state = new SessionPrepWizardState { UseLocalFiles = false, UseYouTube = false };
         
-        Assert.False(WizardLogic.NeedsVlcPrepare(state));
+        Assert.False(SessionPrepWizardLogic.NeedsVlcPrepare(state));
     }
     
     [Fact]
     public void NeedsYtDlpPrepare_YouTubeEnabled_ReturnsTrue()
     {
-        var state = new WizardState { UseYouTube = true };
+        var state = new SessionPrepWizardState { UseYouTube = true };
         
-        Assert.True(WizardLogic.NeedsYtDlpPrepare(state));
+        Assert.True(SessionPrepWizardLogic.NeedsYtDlpPrepare(state));
     }
     
     [Fact]
     public void NeedsYtDlpPrepare_YouTubeDisabled_ReturnsFalse()
     {
-        var state = new WizardState { UseYouTube = false };
+        var state = new SessionPrepWizardState { UseYouTube = false };
         
-        Assert.False(WizardLogic.NeedsYtDlpPrepare(state));
+        Assert.False(SessionPrepWizardLogic.NeedsYtDlpPrepare(state));
     }
     
     [Fact]
     public void NeedsBrowserCheck_KarafunWithControlledBrowser_ReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseKarafun = true, 
             KarafunMode = KarafunMode.ControlledBrowser 
         };
         
-        Assert.True(WizardLogic.NeedsBrowserCheck(state));
+        Assert.True(SessionPrepWizardLogic.NeedsBrowserCheck(state));
     }
     
     [Fact]
     public void NeedsBrowserCheck_KarafunWithInstalledApp_ReturnsFalse()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseKarafun = true, 
             KarafunMode = KarafunMode.InstalledApp 
         };
         
-        Assert.False(WizardLogic.NeedsBrowserCheck(state));
+        Assert.False(SessionPrepWizardLogic.NeedsBrowserCheck(state));
     }
     
     [Fact]
     public void NeedsBrowserCheck_KarafunDisabled_ReturnsFalse()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseKarafun = false, 
             KarafunMode = KarafunMode.ControlledBrowser 
         };
         
-        Assert.False(WizardLogic.NeedsBrowserCheck(state));
+        Assert.False(SessionPrepWizardLogic.NeedsBrowserCheck(state));
     }
     
     #endregion
@@ -220,53 +220,53 @@ public class WizardLogicTests
     [Fact]
     public void ShouldShowKarafunSteps_KarafunEnabled_ReturnsTrue()
     {
-        var state = new WizardState { UseKarafun = true };
+        var state = new SessionPrepWizardState { UseKarafun = true };
         
-        Assert.True(WizardLogic.ShouldShowKarafunSteps(state));
+        Assert.True(SessionPrepWizardLogic.ShouldShowKarafunSteps(state));
     }
     
     [Fact]
     public void ShouldShowKarafunSteps_KarafunDisabled_ReturnsFalse()
     {
-        var state = new WizardState { UseKarafun = false };
+        var state = new SessionPrepWizardState { UseKarafun = false };
         
-        Assert.False(WizardLogic.ShouldShowKarafunSteps(state));
+        Assert.False(SessionPrepWizardLogic.ShouldShowKarafunSteps(state));
     }
     
     [Fact]
-    public void IsStepCNextEnabled_NoServicesSelected_ReturnsFalse()
+    public void IsStep3SelectServicesNextEnabled_NoServicesSelected_ReturnsFalse()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = false, 
             UseYouTube = false, 
             UseKarafun = false 
         };
         
-        Assert.False(WizardLogic.IsStepCNextEnabled(state));
+        Assert.False(SessionPrepWizardLogic.IsStep3SelectServicesNextEnabled(state));
     }
     
     [Fact]
-    public void IsStepCNextEnabled_AtLeastOneServiceSelected_ReturnsTrue()
+    public void IsStep3SelectServicesNextEnabled_AtLeastOneServiceSelected_ReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = false, 
             UseYouTube = true, 
             UseKarafun = false 
         };
         
-        Assert.True(WizardLogic.IsStepCNextEnabled(state));
+        Assert.True(SessionPrepWizardLogic.IsStep3SelectServicesNextEnabled(state));
     }
     
     #endregion
     
-    #region Step D Auto-Advance Tests
+    #region Step 4 Auto-Advance Tests
     
     [Fact]
-    public void CanAutoAdvanceFromStepD_AllRequiredReady_ReturnsTrue()
+    public void CanAutoAdvanceFromStep4PrepareSession_AllRequiredReady_ReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = true, 
             UseYouTube = true,
@@ -277,25 +277,25 @@ public class WizardLogicTests
             BrowserReady = true
         };
         
-        Assert.True(WizardLogic.CanAutoAdvanceFromStepD(state));
+        Assert.True(SessionPrepWizardLogic.CanAutoAdvanceFromStep4PrepareSession(state));
     }
     
     [Fact]
-    public void CanAutoAdvanceFromStepD_VlcNotReady_ReturnsFalse()
+    public void CanAutoAdvanceFromStep4PrepareSession_VlcNotReady_ReturnsFalse()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = true, 
             VlcReady = false
         };
         
-        Assert.False(WizardLogic.CanAutoAdvanceFromStepD(state));
+        Assert.False(SessionPrepWizardLogic.CanAutoAdvanceFromStep4PrepareSession(state));
     }
     
     [Fact]
-    public void CanAutoAdvanceFromStepD_NoServicesNeeded_ReturnsTrue()
+    public void CanAutoAdvanceFromStep4PrepareSession_NoServicesNeeded_ReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = false, 
             UseYouTube = false,
@@ -303,63 +303,63 @@ public class WizardLogicTests
         };
         
         // Even with nothing ready, if nothing is needed, it should pass
-        Assert.True(WizardLogic.CanAutoAdvanceFromStepD(state));
+        Assert.True(SessionPrepWizardLogic.CanAutoAdvanceFromStep4PrepareSession(state));
     }
     
     #endregion
     
-    #region Step E/F Enable Tests
+    #region Step 5/6 Enable Tests
     
     [Fact]
-    public void IsStepENextEnabled_ControlledBrowserNotLaunched_ReturnsFalse()
+    public void IsStep5LaunchKarafunNextEnabled_ControlledBrowserNotLaunched_ReturnsFalse()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             KarafunMode = KarafunMode.ControlledBrowser,
             KarafunWebPlayerLaunched = false
         };
         
-        Assert.False(WizardLogic.IsStepENextEnabled(state));
+        Assert.False(SessionPrepWizardLogic.IsStep5LaunchKarafunNextEnabled(state));
     }
     
     [Fact]
-    public void IsStepENextEnabled_ControlledBrowserLaunched_ReturnsTrue()
+    public void IsStep5LaunchKarafunNextEnabled_ControlledBrowserLaunched_ReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             KarafunMode = KarafunMode.ControlledBrowser,
             KarafunWebPlayerLaunched = true
         };
         
-        Assert.True(WizardLogic.IsStepENextEnabled(state));
+        Assert.True(SessionPrepWizardLogic.IsStep5LaunchKarafunNextEnabled(state));
     }
     
     [Fact]
-    public void IsStepENextEnabled_InstalledApp_AlwaysReturnsTrue()
+    public void IsStep5LaunchKarafunNextEnabled_InstalledApp_AlwaysReturnsTrue()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             KarafunMode = KarafunMode.InstalledApp,
             KarafunWebPlayerLaunched = false  // Doesn't matter for installed app
         };
         
-        Assert.True(WizardLogic.IsStepENextEnabled(state));
+        Assert.True(SessionPrepWizardLogic.IsStep5LaunchKarafunNextEnabled(state));
     }
     
     [Fact]
-    public void IsStepFNextEnabled_NotConnected_ReturnsFalse()
+    public void IsStep6KarafunRemoteControlNextEnabled_NotConnected_ReturnsFalse()
     {
-        var state = new WizardState { KarafunRemoteConnected = false };
+        var state = new SessionPrepWizardState { KarafunRemoteConnected = false };
         
-        Assert.False(WizardLogic.IsStepFNextEnabled(state));
+        Assert.False(SessionPrepWizardLogic.IsStep6KarafunRemoteControlNextEnabled(state));
     }
     
     [Fact]
-    public void IsStepFNextEnabled_Connected_ReturnsTrue()
+    public void IsStep6KarafunRemoteControlNextEnabled_Connected_ReturnsTrue()
     {
-        var state = new WizardState { KarafunRemoteConnected = true };
+        var state = new SessionPrepWizardState { KarafunRemoteConnected = true };
         
-        Assert.True(WizardLogic.IsStepFNextEnabled(state));
+        Assert.True(SessionPrepWizardLogic.IsStep6KarafunRemoteControlNextEnabled(state));
     }
     
     #endregion
@@ -369,37 +369,37 @@ public class WizardLogicTests
     [Fact]
     public void GetWizardDestination_LocalFilesWithNoSongs_ReturnsLocalFilesTab()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = true, 
             LocalSongCount = 0 
         };
         
-        Assert.Equal(WizardDestination.LocalFilesTab, WizardLogic.GetWizardDestination(state));
+        Assert.Equal(SessionPrepWizardFinishDestination.LocalFilesTab, SessionPrepWizardLogic.GetWizardDestination(state));
     }
     
     [Fact]
     public void GetWizardDestination_LocalFilesWithSongs_ReturnsSearchTab()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = true, 
             LocalSongCount = 100 
         };
         
-        Assert.Equal(WizardDestination.SearchTab, WizardLogic.GetWizardDestination(state));
+        Assert.Equal(SessionPrepWizardFinishDestination.SearchTab, SessionPrepWizardLogic.GetWizardDestination(state));
     }
     
     [Fact]
     public void GetWizardDestination_NoLocalFiles_ReturnsSearchTab()
     {
-        var state = new WizardState 
+        var state = new SessionPrepWizardState 
         { 
             UseLocalFiles = false, 
             LocalSongCount = 0 
         };
         
-        Assert.Equal(WizardDestination.SearchTab, WizardLogic.GetWizardDestination(state));
+        Assert.Equal(SessionPrepWizardFinishDestination.SearchTab, SessionPrepWizardLogic.GetWizardDestination(state));
     }
     
     #endregion
@@ -417,7 +417,7 @@ public class WizardLogicTests
     [InlineData("  123456  ", false)] // With spaces
     public void IsValidRoomCodeFormat_VariousCodes_ReturnsExpected(string code, bool expected)
     {
-        Assert.Equal(expected, WizardLogic.IsValidRoomCodeFormat(code));
+        Assert.Equal(expected, SessionPrepWizardLogic.IsValidRoomCodeFormat(code));
     }
     
     #endregion

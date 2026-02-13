@@ -160,7 +160,7 @@ IProvide<IDisplayScreen>
 		SessionPrepWizard.StartWizard(savedQueueItems);
 	}
 	
-	private void OnWizardCompleted(WizardState state)
+	private void OnWizardCompleted(SessionPrepWizardState state)
 	{
 		// Save service selections to settings
 		Settings.UseLocalFiles = state.UseLocalFiles;
@@ -186,7 +186,7 @@ IProvide<IDisplayScreen>
 		SetProcess(true);
 	}
 	
-	private void HandleQueueRestoration(WizardState state)
+	private void HandleQueueRestoration(SessionPrepWizardState state)
 	{
 		switch (state.QueueRestoreChoice)
 		{

@@ -1,0 +1,208 @@
+[gd_scene load_steps=7 format=3 uid="uid://d1lutwoexv1my"]
+
+[ext_resource type="Script" uid="uid://d036pmu6yicge" path="res://Controls/SessionPrepWizard/Step6KarafunRemoteControl.cs" id="1_p4tkq"]
+[ext_resource type="Texture2D" uid="uid://bnle3uws3oks" path="res://Graphics/KF3-RCIcon.png" id="2_57ta0"]
+[ext_resource type="Texture2D" uid="uid://tc4ug32k1or6" path="res://Graphics/KF3-RCToggle.png" id="3_k3au3"]
+[ext_resource type="Texture2D" uid="uid://dasjh6nvbmxtg" path="res://Graphics/KF3-RCLinkTab.png" id="4_dq354"]
+[ext_resource type="Texture2D" uid="uid://c4xck6dwkrfow" path="res://Graphics/KF3-RCQRToggle.png" id="5_m83mf"]
+[ext_resource type="Texture2D" uid="uid://h6ppwu1xtobq" path="res://Graphics/KF3-RCCode.png" id="6_x0vwy"]
+
+[node name="Step6KarafunRemoteControl" type="VBoxContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_p4tkq")
+
+[node name="Step6KarafunRemoteControlTitle" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Setup Step: Karafun Remote Control"
+
+[node name="BodyVBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="RCStepMarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "1. In Karafun, open the Remote Control pop-down pane by clicking this icon:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/RCStepMarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/RCStepMarginContainer/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+texture = ExtResource("2_57ta0")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="RCStepMarginContainer2" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer2/VBoxContainer"]
+layout_mode = 2
+text = "2. Ensure the Remote Control feature is toggled on:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/RCStepMarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/RCStepMarginContainer2/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+texture = ExtResource("3_k3au3")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="RCStepMarginContainer3" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer3"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer3/VBoxContainer"]
+layout_mode = 2
+text = "3. Make sure you're on the pane's Link tab:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/RCStepMarginContainer3/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/RCStepMarginContainer3/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 23)
+layout_mode = 2
+texture = ExtResource("4_dq354")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="RCStepMarginContainer4" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer4"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer4/VBoxContainer"]
+layout_mode = 2
+text = "4. Uncheck \"Display QR Code on Screen\" (it would interfere with KOKT):"
+autowrap_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/RCStepMarginContainer4/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/RCStepMarginContainer4/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 19)
+layout_mode = 2
+texture = ExtResource("5_m83mf")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="RCStepMarginContainer5" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer5"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer5/VBoxContainer"]
+layout_mode = 2
+text = "5. Note the six-digit code at the end of the URL:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer/RCStepMarginContainer5/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TextureRect" type="TextureRect" parent="BodyVBoxContainer/RCStepMarginContainer5/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+texture = ExtResource("6_x0vwy")
+expand_mode = 3
+stretch_mode = 4
+
+[node name="RCStepMarginContainer6" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BodyVBoxContainer/RCStepMarginContainer6"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="BodyVBoxContainer/RCStepMarginContainer6/VBoxContainer"]
+layout_mode = 2
+text = "6. Enter that code into the box below and click Connect:"
+
+[node name="MarginContainer" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+
+[node name="RoomCodeHBox" type="HBoxContainer" parent="BodyVBoxContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="RoomCodeLabel" type="Label" parent="BodyVBoxContainer/MarginContainer/RoomCodeHBox"]
+layout_mode = 2
+text = "Room Code:"
+
+[node name="RoomCodeEdit" type="LineEdit" parent="BodyVBoxContainer/MarginContainer/RoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter 6-digit room code"
+max_length = 6
+
+[node name="ConnectButton" type="Button" parent="BodyVBoxContainer/MarginContainer/RoomCodeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Connect"
+
+[node name="MarginContainer2" type="MarginContainer" parent="BodyVBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+
+[node name="ConnectionStatusLabel" type="Label" parent="BodyVBoxContainer/MarginContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Not connected"
+
+[node name="Step6KarafunRemoteControlButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="Step6KarafunRemoteControlBackButton" type="Button" parent="Step6KarafunRemoteControlButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "< Back"
+
+[node name="Step6KarafunRemoteControlNextButton" type="Button" parent="Step6KarafunRemoteControlButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Next >"
