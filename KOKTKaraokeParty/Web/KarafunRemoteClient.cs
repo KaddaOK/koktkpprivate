@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.WebSockets;
@@ -102,7 +103,7 @@ public class KarafunRemoteClient : IKarafunRemoteClient
 {
     private const string KarafunBaseUrl = "https://www.karafun.com";
     private const string WebSocketSubProtocol = "kcpj~v2+emuping";
-    private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0";
     private const string DefaultUsernamePrefix = "koktkp";
     private const int MaxUsernameLength = 16;
     
@@ -187,18 +188,73 @@ public class KarafunRemoteClient : IKarafunRemoteClient
         }
     }
     
+    private async Task<string> FetchViaHttpClient(string url, CancellationToken cancellationToken)
+    {
+        // cookie-aware HTTP client 
+
+        var handler = new HttpClientHandler
+        {
+
+            CookieContainer = _cookies,
+
+            AutomaticDecompression = DecompressionMethods.All
+        };
+        var http = new System.Net.Http.HttpClient(handler);
+
+        // use HTTP/1.1, because HTTP/2 seems to be fingerprinted against .NET HttpClient
+        http.DefaultRequestVersion = HttpVersion.Version11;
+        http.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+        // Claim to be Firefox
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+
+        // Some other headers we may need to set; just throwing everything at it to try to keep from getting rejected...
+
+        http.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        http.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-CA,en-US;q=0.9,en;q=0.8");
+        http.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate, br, zstd");
+        http.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
+        return await http.GetStringAsync(url, cancellationToken);
+    }
+
+    private async Task<string> FetchViaSystemCurl(string url, CancellationToken cancellationToken)
+    {
+        var psi = new ProcessStartInfo("curl")
+        {
+            Arguments = $"--http1.1 -s -L " +
+                        $"-H \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0\" " +
+                        $"-H \"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\" " +
+                        $"-H \"Accept-Language: en-CA,en-US;q=0.9,en;q=0.8\" " +
+                        $"-H \"Accept-Encoding: gzip, deflate, br, zstd\" " +
+                        $"-H \"Upgrade-Insecure-Requests: 1\" " +
+                        $"-H \"Sec-Fetch-Dest: document\" " +
+                        $"-H \"Sec-Fetch-Mode: navigate\" " +
+                        $"-H \"Sec-Fetch-Site: none\" " +
+                        $"-H \"Sec-Fetch-User: ?1\" " +
+                        $"--compressed \"{url}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        var html = await process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync(cancellationToken);
+        return html;
+    }
     private async Task<KarafunRemoteSettings> FetchSettingsAsync(string roomCode, CancellationToken cancellationToken)
     {
-        var handler = new HttpClientHandler { CookieContainer = _cookies };
-        using var http = new System.Net.Http.HttpClient(handler);
-        
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-        
         var url = $"{KarafunBaseUrl}/{roomCode}/";
         GD.Print($"Fetching settings from {url}");
-        
-        var html = await http.GetStringAsync(url, cancellationToken);
-        
+
+        // var html = await FetchViaHttpClient(url, cancellationToken);
+        var html = await FetchViaSystemCurl(url, cancellationToken);
+
         // Extract: const Settings = { ... };
         var match = Regex.Match(
             html,
